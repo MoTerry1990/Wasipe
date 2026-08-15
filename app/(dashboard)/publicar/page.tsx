@@ -33,7 +33,7 @@ export default function Publicar() {
     <Contenedor className="py-10 sm:py-14">
       <header className="mx-auto max-w-2xl text-center">
         <h1 className="text-[clamp(1.6rem,4vw,2.25rem)]">Publica gratis, seas quien seas</h1>
-        <p className="mx-auto mt-3 max-w-[50ch] text-tinta-60">
+        <p className="text-tinta-60 mx-auto mt-3 max-w-[50ch]">
           Propietarios, corredores inmobiliarios e inmobiliarias trabajan en el mismo portal,
           cada uno con su panel.
         </p>
@@ -43,8 +43,8 @@ export default function Publicar() {
         {PERFILES.map((p) => (
           <Tarjeta as="li" key={p.titulo} className="flex flex-col gap-2.5 p-6">
             <h2 className="font-display text-[17.5px] font-extrabold">{p.titulo}</h2>
-            <p className="text-[14.5px] text-tinta-60">
-              {p.texto} <strong className="font-bold text-tinta">{p.destaque}</strong>
+            <p className="text-tinta-60 text-[14.5px]">
+              {p.texto} <strong className="text-tinta font-bold">{p.destaque}</strong>
             </p>
           </Tarjeta>
         ))}
@@ -53,10 +53,10 @@ export default function Publicar() {
       {/* El asistente de publicación llega en el Sprint 7, con Storage y cuentas. */}
       <Tarjeta className="mt-8 flex flex-col items-center px-6 py-12 text-center">
         <Insignia tono="fucsia">Muy pronto</Insignia>
-        <h2 className="mt-4 font-display text-2xl font-extrabold">
+        <h2 className="font-display mt-4 text-2xl font-extrabold">
           El asistente de publicación está en camino
         </h2>
-        <p className="mt-3 max-w-[46ch] text-tinta-60">
+        <p className="text-tinta-60 mt-3 max-w-[46ch]">
           Cinco pasos, con las fotos primero y el precio por m² de tu distrito a la vista
           mientras decides cuánto pedir.
         </p>

@@ -14,7 +14,9 @@
 // ---------------------------------------------------------------------
 // Enumerados (espejo de 20260815120100_enums.sql)
 // ---------------------------------------------------------------------
-export type RolUsuario = 'owner' | 'agent' | 'agency_admin' | 'moderator' | 'admin';
+export type RolUsuario = 'buyer' | 'owner' | 'agent' | 'agency_admin' | 'moderator' | 'admin';
+export type ContactoPreferido = 'whatsapp' | 'phone' | 'email';
+export type IntencionUsuario = 'buy' | 'rent' | 'sell' | 'rent_out' | 'invest';
 export type EstadoInmueble = 'available' | 'reserved' | 'sold' | 'rented' | 'withdrawn';
 export type Operacion = 'sale' | 'rent' | 'project';
 export type TipoInmueble =
@@ -78,8 +80,21 @@ export type Perfil = {
   role: RolUsuario;
   is_active: boolean;
   free_listings_used: number;
+  preferred_contact: ContactoPreferido;
+  intent: IntencionUsuario | null;
+  /** Fin de la bienvenida. Mientras sea null, el panel redirige a /bienvenida. */
+  onboarded_at: string | null;
   created_at: string;
   updated_at: string;
+};
+
+/** Distrito que le interesa a una persona: alimenta sus alertas. */
+export type DistritoDeInteres = {
+  user_id: string;
+  district: string;
+  province: string | null;
+  department: string | null;
+  created_at: string;
 };
 
 export type Agencia = {
@@ -344,22 +359,34 @@ export type Anunciante = {
 // Esquema para el cliente de Supabase
 // ---------------------------------------------------------------------
 export type Database = {
+  // supabase-js usa esta marca para saber contra qué versión de PostgREST
+  // están escritos los tipos. Sin ella, select() y update() devuelven `never`.
+  __InternalSupabase: { PostgrestVersion: '13' };
   public: {
     Tables: {
       profiles: {
         Row: Perfil;
         Insert: Alta<Perfil, 'id' | 'full_name'>;
         Update: Partial<Perfil>;
+        Relationships: [];
+      };
+      profile_districts: {
+        Row: DistritoDeInteres;
+        Insert: Alta<DistritoDeInteres, 'user_id' | 'district'>;
+        Update: Partial<DistritoDeInteres>;
+        Relationships: [];
       };
       agencies: {
         Row: Agencia;
         Insert: Alta<Agencia, 'name' | 'slug' | 'created_by'>;
         Update: Partial<Agencia>;
+        Relationships: [];
       };
       agency_members: {
         Row: MiembroAgencia;
         Insert: Alta<MiembroAgencia, 'agency_id' | 'user_id'>;
         Update: Partial<MiembroAgencia>;
+        Relationships: [];
       };
       properties: {
         Row: Propiedad;
@@ -378,6 +405,7 @@ export type Database = {
           | 'district'
         >;
         Update: Partial<Propiedad>;
+        Relationships: [];
       };
       property_locations: {
         Row: UbicacionPropiedad;
@@ -386,75 +414,89 @@ export type Database = {
           'property_id' | 'address_line' | 'exact_lat' | 'exact_lon'
         >;
         Update: Partial<UbicacionPropiedad>;
+        Relationships: [];
       };
       property_features: {
         Row: CaracteristicaPropiedad;
         Insert: Alta<CaracteristicaPropiedad, 'property_id' | 'feature'>;
         Update: Partial<CaracteristicaPropiedad>;
+        Relationships: [];
       };
       property_media: {
         Row: MedioPropiedad;
         Insert: Alta<MedioPropiedad, 'property_id' | 'url'>;
         Update: Partial<MedioPropiedad>;
+        Relationships: [];
       };
       favorites: {
         Row: Favorito;
         Insert: Alta<Favorito, 'user_id' | 'property_id'>;
         Update: Partial<Favorito>;
+        Relationships: [];
       };
       inquiries: {
         Row: Consulta;
         Insert: Alta<Consulta, 'property_id' | 'sender_name' | 'message'>;
         Update: Partial<Consulta>;
+        Relationships: [];
       };
       saved_searches: {
         Row: BusquedaGuardada;
         Insert: Alta<BusquedaGuardada, 'user_id' | 'name'>;
         Update: Partial<BusquedaGuardada>;
+        Relationships: [];
       };
       price_history: {
         Row: HistorialPrecio;
         Insert: Alta<HistorialPrecio, 'property_id' | 'price' | 'currency'>;
         Update: Partial<HistorialPrecio>;
+        Relationships: [];
       };
       listing_views: {
         Row: VistaAviso;
         Insert: Alta<VistaAviso, 'property_id'>;
         Update: Partial<VistaAviso>;
+        Relationships: [];
       };
       reports: {
         Row: Denuncia;
         Insert: Alta<Denuncia, 'property_id' | 'reason'>;
         Update: Partial<Denuncia>;
+        Relationships: [];
       };
       subscriptions: {
         Row: Suscripcion;
         Insert: Alta<Suscripcion, 'plan_code' | 'amount'>;
         Update: Partial<Suscripcion>;
+        Relationships: [];
       };
       credit_transactions: {
         Row: MovimientoCredito;
         Insert: Alta<MovimientoCredito, 'amount' | 'balance_after' | 'reason'>;
         Update: Partial<MovimientoCredito>;
+        Relationships: [];
       };
       ai_jobs: {
         Row: TrabajoIA;
         Insert: Alta<TrabajoIA, 'user_id' | 'kind'>;
         Update: Partial<TrabajoIA>;
+        Relationships: [];
       };
       audit_logs: {
         Row: RegistroAuditoria;
         Insert: Alta<RegistroAuditoria, 'action' | 'entity'>;
         Update: Partial<RegistroAuditoria>;
+        Relationships: [];
       };
       exchange_rates: {
         Row: TipoCambio;
         Insert: Alta<TipoCambio, 'day' | 'pen_per_usd'>;
         Update: Partial<TipoCambio>;
+        Relationships: [];
       };
     };
     Views: {
-      anunciantes: { Row: Anunciante };
+      anunciantes: { Row: Anunciante; Relationships: [] };
     };
     Functions: {
       propiedades_cercanas: {

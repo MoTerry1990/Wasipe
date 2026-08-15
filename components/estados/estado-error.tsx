@@ -21,9 +21,9 @@ export function EstadoError({
   return (
     <div
       role="alert"
-      className="flex flex-col items-center rounded-marca border border-linea bg-white px-6 py-14 text-center"
+      className="rounded-marca border-linea flex flex-col items-center border bg-white px-6 py-14 text-center"
     >
-      <div className="mb-4 grid size-12 place-items-center rounded-full bg-fucsia-suave text-fucsia">
+      <div className="bg-fucsia-suave text-fucsia mb-4 grid size-12 place-items-center rounded-full">
         <svg width="24" height="24" viewBox="0 0 24 24" fill="none" aria-hidden="true">
           <path d="M12 8v5" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" />
           <circle cx="12" cy="16.5" r="1.2" fill="currentColor" />
@@ -31,7 +31,7 @@ export function EstadoError({
         </svg>
       </div>
       <h3 className="text-xl">{titulo}</h3>
-      <p className="mt-2 max-w-[44ch] text-tinta-60">
+      <p className="text-tinta-60 mt-2 max-w-[44ch]">
         {mensaje ?? 'No pudimos cargar esta parte. Vuelve a intentarlo en un momento.'}
       </p>
       {reintentar && (
@@ -56,8 +56,8 @@ export function Aviso({
       role={tono === 'mal' ? 'alert' : 'status'}
       className={
         tono === 'mal'
-          ? 'rounded-xl bg-fucsia-suave px-3.5 py-3 text-sm text-fucsia-osc'
-          : 'rounded-xl bg-turquesa-suave px-3.5 py-3 text-sm text-turquesa-osc'
+          ? 'bg-fucsia-suave text-fucsia-osc rounded-xl px-3.5 py-3 text-sm'
+          : 'bg-turquesa-suave text-turquesa-osc rounded-xl px-3.5 py-3 text-sm'
       }
     >
       {children}

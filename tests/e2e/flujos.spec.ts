@@ -21,20 +21,20 @@ test('la pestaña Proyectos ya no queda en un enlace roto (P-06)', async ({ page
   await expect(page.locator('main')).toBeVisible();
 });
 
-test('el formulario de ingreso avisa con honestidad que aún no está activo', async ({
-  page,
-}) => {
+test('el ingreso valida los campos antes de llamar a la base', async ({ page }) => {
   await page.goto('/ingresar');
-  await page.getByLabel('Correo').fill('persona@ejemplo.com');
-  await page.getByLabel('Contraseña').fill('unaclave123');
   await page.getByRole('button', { name: 'Iniciar sesión' }).click();
 
-  // No finge un ingreso: dice en español que llega en el próximo sprint.
-  // Va en role="alert" para que lo anuncie el lector de pantalla.
-  // Next agrega su propio role="alert" invisible para anunciar rutas: se filtra por texto.
-  const aviso = page.getByRole('alert').filter({ hasText: 'todavía no está disponible' });
-  await expect(aviso).toBeVisible();
+  // La validación corre en el servidor pero antes de tocar Supabase, así
+  // que responde en castellano incluso sin proyecto conectado.
+  await expect(page.getByText('Escribe tu correo')).toBeVisible();
   await expect(page).toHaveURL(/\/ingresar/);
+});
+
+test('desde el ingreso se llega a crear cuenta', async ({ page }) => {
+  await page.goto('/ingresar');
+  await page.getByRole('link', { name: 'Publica gratis' }).click();
+  await expect(page.locator('main')).toBeVisible();
 });
 
 test.describe('navegación móvil', () => {

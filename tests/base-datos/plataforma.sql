@@ -107,3 +107,54 @@ set search_path = public, extensions;
 alter role anon set search_path = public, extensions;
 alter role authenticated set search_path = public, extensions;
 alter role service_role set search_path = public, extensions;
+
+-- ---------------------------------------------------------------------
+-- storage — versión mínima.
+--
+-- Supabase Storage guarda los archivos fuera de Postgres, pero los
+-- metadatos y —lo que acá importa— las políticas de acceso viven en
+-- storage.objects. Se reproduce lo justo para que las políticas de la
+-- migración 20260816090200 se apliquen y se puedan probar.
+-- ---------------------------------------------------------------------
+create schema if not exists storage;
+
+create table if not exists storage.buckets (
+  id text primary key,
+  name text not null,
+  public boolean not null default false,
+  file_size_limit bigint,
+  allowed_mime_types text[],
+  created_at timestamptz default now()
+);
+
+create table if not exists storage.objects (
+  id uuid primary key default gen_random_uuid(),
+  bucket_id text not null references storage.buckets (id),
+  name text not null,
+  owner uuid,
+  metadata jsonb,
+  created_at timestamptz default now(),
+  unique (bucket_id, name)
+);
+
+alter table storage.objects enable row level security;
+
+-- Parte la ruta "avatares/<id>/foto.webp" y devuelve los directorios.
+-- Es la misma función que usa Supabase en sus políticas de ejemplo.
+create or replace function storage.foldername(name text)
+returns text[]
+language plpgsql
+immutable
+as $$
+declare
+  partes text[];
+begin
+  partes := string_to_array(name, '/');
+  return partes[1 : array_length(partes, 1) - 1];
+end;
+$$;
+
+grant usage on schema storage to anon, authenticated, service_role;
+grant select, insert, update, delete on storage.objects, storage.buckets
+  to anon, authenticated, service_role;
+grant execute on all functions in schema storage to anon, authenticated, service_role;

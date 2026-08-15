@@ -23,7 +23,7 @@ export const NAVEGACION = [
 
 /** Acciones del extremo derecho del encabezado. */
 export const ACCIONES = [
-  { texto: 'Favoritos', href: '/favoritos', tipo: 'enlace' },
+  { texto: 'Favoritos', href: '/panel/favoritos', tipo: 'enlace' },
   { texto: 'Iniciar sesión', href: '/ingresar', tipo: 'secundario' },
   { texto: 'Publicar gratis', href: '/publicar', tipo: 'primario' },
 ] as const;

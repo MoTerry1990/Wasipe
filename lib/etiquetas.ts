@@ -68,6 +68,7 @@ export const ESTADO_VERIFICACION: Record<EstadoVerificacion, string> = {
 };
 
 export const ROL: Record<RolUsuario, string> = {
+  buyer: 'Comprador',
   owner: 'Propietario directo',
   agent: 'Corredor inmobiliario',
   agency_admin: 'Administrador de inmobiliaria',

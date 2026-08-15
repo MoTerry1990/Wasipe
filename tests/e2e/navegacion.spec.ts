@@ -13,9 +13,11 @@ const RUTAS = [
   { ruta: '/proyectos', titulo: /Proyectos/ },
   { ruta: '/precio-m2', titulo: /m²|Precio/ },
   { ruta: '/wasi-ai', titulo: /Wasi/ },
-  { ruta: '/favoritos', titulo: /Favoritos/ },
   { ruta: '/ingresar', titulo: /Ingresar|Iniciar/ },
-  { ruta: '/publicar', titulo: /Publicar/ },
+  { ruta: '/registrarse', titulo: /Crear cuenta/ },
+  { ruta: '/recuperar', titulo: /Recuperar/ },
+  // /publicar y todo /panel exigen sesión desde el Sprint 4: su prueba
+  // está en cuentas.spec.ts, donde se comprueba que redirigen.
 ];
 
 for (const { ruta, titulo } of RUTAS) {

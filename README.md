@@ -62,6 +62,29 @@ visitante sin sesión, por la dueña de un aviso y por moderación.
 > ejecuta en las pruebas locales. El índice espacial y `propiedades_cercanas()`
 > se verifican recién contra un Supabase real.
 
+## Cuentas y panel
+
+El registro, el ingreso, la confirmación de correo y la recuperación de contraseña
+usan Supabase Auth. Quien se registra entra como **comprador** —el rol que menos
+puede hacer— y elige su tipo de cuenta en la bienvenida, una sola vez.
+
+Los cinco tipos de cuenta: comprador, propietario, corredor, inmobiliaria y
+administrador. Los dos últimos roles internos (`moderator` y `admin`) los asigna
+Wasipe: no se pueden elegir desde el cliente, y hay un trigger en la base que lo
+impide aunque alguien llame a la API directamente.
+
+La autorización se comprueba en tres capas, y cada una funciona sola:
+
+1. **Middleware** — redirige a `/ingresar` a quien no tiene sesión. Es comodidad,
+   no defensa: una petición directa lo saltea.
+2. **Servidor** — cada página y cada Server Action llama a `requiereSeccion()` o
+   `requiereRol()` antes de responder. Escribir la URL a mano no alcanza.
+3. **Base de datos** — la RLS filtra las filas. Aunque una consulta se escapara
+   sin comprobar nada, no devolvería datos ajenos.
+
+Sin proyecto de Supabase conectado el sitio público sigue funcionando, pero todo
+lo privado se cierra: ante la duda, no se abre.
+
 ## Variables de entorno
 
 Copiar `.env.example` a `.env` y completar. Ninguna clave real se sube al

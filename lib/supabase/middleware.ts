@@ -4,7 +4,7 @@ import type { Database } from '@/types/base-datos';
 import { entornoPublico, supabaseConfigurado } from '@/lib/supabase/entorno';
 
 /** Rutas que exigen sesión iniciada. */
-const RUTAS_PRIVADAS = ['/publicar', '/panel', '/favoritos', '/mis-avisos', '/cuenta'];
+const RUTAS_PRIVADAS = ['/panel', '/bienvenida', '/publicar', '/cuenta'];
 
 /**
  * Refresco de sesión en el borde.
@@ -21,10 +21,20 @@ const RUTAS_PRIVADAS = ['/publicar', '/panel', '/favoritos', '/mis-avisos', '/cu
 export async function actualizarSesion(request: NextRequest) {
   let respuesta = NextResponse.next({ request });
 
-  // Mientras no haya proyecto de Supabase conectado, el middleware deja
-  // pasar todo. Reventar acá dejaría el sitio entero en error 500 por una
-  // variable de entorno que todavía no toca configurar.
+  const ruta = request.nextUrl.pathname;
+  const esPrivada = RUTAS_PRIVADAS.some((r) => ruta === r || ruta.startsWith(`${r}/`));
+
+  // Sin proyecto de Supabase conectado no hay forma de comprobar sesión.
+  // Las páginas públicas siguen andando —reventar acá dejaría el sitio
+  // entero en error 500 por una variable que todavía no toca configurar—,
+  // pero lo privado se cierra: ante la duda, no se abre.
   if (!supabaseConfigurado()) {
+    if (esPrivada) {
+      const destino = request.nextUrl.clone();
+      destino.pathname = '/ingresar';
+      destino.searchParams.set('volver', ruta);
+      return NextResponse.redirect(destino);
+    }
     return respuesta;
   }
 
@@ -52,9 +62,6 @@ export async function actualizarSesion(request: NextRequest) {
   const {
     data: { user },
   } = await supabase.auth.getUser();
-
-  const ruta = request.nextUrl.pathname;
-  const esPrivada = RUTAS_PRIVADAS.some((r) => ruta === r || ruta.startsWith(`${r}/`));
 
   if (!user && esPrivada) {
     const destino = request.nextUrl.clone();

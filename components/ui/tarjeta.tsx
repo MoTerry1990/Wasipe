@@ -16,9 +16,9 @@ export function Tarjeta({
   return (
     <Etiqueta
       className={cn(
-        'rounded-marca border border-linea bg-white',
+        'rounded-marca border-linea border bg-white',
         interactiva &&
-          'transition-[transform,box-shadow] duration-200 hover:-translate-y-1 hover:shadow-marca',
+          'hover:shadow-marca transition-[transform,box-shadow] duration-200 hover:-translate-y-1',
         className,
       )}
     >

@@ -8,7 +8,7 @@ export function Marca({ className }: { className?: string }) {
       href="/"
       translate="no"
       className={cn(
-        'flex items-center gap-2 font-display text-[22px] font-extrabold tracking-[-0.04em]',
+        'font-display flex items-center gap-2 text-[22px] font-extrabold tracking-[-0.04em]',
         className,
       )}
     >

@@ -303,7 +303,7 @@ describe('escalada de privilegios', () => {
       banco.comoUsuario(CUENTAS.rosa, (db) =>
         db.query(`update public.profiles set role = 'admin' where id = $1`, [CUENTAS.rosa]),
       ),
-    ).rejects.toThrow(/No puedes cambiar tu propio rol/);
+    ).rejects.toThrow(/tipo de cuenta ya no se puede cambiar/);
   });
 
   it('el rol no se lee del token, aunque el token diga otra cosa', async () => {

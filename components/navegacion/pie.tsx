@@ -7,19 +7,19 @@ export function Pie() {
   const anio = new Date().getFullYear();
 
   return (
-    <footer className="border-t border-linea bg-white pt-9 pb-7 text-sm">
+    <footer className="border-linea border-t bg-white pt-9 pb-7 text-sm">
       <Contenedor>
         <div className="grid gap-7 sm:grid-cols-2 lg:grid-cols-[1.4fr_repeat(3,1fr)]">
           <div>
             <Marca className="mb-2.5" />
-            <p className="max-w-[28em] text-[13.5px] text-tinta-60">
+            <p className="text-tinta-60 max-w-[28em] text-[13.5px]">
               El portal inmobiliario peruano donde ves el precio antes de preguntar.
             </p>
           </div>
 
           {PIE.map((grupo) => (
             <div key={grupo.titulo}>
-              <h2 className="mb-3 font-texto text-xs font-bold tracking-[0.08em] text-tinta-40 uppercase">
+              <h2 className="font-texto text-tinta-40 mb-3 text-xs font-bold tracking-[0.08em] uppercase">
                 {grupo.titulo}
               </h2>
               <ul className="flex flex-col gap-1">
@@ -27,7 +27,7 @@ export function Pie() {
                   <li key={enlace.href}>
                     <Link
                       href={enlace.href}
-                      className="block py-1 text-tinta-60 transition-colors hover:text-fucsia"
+                      className="text-tinta-60 hover:text-fucsia block py-1 transition-colors"
                     >
                       {enlace.texto}
                     </Link>
@@ -38,7 +38,7 @@ export function Pie() {
           ))}
         </div>
 
-        <div className="mt-8 flex flex-wrap justify-between gap-4 border-t border-linea pt-5 text-[13px] text-tinta-40">
+        <div className="border-linea text-tinta-40 mt-8 flex flex-wrap justify-between gap-4 border-t pt-5 text-[13px]">
           <span>© {anio} Wasipe · Lima, Perú</span>
           {/*
             Términos, Privacidad y Libro de Reclamaciones todavía no tienen

@@ -14,7 +14,7 @@ export default function PrecioM2() {
     <Contenedor className="py-10 sm:py-16">
       <header className="mb-8 text-center">
         <h1 className="text-[clamp(1.6rem,4vw,2.25rem)]">Precio por m² en el Perú</h1>
-        <p className="mx-auto mt-3 max-w-[52ch] text-tinta-60">
+        <p className="text-tinta-60 mx-auto mt-3 max-w-[52ch]">
           Cuánto cuesta el metro cuadrado en cada distrito, para que puedas comparar antes de
           decidir. Es lo que nos hace distintos: el precio siempre a la vista.
         </p>
@@ -32,7 +32,7 @@ export default function PrecioM2() {
         mientrasTanto={{ texto: 'Ver propiedades', href: '/comprar' }}
       />
 
-      <p className="mx-auto mt-6 max-w-[52ch] text-center text-xs text-tinta-40">
+      <p className="text-tinta-40 mx-auto mt-6 max-w-[52ch] text-center text-xs">
         Los valores del índice son referenciales y no reemplazan una tasación.
       </p>
     </Contenedor>

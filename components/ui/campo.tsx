@@ -38,7 +38,7 @@ export function Campo({
 
   return (
     <div className={cn('block', className)}>
-      <label htmlFor={id} className="mb-1.5 block text-sm font-semibold text-tinta">
+      <label htmlFor={id} className="text-tinta mb-1.5 block text-sm font-semibold">
         {etiqueta}
       </label>
       <input
@@ -49,12 +49,12 @@ export function Campo({
         {...input}
       />
       {pista && !error && (
-        <p id={idPista} className="mt-1.5 text-xs text-tinta-40">
+        <p id={idPista} className="text-tinta-40 mt-1.5 text-xs">
           {pista}
         </p>
       )}
       {error && (
-        <p id={idError} role="alert" className="mt-1.5 text-xs font-semibold text-fucsia">
+        <p id={idError} role="alert" className="text-fucsia mt-1.5 text-xs font-semibold">
           {error}
         </p>
       )}
@@ -76,7 +76,7 @@ export function Selector({
 
   return (
     <div className={cn('block', className)}>
-      <label htmlFor={id} className="mb-1.5 block text-sm font-semibold text-tinta">
+      <label htmlFor={id} className="text-tinta mb-1.5 block text-sm font-semibold">
         {etiqueta}
       </label>
       <select
@@ -88,9 +88,9 @@ export function Selector({
       >
         {children}
       </select>
-      {pista && !error && <p className="mt-1.5 text-xs text-tinta-40">{pista}</p>}
+      {pista && !error && <p className="text-tinta-40 mt-1.5 text-xs">{pista}</p>}
       {error && (
-        <p id={idError} role="alert" className="mt-1.5 text-xs font-semibold text-fucsia">
+        <p id={idError} role="alert" className="text-fucsia mt-1.5 text-xs font-semibold">
           {error}
         </p>
       )}

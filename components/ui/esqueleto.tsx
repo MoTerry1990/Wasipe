@@ -8,23 +8,20 @@ import { cn } from '@/lib/cn';
  */
 export function Esqueleto({ className }: { className?: string }) {
   return (
-    <div
-      aria-hidden="true"
-      className={cn('animate-pulse rounded-lg bg-linea/70', className)}
-    />
+    <div aria-hidden="true" className={cn('bg-linea/70 animate-pulse rounded-lg', className)} />
   );
 }
 
 /** Silueta de una tarjeta de aviso, con las mismas proporciones. */
 export function EsqueletoAviso() {
   return (
-    <div className="overflow-hidden rounded-marca border border-linea bg-white">
+    <div className="rounded-marca border-linea overflow-hidden border bg-white">
       <Esqueleto className="aspect-[4/3] rounded-none" />
       <div className="flex flex-col gap-2 p-4">
         <Esqueleto className="h-5 w-28" />
         <Esqueleto className="h-4 w-full" />
         <Esqueleto className="h-4 w-3/5" />
-        <div className="mt-2 flex gap-3 border-t border-linea pt-3">
+        <div className="border-linea mt-2 flex gap-3 border-t pt-3">
           <Esqueleto className="h-3 w-14" />
           <Esqueleto className="h-3 w-14" />
           <Esqueleto className="h-3 w-14" />

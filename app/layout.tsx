@@ -44,7 +44,12 @@ export const metadata: Metadata = {
     title: 'Wasipe · Portal inmobiliario del Perú',
     description: SITIO.descripcion,
     images: [
-      { url: '/og.png', width: 1200, height: 630, alt: 'Wasipe · Ve el precio antes de preguntar' },
+      {
+        url: '/og.png',
+        width: 1200,
+        height: 630,
+        alt: 'Wasipe · Ve el precio antes de preguntar',
+      },
     ],
   },
   twitter: { card: 'summary_large_image' },
@@ -64,7 +69,7 @@ export default function LayoutRaiz({ children }: { children: React.ReactNode }) 
         {/* Primer elemento enfocable: poder saltar el menú es lo básico de accesibilidad. */}
         <a
           href="#contenido"
-          className="sr-only focus:not-sr-only focus:absolute focus:top-3 focus:left-3 focus:z-[60] focus:rounded-xl focus:bg-fucsia focus:px-4 focus:py-2.5 focus:font-bold focus:text-white"
+          className="focus:bg-fucsia sr-only focus:not-sr-only focus:absolute focus:top-3 focus:left-3 focus:z-[60] focus:rounded-xl focus:px-4 focus:py-2.5 focus:font-bold focus:text-white"
         >
           Saltar al contenido
         </a>

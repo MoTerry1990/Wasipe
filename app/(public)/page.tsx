@@ -33,19 +33,32 @@ export default function Inicio() {
           <h1 className="mx-auto max-w-[22ch] text-[clamp(1.75rem,4.6vw,2.875rem)]">
             Encuentra tu próximo hogar sabiendo cuánto vale realmente
           </h1>
-          <p className="mx-auto mt-3 mb-6 max-w-[46ch] text-[clamp(0.97rem,1.6vw,1.125rem)] text-tinta-60">
+          <p className="text-tinta-60 mx-auto mt-3 mb-6 max-w-[46ch] text-[clamp(0.97rem,1.6vw,1.125rem)]">
             Casas, departamentos, terrenos y proyectos en todo el Perú, con precios por m² para
             comparar mejor.
           </p>
 
           <BuscadorHero />
 
-          <ul className="mt-5 flex flex-wrap justify-center gap-x-5 gap-y-2 text-[13.5px] font-semibold text-tinta-60">
+          <ul className="text-tinta-60 mt-5 flex flex-wrap justify-center gap-x-5 gap-y-2 text-[13.5px] font-semibold">
             {GARANTIAS.map((g) => (
               <li key={g} className="flex items-center gap-1.5">
-                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" className="shrink-0 text-turquesa" aria-hidden="true">
+                <svg
+                  width="15"
+                  height="15"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  className="text-turquesa shrink-0"
+                  aria-hidden="true"
+                >
                   <circle cx="12" cy="12" r="11" fill="currentColor" opacity="0.14" />
-                  <path d="M7 12.5l3.2 3.2L17 9" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round" />
+                  <path
+                    d="M7 12.5l3.2 3.2L17 9"
+                    stroke="currentColor"
+                    strokeWidth="2.6"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  />
                 </svg>
                 {g}
               </li>
@@ -61,12 +74,15 @@ export default function Inicio() {
         <div className="mb-5 flex flex-wrap items-end justify-between gap-4">
           <div>
             <h2 className="text-[clamp(1.5rem,3.4vw,2.125rem)]">Publicadas y confirmadas</h2>
-            <p className="mt-2 max-w-[52ch] text-tinta-60">
+            <p className="text-tinta-60 mt-2 max-w-[52ch]">
               Cada aviso se confirma cada 90 días. Acá no vas a encontrar propiedades que se
               vendieron hace meses.
             </p>
           </div>
-          <Link href="/comprar" className="font-bold whitespace-nowrap text-fucsia hover:underline">
+          <Link
+            href="/comprar"
+            className="text-fucsia font-bold whitespace-nowrap hover:underline"
+          >
             Ver todas →
           </Link>
         </div>
@@ -81,17 +97,20 @@ export default function Inicio() {
       {/* DISTRITOS */}
       <Contenedor as="section" className="pb-10 sm:pb-14">
         <h2 className="text-[clamp(1.5rem,3.4vw,2.125rem)]">Busca por distrito</h2>
-        <p className="mt-2 mb-5 text-tinta-60">Los distritos más buscados de Lima.</p>
+        <p className="text-tinta-60 mt-2 mb-5">Los distritos más buscados de Lima.</p>
 
-        <ul className="grid grid-cols-[repeat(auto-fill,minmax(160px,1fr))] gap-3" translate="no">
+        <ul
+          className="grid grid-cols-[repeat(auto-fill,minmax(160px,1fr))] gap-3"
+          translate="no"
+        >
           {DISTRITOS_POPULARES.map((d) => (
             <li key={d.slug}>
               <Link
                 href={`/comprar?donde=${d.slug}`}
-                className="flex h-full flex-col gap-0.5 rounded-2xl border border-linea bg-white p-4 transition-[transform,border-color,box-shadow] hover:-translate-y-0.5 hover:border-fucsia hover:shadow-marca"
+                className="border-linea hover:border-fucsia hover:shadow-marca flex h-full flex-col gap-0.5 rounded-2xl border bg-white p-4 transition-[transform,border-color,box-shadow] hover:-translate-y-0.5"
               >
                 <span className="font-display text-[15.5px] font-extrabold">{d.nombre}</span>
-                <span className="text-[12.5px] text-tinta-60">Ver propiedades</span>
+                <span className="text-tinta-60 text-[12.5px]">Ver propiedades</span>
               </Link>
             </li>
           ))}
@@ -101,12 +120,12 @@ export default function Inicio() {
       {/* CIERRE */}
       <Contenedor as="section" className="pb-16 text-center sm:pb-24">
         <h2 className="text-[clamp(1.6rem,4vw,2.5rem)]">Publica tu propiedad en 3 minutos</h2>
-        <p className="mx-auto mt-3 mb-6 max-w-[42ch] text-tinta-60">
+        <p className="text-tinta-60 mx-auto mt-3 mb-6 max-w-[42ch]">
           Crea tu cuenta gratis, mira cuánto vale y sube las fotos desde tu celular.
         </p>
         <Link
           href="/publicar"
-          className="inline-flex items-center rounded-xl bg-fucsia px-7 py-3.5 font-bold text-white shadow-[0_6px_16px_-6px_rgb(225_29_116_/_0.5)] transition-colors hover:bg-fucsia-osc"
+          className="bg-fucsia hover:bg-fucsia-osc inline-flex items-center rounded-xl px-7 py-3.5 font-bold text-white shadow-[0_6px_16px_-6px_rgb(225_29_116_/_0.5)] transition-colors"
         >
           Publicar gratis
         </Link>

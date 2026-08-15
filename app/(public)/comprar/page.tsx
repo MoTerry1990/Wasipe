@@ -4,7 +4,8 @@ import { EstadoVacio } from '@/components/estados/estado-vacio';
 
 export const metadata: Metadata = {
   title: 'Comprar',
-  description: 'Busca departamentos, casas y terrenos en venta en el Perú. Compara por precio por m².',
+  description:
+    'Busca departamentos, casas y terrenos en venta en el Perú. Compara por precio por m².',
   alternates: { canonical: '/comprar' },
 };
 
@@ -12,8 +13,13 @@ export default function Pagina() {
   return (
     <Contenedor className="py-10 sm:py-14">
       <header className="mb-7">
-        <h1 className="text-[clamp(1.6rem,4vw,2.25rem)]">Departamentos, casas y terrenos en venta</h1>
-        <p className="mt-2 max-w-[56ch] text-tinta-60">Propiedades en venta en todo el Perú, con el precio por m² a la vista para que puedas comparar.</p>
+        <h1 className="text-[clamp(1.6rem,4vw,2.25rem)]">
+          Departamentos, casas y terrenos en venta
+        </h1>
+        <p className="text-tinta-60 mt-2 max-w-[56ch]">
+          Propiedades en venta en todo el Perú, con el precio por m² a la vista para que puedas
+          comparar.
+        </p>
       </header>
 
       {/*

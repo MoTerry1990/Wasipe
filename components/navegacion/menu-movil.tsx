@@ -43,7 +43,7 @@ export function MenuMovil() {
         onClick={() => setAbierto((v) => !v)}
         aria-expanded={abierto}
         aria-controls="menu-movil"
-        className="-mr-1 rounded-lg p-2 text-tinta lg:hidden"
+        className="text-tinta -mr-1 rounded-lg p-2 lg:hidden"
       >
         <span className="solo-lectores">{abierto ? 'Cerrar menú' : 'Abrir menú'}</span>
         <svg width="24" height="24" viewBox="0 0 24 24" fill="none" aria-hidden="true">
@@ -68,7 +68,7 @@ export function MenuMovil() {
       <div
         id="menu-movil"
         hidden={!abierto}
-        className="fixed inset-x-0 top-16 bottom-0 z-50 overflow-y-auto border-t border-linea bg-white lg:hidden"
+        className="border-linea fixed inset-x-0 top-16 bottom-0 z-50 overflow-y-auto border-t bg-white lg:hidden"
       >
         <nav
           aria-label="Navegación principal"
@@ -92,7 +92,7 @@ export function MenuMovil() {
             );
           })}
 
-          <hr className="my-3 border-linea" />
+          <hr className="border-linea my-3" />
 
           {ACCIONES.map((accion) => (
             <Link
@@ -101,10 +101,10 @@ export function MenuMovil() {
               className={cn(
                 'rounded-xl px-4 py-3.5 text-center text-[17px] font-bold transition-colors',
                 accion.tipo === 'primario'
-                  ? 'bg-fucsia text-white hover:bg-fucsia-osc'
+                  ? 'bg-fucsia hover:bg-fucsia-osc text-white'
                   : accion.tipo === 'secundario'
-                    ? 'border-[1.5px] border-linea bg-white text-tinta'
-                    : 'text-left font-semibold text-tinta hover:bg-niebla',
+                    ? 'border-linea text-tinta border-[1.5px] bg-white'
+                    : 'text-tinta hover:bg-niebla text-left font-semibold',
               )}
             >
               {accion.texto}

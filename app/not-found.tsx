@@ -15,9 +15,9 @@ export default function NoEncontrado() {
             descripcion="Puede que el enlace esté mal escrito o que la propiedad ya no esté publicada."
             accion={{ texto: 'Ir al inicio', href: '/' }}
           />
-          <p className="mt-6 text-center text-sm text-tinta-60">
+          <p className="text-tinta-60 mt-6 text-center text-sm">
             También puedes{' '}
-            <Link href="/comprar" className="font-bold text-fucsia hover:underline">
+            <Link href="/comprar" className="text-fucsia font-bold hover:underline">
               buscar propiedades
             </Link>
             .

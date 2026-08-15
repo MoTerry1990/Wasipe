@@ -76,16 +76,33 @@ values
   ('44444444-4444-4444-8444-444444444444', 'Equipo de moderación', 'moderator')
 on conflict (id) do nothing;
 
+-- Todas las cuentas de ejemplo ya pasaron la bienvenida.
 update public.profiles set
   phone = '987654321', whatsapp = '987654321',
-  bio = 'Vendo el departamento donde viví los últimos ocho años.'
+  bio = 'Vendo el departamento donde viví los últimos ocho años.',
+  preferred_contact = 'whatsapp', intent = 'sell', onboarded_at = now()
 where id = '11111111-1111-4111-8111-111111111111';
 
-update public.profiles set role = 'agency_admin', phone = '912345678'
+update public.profiles set
+  role = 'agency_admin', phone = '912345678',
+  preferred_contact = 'phone', intent = 'sell', onboarded_at = now()
 where id = '22222222-2222-4222-8222-222222222222';
 
-update public.profiles set role = 'moderator'
+update public.profiles set
+  role = 'owner', phone = '976543210', whatsapp = '976543210',
+  preferred_contact = 'whatsapp', intent = 'buy', onboarded_at = now()
+where id = '33333333-3333-4333-8333-333333333333';
+
+update public.profiles set role = 'moderator', onboarded_at = now()
 where id = '44444444-4444-4444-8444-444444444444';
+
+-- Distritos que le interesan a Lucía: alimentan sus alertas.
+insert into public.profile_districts (user_id, district, province, department)
+values
+  ('33333333-3333-4333-8333-333333333333', 'Miraflores', 'Lima', 'Lima'),
+  ('33333333-3333-4333-8333-333333333333', 'Barranco', 'Lima', 'Lima'),
+  ('33333333-3333-4333-8333-333333333333', 'San Isidro', 'Lima', 'Lima')
+on conflict do nothing;
 
 -- ---------------------------------------------------------------------
 -- Inmobiliaria de ejemplo
