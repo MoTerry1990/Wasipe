@@ -1,9 +1,27 @@
 node_modules/
-.netlify/
+
+# Secretos: nunca al repositorio. La plantilla sí, con valores vacíos.
 .env
 .env.*
-dist/
-*.log
+!.env.example
 
-# artefactos de empaquetado
+# Build de Next
+.next/
+out/
+next-env.d.ts
+*.tsbuildinfo
+
+# Pruebas
+test-results/
+playwright-report/
+blob-report/
+.playwright/
+
+# Despliegue
+.vercel/
+.netlify/
+dist/
 wasipe-deploy.zip
+
+*.log
+.DS_Store

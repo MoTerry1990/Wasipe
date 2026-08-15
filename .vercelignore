@@ -1,0 +1,14 @@
+# El stack anterior (Hono + Netlify Functions) se conserva como referencia
+# durante la migración, pero no forma parte del build de Vercel. Excluirlo
+# evita subir ~40 MB y que Vercel detecte dos proyectos en el repositorio.
+legacy/
+
+# Documentación de diseño y auditoría: no hace falta en el despliegue.
+*.md
+!README.md
+
+tests/
+playwright.config.ts
+vitest.config.ts
+test-results/
+playwright-report/

@@ -1,45 +1,44 @@
 {
   "name": "wasipe",
-  "version": "0.1.0",
-  "private": true,
-  "type": "module",
+  "version": "1.0.0",
   "description": "Portal inmobiliario del Perú",
-  "engines": {
-    "node": ">=20"
-  },
   "scripts": {
-    "verificar": "npm run typecheck && npm run sql && npm run idioma && npm run formato && npm run humo && npm run esquema && npm run invariantes && npm run autoesquema && npm run cuentas && npm run ubicaciones && npm run medios && npm run propiedades && npm run ficha && npm run busqueda && npm run bundle",
-    "cuentas": "node --experimental-strip-types --no-warnings scripts/probar-cuentas.js",
-    "dev": "netlify dev",
-    "esquema": "node scripts/probar-esquema.js",
-    "humo": "node --experimental-strip-types --no-warnings scripts/humo.js",
-    "invariantes": "node scripts/probar-invariantes.js",
-    "medios": "node --experimental-strip-types --no-warnings scripts/probar-medios.js",
-    "migrar": "node scripts/generar-semilla.js && node src/db/migrar.js",
-    "sembrar": "node scripts/sembrar-todo.js",
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "eslint .",
     "typecheck": "tsc --noEmit",
-    "ubicaciones": "node --experimental-strip-types --no-warnings scripts/probar-ubicaciones.js",
-    "sql": "node scripts/probar-dividir-sql.js",
-    "propiedades": "node --experimental-strip-types --no-warnings scripts/probar-propiedades.js",
-    "ficha": "node --experimental-strip-types --no-warnings scripts/probar-ficha.js",
-    "bundle": "node scripts/probar-bundle.js",
-    "autoesquema": "node --experimental-strip-types --no-warnings scripts/probar-autoesquema.js",
-    "empaquetar": "node scripts/empaquetar.js",
-    "semilla": "node scripts/generar-semilla.js && node scripts/generar-migraciones-embebidas.js",
-    "busqueda": "node --experimental-strip-types --no-warnings scripts/probar-busqueda.js",
-    "idioma": "node scripts/probar-idioma.js",
-    "formato": "node scripts/probar-formato-pe.js"
+    "format": "prettier --write .",
+    "test": "vitest run",
+    "test:e2e": "playwright test",
+    "legacy": "npm --prefix legacy run verificar"
   },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
   "dependencies": {
-    "@neondatabase/serverless": "^0.10.4",
-    "hono": "^4.6.14",
-    "jose": "^5.9.6",
-    "zod": "^3.24.1"
+    "next": "^16.3.1",
+    "react": "^19.2.8",
+    "react-dom": "^19.2.8"
   },
   "devDependencies": {
-    "@electric-sql/pglite": "^0.5.4",
-    "@types/node": "^22.10.2",
-    "esbuild": "^0.28.2",
-    "typescript": "^5.7.2"
-  }
+    "@playwright/test": "^1.62.1",
+    "@tailwindcss/postcss": "^4.3.3",
+    "@testing-library/jest-dom": "^7.0.1",
+    "@testing-library/react": "^16.3.2",
+    "@types/node": "^26.2.0",
+    "@types/react": "^19.2.18",
+    "@types/react-dom": "^19.2.4",
+    "@vitejs/plugin-react": "^6.0.5",
+    "eslint": "^9.39.5",
+    "eslint-config-next": "^16.3.1",
+    "jsdom": "^30.0.1",
+    "postcss": "^8.5.26",
+    "prettier": "^3.9.6",
+    "prettier-plugin-tailwindcss": "^0.8.1",
+    "tailwindcss": "^4.3.3",
+    "typescript": "^6.0.3",
+    "vitest": "^4.1.10"
+  },
+  "private": true
 }

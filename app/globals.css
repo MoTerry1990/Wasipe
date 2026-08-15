@@ -1,0 +1,148 @@
+@import 'tailwindcss';
+
+/**
+ * Identidad visual de Wasipe.
+ *
+ * Los colores y tipografías salen tal cual del sitio anterior
+ * (ver PROJECT_AUDIT.md §5). No se cambió ni un tono: la marca ya
+ * existía y funciona.
+ */
+@theme {
+  /* Tinta: el gris azulado del texto */
+  --color-tinta: #1b2733;
+  --color-tinta-70: #3d4b58;
+  --color-tinta-60: #51606d;
+  --color-tinta-45: #6f7f8c;
+  --color-tinta-40: #8494a1;
+
+  /* Fondos */
+  --color-niebla: #f4f6f8;
+  --color-blanco: #ffffff;
+  --color-linea: #e3e8ed;
+
+  /* Fucsia: acción primaria y marca */
+  --color-fucsia: #e11d74;
+  --color-fucsia-osc: #c01562;
+  --color-fucsia-suave: #fdebf3;
+
+  /* Turquesa: confirmación y valores por debajo del mercado */
+  --color-turquesa: #0fa3a0;
+  --color-turquesa-osc: #0a6b69;
+  --color-turquesa-suave: #e6f6f5;
+
+  /* Cielo: degradado del hero */
+  --color-cielo-1: #c9e3f9;
+  --color-cielo-2: #e4f1fc;
+
+  --color-maiz: #f0b32e;
+
+  /* Tipografías — las variables las inyecta next/font desde app/layout.tsx */
+  --font-display: var(--fuente-display), system-ui, sans-serif;
+  --font-texto: var(--fuente-texto), system-ui, sans-serif;
+  --font-dato: var(--fuente-dato), ui-monospace, monospace;
+
+  --radius-marca: 16px;
+  --shadow-marca: 0 6px 24px -10px rgb(27 39 51 / 0.16);
+}
+
+@layer base {
+  html {
+    scroll-behavior: smooth;
+    -webkit-text-size-adjust: 100%;
+  }
+
+  body {
+    background: var(--color-niebla);
+    color: var(--color-tinta);
+    font-family: var(--font-texto);
+    font-size: 16.5px;
+    line-height: 1.55;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  h1,
+  h2,
+  h3 {
+    font-family: var(--font-display);
+    font-weight: 800;
+    line-height: 1.08;
+    letter-spacing: -0.025em;
+  }
+
+  /* Foco siempre visible: es el único rastro para quien navega con teclado. */
+  :focus-visible {
+    outline: 3px solid var(--color-fucsia);
+    outline-offset: 2px;
+    border-radius: 6px;
+  }
+
+  /* Quien pide menos movimiento, recibe menos movimiento. */
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+      scroll-behavior: auto !important;
+    }
+  }
+}
+
+@layer utilities {
+  /* Cifras tabulares para precios: evita que la columna baile. */
+  .cifra {
+    font-family: var(--font-dato);
+    font-variant-numeric: tabular-nums;
+    letter-spacing: -0.02em;
+  }
+
+  /* Solo para lectores de pantalla. */
+  .solo-lectores {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+    border-width: 0;
+  }
+}
+
+/* Animaciones de la ilustración del hero. */
+@keyframes flota {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-9px);
+  }
+}
+@keyframes deriva {
+  0% {
+    transform: translateX(0);
+  }
+  100% {
+    transform: translateX(46px);
+  }
+}
+@keyframes brisa {
+  0%,
+  100% {
+    transform: rotate(-2.5deg);
+  }
+  50% {
+    transform: rotate(2.5deg);
+  }
+}
+@keyframes ola {
+  0% {
+    transform: translateX(0);
+  }
+  100% {
+    transform: translateX(-70px);
+  }
+}
