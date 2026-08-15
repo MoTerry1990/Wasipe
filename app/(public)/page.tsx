@@ -1,15 +1,31 @@
 import type { Metadata } from 'next';
-import Link from 'next/link';
+import { Suspense } from 'react';
 import { Contenedor } from '@/components/ui/contenedor';
-import { EstadoVacio } from '@/components/estados/estado-vacio';
 import { SkylineLima } from '@/components/marca/skyline-lima';
+import { SeccionCargando } from '@/components/propiedades/seccion-avisos';
 import { BuscadorHero } from '@/features/busqueda/buscador-hero';
-import { DISTRITOS_POPULARES } from '@/config/sitio';
+import { SelectorMoneda } from '@/features/preferencias/selector-moneda';
+import {
+  Destacadas,
+  RecienPublicadas,
+  BajaronDePrecio,
+  ProyectosNuevos,
+  DistritosPopulares,
+  PrecioPromedioPorMetro,
+} from '@/features/portada/secciones-con-datos';
+import {
+  ComoFunciona,
+  IntroWasiAi,
+  Confianza,
+  PublicaGratis,
+} from '@/features/portada/secciones-fijas';
+import { monedaPreferida } from '@/lib/preferencias';
+import { tipoDeCambio } from '@/lib/consultas/portada';
 
 export const metadata: Metadata = {
   title: 'Wasipe · Departamentos, casas y proyectos en venta y alquiler en el Perú',
   description:
-    'Busca departamentos, casas, terrenos y proyectos en venta y alquiler en todo el Perú. Publica gratis y consulta el precio por m² de tu distrito.',
+    'Busca departamentos, casas, terrenos y proyectos en venta y alquiler en todo el Perú, con el precio por m² siempre visible. Publicar es gratis.',
   alternates: { canonical: '/' },
 };
 
@@ -19,117 +35,104 @@ const GARANTIAS = [
   'Publicar es gratis',
 ];
 
-export default function Inicio() {
+/**
+ * Portada.
+ *
+ * El hero se dibuja de inmediato: no espera a ninguna consulta. Las seis
+ * secciones que leen la base van cada una en su propio Suspense, así que
+ * aparecen a medida que responden y una lenta no frena a las otras.
+ *
+ * Cada esqueleto ocupa el mismo alto que su sección real. Ese detalle es
+ * lo que evita que la página salte mientras carga.
+ */
+export default async function Inicio() {
+  const [moneda, cambio] = await Promise.all([monedaPreferida(), tipoDeCambio()]);
+  const datos = { moneda, tipoDeCambio: cambio };
+
   return (
     <>
       {/*
         HERO
-        La ilustración se preserva tal cual del sitio anterior. En móvil el
-        relleno inferior baja para que el skyline no se coma la pantalla
-        (el sitio anterior llegaba a 280px y tapaba el contenido).
+        La ilustración es la misma del sitio anterior, sin tocar. En móvil
+        el relleno inferior se achica para que el skyline no se coma la
+        pantalla y el buscador quede visible sin desplazar.
       */}
-      <header className="relative overflow-hidden bg-[linear-gradient(180deg,#C9E3F9,#E4F1FC_58%,#F4F6F8)]">
-        <Contenedor className="relative z-10 pt-9 pb-[clamp(140px,22vw,260px)] text-center sm:pt-14">
-          <h1 className="mx-auto max-w-[22ch] text-[clamp(1.75rem,4.6vw,2.875rem)]">
+      <header
+        id="hero"
+        className="relative overflow-hidden bg-[linear-gradient(180deg,#C9E3F9,#E4F1FC_58%,#F4F6F8)]"
+      >
+        <Contenedor className="relative z-10 pt-7 pb-[clamp(120px,20vw,240px)] text-center sm:pt-12">
+          <h1 className="mx-auto max-w-[22ch] text-[clamp(1.7rem,4.6vw,2.875rem)]">
             Encuentra tu próximo hogar sabiendo cuánto vale realmente
           </h1>
-          <p className="text-tinta-60 mx-auto mt-3 mb-6 max-w-[46ch] text-[clamp(0.97rem,1.6vw,1.125rem)]">
+          <p className="text-tinta-60 mx-auto mt-3 mb-5 max-w-[48ch] text-[clamp(0.95rem,1.6vw,1.125rem)]">
             Casas, departamentos, terrenos y proyectos en todo el Perú, con precios por m² para
             comparar mejor.
           </p>
 
           <BuscadorHero />
 
-          <ul className="text-tinta-60 mt-5 flex flex-wrap justify-center gap-x-5 gap-y-2 text-[13.5px] font-semibold">
-            {GARANTIAS.map((g) => (
-              <li key={g} className="flex items-center gap-1.5">
-                <svg
-                  width="15"
-                  height="15"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  className="text-turquesa shrink-0"
-                  aria-hidden="true"
-                >
-                  <circle cx="12" cy="12" r="11" fill="currentColor" opacity="0.14" />
-                  <path
-                    d="M7 12.5l3.2 3.2L17 9"
-                    stroke="currentColor"
-                    strokeWidth="2.6"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                  />
-                </svg>
-                {g}
-              </li>
-            ))}
-          </ul>
+          <div className="mt-5 flex flex-wrap items-center justify-center gap-x-5 gap-y-3">
+            <ul className="text-tinta-60 flex flex-wrap justify-center gap-x-5 gap-y-2 text-[13.5px] font-semibold">
+              {GARANTIAS.map((garantia) => (
+                <li key={garantia} className="flex items-center gap-1.5">
+                  <svg
+                    width="15"
+                    height="15"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    className="text-turquesa shrink-0"
+                    aria-hidden="true"
+                  >
+                    <circle cx="12" cy="12" r="11" fill="currentColor" opacity="0.14" />
+                    <path
+                      d="M7 12.5l3.2 3.2L17 9"
+                      stroke="currentColor"
+                      strokeWidth="2.6"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    />
+                  </svg>
+                  {garantia}
+                </li>
+              ))}
+            </ul>
+
+            <SelectorMoneda actual={moneda} />
+          </div>
         </Contenedor>
 
         <SkylineLima className="pointer-events-none absolute inset-x-0 -bottom-0.5 z-0 [&_svg]:block [&_svg]:h-auto [&_svg]:w-full" />
       </header>
 
-      {/* PROPIEDADES — todavía sin datos: el Sprint 3 conecta Supabase */}
-      <Contenedor as="section" className="py-10 sm:py-14">
-        <div className="mb-5 flex flex-wrap items-end justify-between gap-4">
-          <div>
-            <h2 className="text-[clamp(1.5rem,3.4vw,2.125rem)]">Publicadas y confirmadas</h2>
-            <p className="text-tinta-60 mt-2 max-w-[52ch]">
-              Cada aviso se confirma cada 90 días. Acá no vas a encontrar propiedades que se
-              vendieron hace meses.
-            </p>
-          </div>
-          <Link
-            href="/comprar"
-            className="text-fucsia font-bold whitespace-nowrap hover:underline"
-          >
-            Ver todas →
-          </Link>
-        </div>
+      <Suspense fallback={<SeccionCargando />}>
+        <Destacadas {...datos} />
+      </Suspense>
 
-        <EstadoVacio
-          titulo="Sé el primero en publicar"
-          descripcion="El portal acaba de abrir. Tu propiedad puede ser la primera que vean todos, y publicar es gratis."
-          accion={{ texto: 'Publicar gratis', href: '/publicar' }}
-        />
-      </Contenedor>
+      <Suspense fallback={<SeccionCargando />}>
+        <RecienPublicadas {...datos} />
+      </Suspense>
 
-      {/* DISTRITOS */}
-      <Contenedor as="section" className="pb-10 sm:pb-14">
-        <h2 className="text-[clamp(1.5rem,3.4vw,2.125rem)]">Busca por distrito</h2>
-        <p className="text-tinta-60 mt-2 mb-5">Los distritos más buscados de Lima.</p>
+      <Suspense fallback={<SeccionCargando columnas={4} />}>
+        <BajaronDePrecio {...datos} />
+      </Suspense>
 
-        <ul
-          className="grid grid-cols-[repeat(auto-fill,minmax(160px,1fr))] gap-3"
-          translate="no"
-        >
-          {DISTRITOS_POPULARES.map((d) => (
-            <li key={d.slug}>
-              <Link
-                href={`/comprar?donde=${d.slug}`}
-                className="border-linea hover:border-fucsia hover:shadow-marca flex h-full flex-col gap-0.5 rounded-2xl border bg-white p-4 transition-[transform,border-color,box-shadow] hover:-translate-y-0.5"
-              >
-                <span className="font-display text-[15.5px] font-extrabold">{d.nombre}</span>
-                <span className="text-tinta-60 text-[12.5px]">Ver propiedades</span>
-              </Link>
-            </li>
-          ))}
-        </ul>
-      </Contenedor>
+      <Suspense fallback={<SeccionCargando columnas={4} />}>
+        <ProyectosNuevos {...datos} />
+      </Suspense>
 
-      {/* CIERRE */}
-      <Contenedor as="section" className="pb-16 text-center sm:pb-24">
-        <h2 className="text-[clamp(1.6rem,4vw,2.5rem)]">Publica tu propiedad en 3 minutos</h2>
-        <p className="text-tinta-60 mx-auto mt-3 mb-6 max-w-[42ch]">
-          Crea tu cuenta gratis, mira cuánto vale y sube las fotos desde tu celular.
-        </p>
-        <Link
-          href="/publicar"
-          className="bg-fucsia hover:bg-fucsia-osc inline-flex items-center rounded-xl px-7 py-3.5 font-bold text-white shadow-[0_6px_16px_-6px_rgb(225_29_116_/_0.5)] transition-colors"
-        >
-          Publicar gratis
-        </Link>
-      </Contenedor>
+      <Suspense fallback={<SeccionCargando columnas={4} />}>
+        <DistritosPopulares />
+      </Suspense>
+
+      <Suspense fallback={<SeccionCargando />}>
+        <PrecioPromedioPorMetro {...datos} />
+      </Suspense>
+
+      <ComoFunciona />
+      <IntroWasiAi />
+      <Confianza />
+      <PublicaGratis />
     </>
   );
 }

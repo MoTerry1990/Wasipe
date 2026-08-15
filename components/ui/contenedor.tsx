@@ -6,11 +6,15 @@ export function Contenedor({
   className,
   ancho = 'normal',
   as: Etiqueta = 'div',
+  // El id sirve para los enlaces de ancla del pie ("Cómo funciona
+  // Wasipe" apunta a /#como-funciona).
+  id,
 }: {
   children: React.ReactNode;
   className?: string;
   ancho?: 'normal' | 'angosto' | 'ancho';
   as?: 'div' | 'section' | 'header' | 'footer' | 'main' | 'nav';
+  id?: string;
 }) {
   const anchos = {
     angosto: 'max-w-3xl',
@@ -19,7 +23,10 @@ export function Contenedor({
   };
 
   return (
-    <Etiqueta className={cn('mx-auto w-full px-4 sm:px-6 lg:px-10', anchos[ancho], className)}>
+    <Etiqueta
+      id={id}
+      className={cn('mx-auto w-full px-4 sm:px-6 lg:px-10', anchos[ancho], className)}
+    >
       {children}
     </Etiqueta>
   );

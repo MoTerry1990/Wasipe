@@ -1,17 +1,11 @@
 import { test, expect } from '@playwright/test';
 
 /** El buscador del hero es el flujo principal de la portada. */
-test('buscar desde la portada lleva a la ruta de la pestaña elegida', async ({ page }) => {
-  await page.goto('/');
-
-  await page.getByRole('tab', { name: 'Alquilar' }).click();
-  await page.getByRole('combobox', { name: 'Tipo de propiedad' }).selectOption('casa');
-  await page.getByRole('searchbox').or(page.getByRole('textbox')).first().fill('Miraflores');
-  await page.getByRole('button', { name: /Buscar/i }).click();
-
-  await expect(page).toHaveURL(/\/alquilar\?.*tipo=casa/);
-  await expect(page).toHaveURL(/donde=Miraflores/);
-});
+/*
+ * El buscador del hero se prueba a fondo en portada.spec.ts, junto con
+ * el autocompletado y los parámetros de la URL. Acá queda solo lo que
+ * cruza pantallas.
+ */
 
 test('la pestaña Proyectos ya no queda en un enlace roto (P-06)', async ({ page }) => {
   await page.goto('/');

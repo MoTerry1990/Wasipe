@@ -2,70 +2,90 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
+import Link from 'next/link';
 import { TIPOS_INMUEBLE, DISTRITOS_POPULARES } from '@/config/sitio';
+import { urlDeBusqueda } from '@/lib/catalogo';
+import { AutocompletadoUbicacion } from '@/features/busqueda/autocompletado-ubicacion';
 import { cn } from '@/lib/cn';
+import type { Operacion } from '@/types/base-datos';
 
 const PESTANAS = [
-  { texto: 'Comprar', ruta: '/comprar' },
-  { texto: 'Alquilar', ruta: '/alquilar' },
-  { texto: 'Proyectos', ruta: '/proyectos' },
-] as const;
+  { texto: 'Comprar', operacion: 'sale' },
+  { texto: 'Alquilar', operacion: 'rent' },
+  { texto: 'Proyectos', operacion: 'project' },
+] as const satisfies readonly { texto: string; operacion: Operacion }[];
 
 /**
- * Buscador del hero. Funcional: arma la URL y navega.
+ * Buscador del hero.
  *
- * Cada pestaña lleva a su propia ruta (`/comprar`, `/alquilar`) en vez de
- * a `/buscar?operacion=x`. Así las páginas son indexables por separado y
- * se resuelve de paso el enlace roto de "Proyectos" (KNOWN_ISSUES P-06).
+ * Cada pestaña lleva a su propia ruta (`/comprar`, `/alquilar`,
+ * `/proyectos`) en vez de a `/buscar?operacion=x`: así cada operación es
+ * una página indexable por separado, que es como se busca en Google en
+ * el Perú ("departamentos en alquiler en Miraflores").
+ *
+ * Es un formulario de verdad, con `action` calculada al enviar. Funciona
+ * con Enter, con el botón, y con el teclado del celular.
  */
-export function BuscadorHero() {
+export function BuscadorHero({
+  operacionInicial = 'sale',
+  donde = '',
+}: {
+  operacionInicial?: Operacion;
+  donde?: string;
+}) {
   const router = useRouter();
-  const [pestana, setPestana] = useState(0);
+  const [operacion, setOperacion] = useState<Operacion>(operacionInicial);
   const [tipo, setTipo] = useState('departamento');
-  const [donde, setDonde] = useState('');
 
-  function buscar(e: React.FormEvent) {
-    e.preventDefault();
-    const destino = PESTANAS[pestana]?.ruta ?? '/comprar';
-    const params = new URLSearchParams();
-    if (tipo) params.set('tipo', tipo);
-    const texto = donde.trim();
-    if (texto) params.set('donde', texto);
-    router.push(params.toString() ? `${destino}?${params}` : destino);
+  function buscar(evento: React.FormEvent<HTMLFormElement>) {
+    evento.preventDefault();
+    const datos = new FormData(evento.currentTarget);
+    router.push(
+      urlDeBusqueda(operacion, {
+        tipo,
+        donde: String(datos.get('donde') ?? ''),
+      }),
+    );
   }
 
   return (
     <div className="mx-auto w-full max-w-[760px]">
       <form
         onSubmit={buscar}
-        className="rounded-marca border-linea shadow-marca border bg-white text-left"
+        role="search"
+        aria-label="Buscar propiedades"
+        className="border-linea shadow-marca rounded-marca border bg-white text-left"
       >
         <div role="tablist" aria-label="Tipo de operación" className="flex gap-0.5 px-2 pt-2">
-          {PESTANAS.map((p, i) => (
-            <button
-              key={p.texto}
-              type="button"
-              role="tab"
-              aria-selected={pestana === i}
-              onClick={() => setPestana(i)}
-              className={cn(
-                'shrink-0 rounded-t-[10px] border-b-[3px] px-4 py-2.5 text-[15px] font-bold transition-colors',
-                pestana === i
-                  ? 'border-fucsia text-fucsia'
-                  : 'text-tinta-60 hover:text-tinta border-transparent',
-              )}
-            >
-              {p.texto}
-            </button>
-          ))}
+          {PESTANAS.map((pestana) => {
+            const activa = pestana.operacion === operacion;
+            return (
+              <button
+                key={pestana.operacion}
+                type="button"
+                role="tab"
+                aria-selected={activa}
+                onClick={() => setOperacion(pestana.operacion)}
+                className={cn(
+                  'shrink-0 rounded-t-[10px] border-b-[3px] px-4 py-2.5 text-[15px] font-bold transition-colors',
+                  activa
+                    ? 'border-fucsia text-fucsia'
+                    : 'text-tinta-60 hover:text-tinta border-transparent',
+                )}
+              >
+                {pestana.texto}
+              </button>
+            );
+          })}
         </div>
 
         <div className="border-linea flex flex-wrap gap-2.5 border-t p-3.5">
-          <label className="sr-only" htmlFor="tipo-inmueble">
+          <label className="solo-lectores" htmlFor="tipo-inmueble">
             Tipo de propiedad
           </label>
           <select
             id="tipo-inmueble"
+            name="tipo"
             value={tipo}
             onChange={(e) => setTipo(e.target.value)}
             className="border-linea bg-niebla text-tinta focus:border-fucsia flex-[0_1_190px] rounded-xl border-[1.5px] px-3 py-3 text-[15.5px] font-semibold focus:outline-none"
@@ -88,44 +108,35 @@ export function BuscadorHero() {
             >
               <circle cx="11" cy="11" r="7" stroke="currentColor" strokeWidth="2.2" />
               <path
-                d="m20 20-3.5-3.5"
+                d="M16.5 16.5L21 21"
                 stroke="currentColor"
                 strokeWidth="2.2"
                 strokeLinecap="round"
               />
             </svg>
-            <label className="sr-only" htmlFor="donde">
-              Distrito o zona
-            </label>
-            <input
-              id="donde"
-              type="search"
-              value={donde}
-              onChange={(e) => setDonde(e.target.value)}
-              placeholder="¿En qué distrito buscas?"
-              className="text-tinta placeholder:text-tinta-40 min-w-0 flex-1 border-0 bg-transparent py-3 text-base focus:outline-none"
-            />
+            <AutocompletadoUbicacion valorInicial={donde} className="min-w-0 flex-1" />
           </div>
 
           <button
             type="submit"
-            className="bg-fucsia hover:bg-fucsia-osc rounded-xl px-7 py-3 font-bold text-white shadow-[0_6px_16px_-6px_rgb(225_29_116_/_0.5)] transition-colors"
+            className="bg-fucsia hover:bg-fucsia-osc flex-[1_1_130px] rounded-xl px-6 py-3 text-[15.5px] font-bold text-white shadow-[0_6px_16px_-6px_rgb(225_29_116_/_0.5)] transition-colors sm:flex-[0_0_auto]"
           >
-            Buscar propiedades
+            Buscar
           </button>
         </div>
       </form>
 
-      <div className="mt-4 flex flex-wrap justify-center gap-2" translate="no">
-        {DISTRITOS_POPULARES.map((d) => (
-          <button
-            key={d.slug}
-            type="button"
-            onClick={() => router.push(`/comprar?donde=${d.slug}`)}
-            className="border-linea text-tinta-60 hover:border-fucsia hover:text-fucsia rounded-full border bg-white/80 px-3.5 py-1.5 text-[13.5px] font-semibold transition-colors hover:bg-white"
+      {/* Atajos: casi todo el mundo empieza por un distrito conocido. */}
+      <div className="mt-3.5 flex flex-wrap items-center justify-center gap-2">
+        <span className="text-tinta-60 text-[13.5px] font-semibold">Buscados ahora:</span>
+        {DISTRITOS_POPULARES.slice(0, 5).map((distrito) => (
+          <Link
+            key={distrito.slug}
+            href={urlDeBusqueda(operacion, { donde: distrito.slug })}
+            className="border-linea text-tinta-60 hover:border-fucsia hover:text-fucsia rounded-full border bg-white/80 px-3 py-1.5 text-[13.5px] font-semibold transition-colors"
           >
-            {d.nombre}
-          </button>
+            {distrito.nombre}
+          </Link>
         ))}
       </div>
     </div>

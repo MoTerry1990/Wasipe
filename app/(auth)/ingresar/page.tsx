@@ -6,6 +6,15 @@ import { redirect } from 'next/navigation';
 import { perfilOpcional } from '@/lib/auth/sesion';
 import { FormularioIngreso } from '@/features/cuentas/formulario-ingreso';
 
+/**
+ * La salida depende de la sesión, así que nunca se prerenderiza.
+ *
+ * Sin esto, cuando no hay Supabase configurado Next ve una redirección
+ * fija y la deja estática: al conectar la base seguiría sirviendo esa
+ * redirección desde la caché.
+ */
+export const dynamic = 'force-dynamic';
+
 export const metadata: Metadata = {
   title: 'Iniciar sesión',
   description: 'Ingresa a tu cuenta de Wasipe.',

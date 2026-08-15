@@ -346,6 +346,43 @@ export type TipoCambio = {
   created_at: string;
 };
 
+/** Rebaja de precio de un aviso publicado. */
+export type RebajaDePrecio = {
+  property_id: string;
+  previous_price: number;
+  previous_currency: Moneda;
+  previous_price_usd: number | null;
+  current_price: number;
+  current_currency: Moneda;
+  current_price_usd: number | null;
+  drop_pct: number | null;
+  dropped_at: string;
+};
+
+/** Precio por m² agregado por distrito y operación. */
+export type IndiceDistrital = {
+  department: string;
+  province: string;
+  district: string;
+  operation: Operacion;
+  listings: number;
+  avg_usd_per_m2: number | null;
+  median_usd_per_m2: number | null;
+  min_usd_per_m2: number | null;
+  max_usd_per_m2: number | null;
+};
+
+/** Distritos con avisos publicados, para los atajos de la portada. */
+export type DistritoPopular = {
+  department: string;
+  province: string;
+  district: string;
+  listings: number;
+  for_sale: number;
+  for_rent: number;
+  avg_usd_per_m2: number | null;
+};
+
 /** Ficha pública del anunciante: sin teléfono ni correo. */
 export type Anunciante = {
   id: string;
@@ -497,6 +534,9 @@ export type Database = {
     };
     Views: {
       anunciantes: { Row: Anunciante; Relationships: [] };
+      listings_price_drops: { Row: RebajaDePrecio; Relationships: [] };
+      district_price_index: { Row: IndiceDistrital; Relationships: [] };
+      popular_districts: { Row: DistritoPopular; Relationships: [] };
     };
     Functions: {
       propiedades_cercanas: {

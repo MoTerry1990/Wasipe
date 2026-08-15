@@ -264,7 +264,7 @@ export async function completarBienvenida(_previo: Estado, datos: FormData): Pro
         district,
         province: 'Lima',
         department: 'Lima',
-      }))
+      })),
     );
   }
 

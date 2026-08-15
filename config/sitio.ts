@@ -38,6 +38,19 @@ export const DISTRITOS_POPULARES = [
   { nombre: 'San Miguel', slug: 'san-miguel' },
 ] as const;
 
+/**
+ * Datos de la empresa.
+ *
+ * El Libro de Reclamaciones es obligatorio para todo negocio que vende
+ * al público en el Perú (Código de Protección y Defensa del Consumidor).
+ * Va en el pie porque la ley pide que esté a la vista.
+ */
+export const EMPRESA = {
+  razonSocial: 'Wasipe',
+  ciudad: 'Lima, Perú',
+  correo: 'hola@wasipe.pe',
+} as const;
+
 /** Enlaces del pie, agrupados. */
 export const PIE = [
   {
@@ -45,27 +58,57 @@ export const PIE = [
     enlaces: [
       { texto: 'Departamentos en venta', href: '/comprar?tipo=departamento' },
       { texto: 'Departamentos en alquiler', href: '/alquilar?tipo=departamento' },
-      { texto: 'Casas', href: '/comprar?tipo=casa' },
+      { texto: 'Casas en venta', href: '/comprar?tipo=casa' },
       { texto: 'Terrenos', href: '/comprar?tipo=terreno' },
-      { texto: 'Proyectos', href: '/proyectos' },
+      { texto: 'Proyectos nuevos', href: '/proyectos' },
+      { texto: 'Precio por m²', href: '/precio-m2' },
     ],
   },
   {
     titulo: 'Publicar',
     enlaces: [
-      { texto: 'Soy propietario', href: '/publicar?rol=propietario' },
-      { texto: 'Soy corredor inmobiliario', href: '/publicar?rol=agente' },
-      { texto: 'Somos inmobiliaria', href: '/publicar?rol=inmobiliaria' },
+      { texto: 'Publicar gratis', href: '/publicar' },
+      { texto: 'Soy propietario', href: '/registrarse' },
+      { texto: 'Soy corredor inmobiliario', href: '/registrarse' },
+      { texto: 'Somos inmobiliaria', href: '/registrarse' },
     ],
   },
   {
-    titulo: 'Wasipe',
+    titulo: 'Ayuda',
     enlaces: [
-      { texto: 'Precio por m²', href: '/precio-m2' },
+      { texto: 'Cómo funciona Wasipe', href: '/#como-funciona' },
+      { texto: 'Cómo verificamos los avisos', href: '/#confianza' },
       { texto: 'Wasi AI', href: '/wasi-ai' },
-      { texto: 'Iniciar sesión', href: '/ingresar' },
+      { texto: 'Escríbenos', href: 'mailto:hola@wasipe.pe' },
     ],
   },
+] as const;
+
+/**
+ * Búsquedas populares del pie.
+ *
+ * Son enlaces de verdad, no adorno: es como llega la mayor parte del
+ * tráfico de buscadores en el Perú ("departamentos en alquiler en
+ * Miraflores"), y le dan a Google una puerta a cada combinación.
+ */
+export const BUSQUEDAS_POPULARES = [
+  { texto: 'Departamentos en Miraflores', href: '/comprar?tipo=departamento&donde=miraflores' },
+  { texto: 'Departamentos en San Isidro', href: '/comprar?tipo=departamento&donde=san-isidro' },
+  { texto: 'Alquiler en Barranco', href: '/alquilar?donde=barranco' },
+  { texto: 'Alquiler en Jesús María', href: '/alquilar?donde=jesus-maria' },
+  { texto: 'Casas en Surco', href: '/comprar?tipo=casa&donde=santiago-de-surco' },
+  { texto: 'Casas en La Molina', href: '/comprar?tipo=casa&donde=la-molina' },
+  { texto: 'Terrenos en Cieneguilla', href: '/comprar?tipo=terreno&donde=cieneguilla' },
+  { texto: 'Departamentos en Yanahuara', href: '/comprar?tipo=departamento&donde=yanahuara' },
+  { texto: 'Proyectos en Lima', href: '/proyectos?donde=lima' },
+  { texto: 'Oficinas en San Isidro', href: '/comprar?tipo=oficina&donde=san-isidro' },
+] as const;
+
+/** Enlaces legales. Todavía sin página: ver el pie. */
+export const LEGALES = [
+  { texto: 'Términos de uso', href: '/terminos' },
+  { texto: 'Política de privacidad', href: '/privacidad' },
+  { texto: 'Libro de Reclamaciones', href: '/libro-de-reclamaciones' },
 ] as const;
 
 export const TIPOS_INMUEBLE = [

@@ -3,6 +3,15 @@ import { requiereCuentaLista } from '@/lib/auth/sesion';
 import { navegacionPanel } from '@/lib/auth/roles';
 import { MenuPanel } from '@/components/navegacion/menu-panel';
 
+/**
+ * La salida depende de la sesión, así que nunca se prerenderiza.
+ *
+ * Sin esto, cuando no hay Supabase configurado Next ve una redirección
+ * fija y la deja estática: al conectar la base seguiría sirviendo esa
+ * redirección desde la caché.
+ */
+export const dynamic = 'force-dynamic';
+
 export const metadata: Metadata = {
   title: { default: 'Panel', template: '%s · Panel · Wasipe' },
   robots: { index: false, follow: false },

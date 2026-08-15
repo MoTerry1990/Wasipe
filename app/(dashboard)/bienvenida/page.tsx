@@ -5,6 +5,15 @@ import { clienteServidor } from '@/lib/supabase/servidor';
 import { Tarjeta } from '@/components/ui/tarjeta';
 import { FormularioBienvenida } from '@/features/cuentas/formulario-bienvenida';
 
+/**
+ * La salida depende de la sesión, así que nunca se prerenderiza.
+ *
+ * Sin esto, cuando no hay Supabase configurado Next ve una redirección
+ * fija y la deja estática: al conectar la base seguiría sirviendo esa
+ * redirección desde la caché.
+ */
+export const dynamic = 'force-dynamic';
+
 export const metadata: Metadata = {
   title: 'Bienvenida',
   robots: { index: false, follow: false },
