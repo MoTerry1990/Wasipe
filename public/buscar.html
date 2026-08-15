@@ -1,0 +1,317 @@
+<!DOCTYPE html>
+<html lang="es-PE">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Buscar propiedades · Wasipe</title>
+<meta name="description" content="Departamentos, casas y proyectos en venta y alquiler en el Perú. Filtra por distrito, dormitorios y precio.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,800&family=Instrument+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/estilos.css">
+<style>
+body{background:var(--papel)}
+.nav{position:sticky;top:0;z-index:60;background:var(--blanco);border-bottom:1px solid var(--linea)}
+.nav-in{display:flex;align-items:center;gap:24px;height:62px;max-width:1240px;margin:0 auto;padding-inline:clamp(14px,3vw,32px)}
+.nav-links{display:flex;gap:20px;font-size:14.5px;font-weight:600;color:var(--tinta-70)}
+.nav-links a:hover{color:var(--fucsia)}
+.nav-cta{margin-left:auto;display:flex;gap:10px;align-items:center}
+@media(max-width:760px){.nav-links{display:none}}
+
+.filtros{background:var(--blanco);border-bottom:1px solid var(--linea);position:sticky;top:62px;z-index:50}
+.filtros-in{max-width:1240px;margin:0 auto;padding:12px clamp(14px,3vw,32px);display:flex;gap:9px;flex-wrap:wrap;align-items:center}
+.filtros input,.filtros select{width:auto;min-height:44px;padding:9px 13px;font-size:14.5px;border-radius:10px}
+.filtros input[name=distrito]{flex:1 1 170px;min-width:150px}
+.filtros select{flex:0 1 auto}
+.btn-filtrar{min-height:44px;padding:9px 22px;border-radius:10px}
+
+.cuerpo{max-width:1240px;margin:0 auto;padding:18px clamp(14px,3vw,32px) 60px}
+.resumen{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:16px}
+.resumen h1{font-size:clamp(18px,2.4vw,23px);letter-spacing:-.02em}
+.resumen .orden{font-size:13.5px;color:var(--tinta-70)}
+
+.lista{display:flex;flex-direction:column;gap:16px}
+.aviso-card{display:grid;grid-template-columns:minmax(220px,340px) 1fr;background:var(--blanco);border:1px solid var(--linea);border-radius:16px;overflow:hidden;transition:box-shadow .18s, transform .18s}
+.aviso-card:hover{box-shadow:0 10px 30px -14px rgba(27,39,51,.25);transform:translateY(-2px)}
+.a-foto{position:relative;background:linear-gradient(135deg,#E8EEF4,#F4F6F8);min-height:210px;display:grid;place-items:center;color:var(--tinta-45)}
+.a-foto img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+.a-tag{position:absolute;top:10px;left:10px;background:var(--blanco);border-radius:8px;padding:4px 11px;font-size:12px;font-weight:700;color:var(--tinta-70);box-shadow:0 2px 8px rgba(27,39,51,.14)}
+.a-info{padding:16px 18px;display:flex;flex-direction:column;gap:6px}
+.a-precio{font-family:var(--dato);font-weight:700;font-size:22px;letter-spacing:-.02em}
+.a-precio small{font-size:13px;color:var(--tinta-45);font-weight:500;font-family:var(--texto)}
+.a-datos{display:flex;gap:14px;font-size:13.5px;color:var(--tinta-70);flex-wrap:wrap}
+.a-titulo{font-weight:700;font-size:16.5px;line-height:1.3}
+.a-lugar{font-size:13.5px;color:var(--tinta-70)}
+.a-desc{font-size:13.5px;color:var(--tinta-70);display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.a-pie{display:flex;justify-content:space-between;align-items:center;gap:10px;margin-top:auto;padding-top:12px;flex-wrap:wrap}
+.a-publica{font-size:12.5px;color:var(--tinta-45)}
+.a-publica b{color:var(--tinta-70)}
+.verificado{color:var(--turquesa);font-weight:700}
+.btn-contactar{background:var(--fucsia);color:#fff;font-weight:700;font-size:14px;border-radius:10px;padding:10px 20px}
+.btn-contactar:hover{background:#C01562}
+@media(max-width:640px){.aviso-card{grid-template-columns:1fr}.a-foto{min-height:180px}}
+
+.vacio-b{background:var(--blanco);border:1.5px dashed var(--linea);border-radius:16px;padding:48px 24px;text-align:center}
+.vacio-b h2{font-size:20px;margin-bottom:8px}
+.vacio-b p{color:var(--tinta-70);margin-bottom:18px}
+
+/* modal de contacto */
+.velo{position:fixed;inset:0;background:rgba(27,39,51,.5);display:none;place-items:center;z-index:100;padding:16px}
+.velo.abierto{display:grid}
+.modal{background:var(--blanco);border-radius:18px;max-width:430px;width:100%;padding:26px;max-height:92vh;overflow:auto}
+.modal h2{font-size:20px;margin-bottom:4px}
+.modal .cual{font-size:13.5px;color:var(--tinta-70);margin-bottom:16px}
+.modal .cerrar{float:right;font-size:22px;color:var(--tinta-45);background:none;border:0;cursor:pointer;padding:2px 8px;border-radius:8px}
+.modal .cerrar:hover{background:var(--papel)}
+.pag{display:flex;gap:8px;justify-content:center;margin-top:24px}
+.pag button{min-width:42px;min-height:42px;border:1.5px solid var(--linea);border-radius:10px;background:var(--blanco);font-weight:700;cursor:pointer}
+.pag button[disabled]{opacity:.4;cursor:default}
+.pag .actual{border-color:var(--fucsia);color:var(--fucsia)}
+.a-vs{display:inline-block;border-radius:999px;padding:4px 11px;font-size:12.5px;font-weight:700;margin-top:6px}
+.a-vs.baja{background:#E6F6F5;color:#0FA3A0}
+.a-vs.alta{background:#FDEBF3;color:#C01562}
+</style>
+</head>
+<body>
+
+<nav class="nav"><div class="nav-in">
+  <a href="/" class="marca" translate="no">
+    <svg viewBox="0 0 24 24" fill="none" width="20" height="20"><path d="M2 11.5 12 3l10 8.5" stroke="#E11D74" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/><path d="M5 12v8h14v-8" stroke="#1B2733" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+    Wasipe
+  </a>
+  <div class="nav-links">
+    <a href="/buscar?operacion=venta">Comprar</a>
+    <a href="/buscar?operacion=alquiler">Alquilar</a>
+    <a href="/buscar?operacion=proyecto">Proyectos</a>
+    <a href="/#indice">Índice de precios</a>
+  </div>
+  <div class="nav-cta" id="nav-cta">
+    <a href="/ingresar" class="btn btn-borde">Ingresar</a>
+    <a href="/registro" class="btn btn-solido">Publicar gratis</a>
+  </div>
+</div></nav>
+
+<form class="filtros" id="filtros"><div class="filtros-in">
+  <input name="distrito" placeholder="Distrito (ej. Miraflores)" list="ds">
+  <datalist id="ds"></datalist>
+  <select name="operacion">
+    <option value="">Comprar o alquilar</option>
+    <option value="venta">Comprar</option>
+    <option value="alquiler">Alquilar</option>
+    <option value="proyecto">Proyectos</option>
+  </select>
+  <select name="tipo">
+    <option value="">Todos los tipos</option>
+    <option value="departamento">Departamento</option>
+    <option value="casa">Casa</option>
+    <option value="terreno">Terreno</option>
+    <option value="oficina">Oficina</option>
+    <option value="local">Local</option>
+  </select>
+  <select name="dormitorios">
+    <option value="">Dormitorios</option>
+    <option value="1">1+</option><option value="2">2+</option>
+    <option value="3">3+</option><option value="4">4+</option>
+  </select>
+  <select name="max">
+    <option value="">Precio máx.</option>
+    <option value="500">500</option><option value="1000">1,000</option>
+    <option value="2000">2,000</option><option value="3500">3,500</option>
+    <option value="80000">80,000</option><option value="150000">150,000</option>
+    <option value="250000">250,000</option><option value="500000">500,000</option>
+  </select>
+  <button class="btn btn-solido btn-filtrar" type="submit">Buscar</button>
+</div></form>
+
+<main class="cuerpo">
+  <div class="resumen">
+    <h1 id="titulo">Propiedades en el Perú</h1>
+    <span class="orden">Lo más reciente primero</span>
+  </div>
+  <div class="lista" id="lista">
+    <div class="vacio-b"><h2>Buscando…</h2></div>
+  </div>
+  <div class="pag" id="pag" hidden>
+    <button id="ant">‹</button>
+    <button class="actual" id="pag-n">1</button>
+    <button id="sig">›</button>
+  </div>
+</main>
+
+<!-- modal contactar -->
+<div class="velo" id="velo" role="dialog" aria-modal="true" aria-labelledby="m-titulo">
+  <div class="modal">
+    <button class="cerrar" id="cerrar" aria-label="Cerrar">×</button>
+    <h2 id="m-titulo">Contactar</h2>
+    <p class="cual" id="m-cual"></p>
+    <div id="m-alerta"></div>
+    <form id="m-form">
+      <input type="hidden" name="pid">
+      <label class="campo-l"><span>Tu nombre</span>
+        <input name="nombre" required autocomplete="name">
+      </label>
+      <label class="campo-l"><span>Tu celular</span>
+        <span class="campo-tel">
+          <span class="prefijo" aria-hidden="true">🇵🇪 +51</span>
+          <input id="m-tel" name="telefono_digitos" type="tel" inputmode="numeric" placeholder="999 999 999" maxlength="11">
+        </span>
+      </label>
+      <label class="campo-l"><span>Mensaje <em style="font-weight:400;color:var(--tinta-45)">(opcional)</em></span>
+        <textarea name="mensaje" rows="3" placeholder="Hola, ¿sigue disponible? Me gustaría visitarlo."></textarea>
+      </label>
+      <button class="btn btn-solido btn-grande btn-full" id="m-enviar" type="submit">Enviar mensaje</button>
+    </form>
+  </div>
+</div>
+
+<script type="module">
+import { dinero, numero } from '/cuenta.js';
+
+const DIST = ['Miraflores','San Isidro','Barranco','San Borja','Surco','Jesús María','Magdalena','Surquillo','Lince','Pueblo Libre','La Molina','San Miguel','Chorrillos','Breña','Los Olivos','Callao','Ate'];
+document.getElementById('ds').innerHTML = DIST.map(d=>`<option value="${d}">`).join('');
+
+const f = document.getElementById('filtros');
+const lista = document.getElementById('lista');
+const titulo = document.getElementById('titulo');
+const OPN = {venta:'en venta', alquiler:'en alquiler', proyecto:'· proyectos'};
+const TPN = {departamento:'Departamentos', casa:'Casas', terreno:'Terrenos', oficina:'Oficinas', local:'Locales'};
+
+// filtros desde la URL
+const url = new URLSearchParams(location.search);
+for (const el of f.elements) if (el.name && url.get(el.name)) el.value = url.get(el.name);
+let pagina = Math.max(1, Number(url.get('pagina')) || 1);
+
+f.addEventListener('submit', e => { e.preventDefault(); pagina = 1; buscar(true); });
+
+async function buscar(empujarURL=false) {
+  lista.innerHTML = '<div class="vacio-b"><h2>Buscando…</h2></div>';
+  const qs = new URLSearchParams();
+  for (const el of f.elements) if (el.name && el.value) qs.set(el.name, el.value);
+  if (pagina > 1) qs.set('pagina', pagina);
+  if (empujarURL) history.replaceState(null, '', '/buscar' + (qs.toString() ? '?' + qs : ''));
+
+  try {
+    const r = await fetch('/api/v1/buscar?' + qs, {credentials:'same-origin'});
+    const d = await r.json();
+    if (!r.ok) throw new Error(d.error);
+
+    const dist = f.elements.distrito.value.trim();
+    const tipo = TPN[f.elements.tipo.value] || 'Propiedades';
+    const op = OPN[f.elements.operacion.value] || '';
+    titulo.textContent = `${d.total} ${tipo.toLowerCase()} ${op} ${dist ? 'en ' + dist : 'en el Perú'}`.replace(/\s+/g,' ');
+
+    if (!d.resultados.length) {
+      lista.innerHTML = `<div class="vacio-b">
+        <h2>Todavía no hay avisos con esos filtros</h2>
+        <p>Prueba con otro distrito o menos filtros. ¿Tienes una propiedad así? Sé el primero en publicarla.</p>
+        <a href="/registro" class="btn btn-solido">Publicar gratis</a></div>`;
+      document.getElementById('pag').hidden = true;
+      return;
+    }
+
+    lista.innerHTML = d.resultados.map(p => `
+      <a class="aviso-card" href="/propiedad/${p.slug}">
+        <div class="a-foto">
+          ${p.portada ? `<img src="${p.portada}" alt="" loading="lazy">` :
+            `<svg width="46" height="46" viewBox="0 0 24 24" fill="none"><path d="M3 11 12 4l9 7" stroke="currentColor" stroke-width="2"/><path d="M5 11v9h14v-9" stroke="currentColor" stroke-width="2"/></svg>`}
+          <span class="a-tag">${p.operacion === 'alquiler' ? 'Alquiler' : p.operacion === 'proyecto' ? 'Proyecto' : 'Venta'}</span>
+        </div>
+        <div class="a-info">
+          <div class="a-precio">${p.precio ? dinero(p.precio, p.moneda) : 'Consultar'}
+            ${p.mantenimiento ? `<small>· ${dinero(p.mantenimiento, 'PEN')} mant.</small>` : ''}</div>
+          ${p.vs_mercado != null && Math.abs(p.vs_mercado) > 3 ? `<div class="a-vs ${p.vs_mercado < 0 ? 'baja' : 'alta'}">${
+            p.vs_mercado < 0
+              ? `${Math.abs(p.vs_mercado)}% debajo del promedio de ${p.distrito}`
+              : `${p.vs_mercado}% encima del promedio de ${p.distrito}`}</div>` : ''}
+          <div class="a-datos">
+            ${p.area_m2 ? `<span>${p.area_m2} m² tot.</span>` : ''}
+            ${p.dormitorios != null ? `<span>${p.dormitorios} dorm.</span>` : ''}
+            ${p.banos != null ? `<span>${p.banos} ${p.banos === 1 ? 'baño' : 'baños'}</span>` : ''}
+            ${p.cocheras ? `<span>${p.cocheras} coch.</span>` : ''}
+          </div>
+          <div class="a-titulo">${p.titulo}</div>
+          <div class="a-lugar" translate="no">${p.distrito}, ${p.provincia}</div>
+          ${p.descripcion ? `<div class="a-desc">${p.descripcion}</div>` : ''}
+          <div class="a-pie">
+            <span class="a-publica">Publica <b>${p.publica}</b>
+              ${p.publica_verificado ? '<span class="verificado">✓ verificado</span>' : ''}
+              · ${p.publica_rol === 'inmobiliaria' ? 'Inmobiliaria' : p.publica_rol === 'agente' ? 'Agente' : 'Dueño directo'}</span>
+            <button type="button" class="btn-contactar" data-pid="${p.id}" data-titulo="${p.titulo.replace(/"/g,'&quot;')}">Contactar</button>
+          </div>
+        </div>
+      </a>`).join('');
+
+    // paginacion
+    const pag = document.getElementById('pag');
+    const paginas = d.paginas ?? Math.ceil(d.total / (d.por_pagina ?? 24));
+    pag.hidden = paginas <= 1;
+    document.getElementById('pag-n').textContent = pagina;
+    document.getElementById('ant').disabled = pagina <= 1;
+    document.getElementById('sig').disabled = pagina >= paginas;
+  } catch (e) {
+    lista.innerHTML = `<div class="vacio-b"><h2>No pudimos cargar los avisos</h2><p>${e.message}</p></div>`;
+  }
+}
+document.getElementById('ant').onclick = () => { pagina--; buscar(true); };
+document.getElementById('sig').onclick = () => { pagina++; buscar(true); };
+
+// --- modal de contacto ---
+const velo = document.getElementById('velo');
+const mf = document.getElementById('m-form');
+const malerta = document.getElementById('m-alerta');
+lista.addEventListener('click', e => {
+  const b = e.target.closest('.btn-contactar');
+  if (!b) return;
+  e.preventDefault();   // la tarjeta entera es un enlace
+  e.stopPropagation();
+  mf.elements.pid.value = b.dataset.pid;
+  document.getElementById('m-cual').textContent = b.dataset.titulo;
+  malerta.innerHTML = '';
+  velo.classList.add('abierto');
+  mf.elements.nombre.focus();
+});
+document.getElementById('cerrar').onclick = () => velo.classList.remove('abierto');
+velo.addEventListener('click', e => { if (e.target === velo) velo.classList.remove('abierto'); });
+
+const mtel = document.getElementById('m-tel');
+mtel.addEventListener('input', () => {
+  const dig = mtel.value.replace(/\D/g, '').slice(0, 9);
+  mtel.value = dig.replace(/(\d{3})(?=\d)/g, '$1 ').trim();
+});
+
+mf.addEventListener('submit', async e => {
+  e.preventDefault();
+  const boton = document.getElementById('m-enviar');
+  boton.disabled = true; boton.textContent = 'Enviando…'; malerta.innerHTML = '';
+  const d = Object.fromEntries(new FormData(mf));
+  const cuerpo = { nombre: d.nombre, mensaje: d.mensaje || undefined };
+  const dig = (d.telefono_digitos || '').replace(/\D/g,'');
+  if (dig) cuerpo.telefono = '+51' + dig;
+  try {
+    const r = await fetch(`/api/propiedades/${d.pid}/contacto`, {
+      method: 'POST', headers: {'content-type':'application/json'},
+      credentials: 'same-origin', body: JSON.stringify(cuerpo)
+    });
+    const res = await r.json();
+    if (!r.ok) throw new Error(res.error);
+    malerta.innerHTML = `<div class="aviso aviso-bien">${res.mensaje}</div>`;
+    mf.reset();
+    setTimeout(() => velo.classList.remove('abierto'), 1800);
+  } catch (err) {
+    malerta.innerHTML = `<div class="aviso aviso-mal">${err.message}</div>`;
+  } finally {
+    boton.disabled = false; boton.textContent = 'Enviar mensaje';
+  }
+});
+
+// sesion: barra cambia si ya entro
+fetch('/api/v1/cuentas/yo',{credentials:'same-origin'}).then(r=>r.ok?r.json():null).then(d=>{
+  if(!d) return;
+  document.getElementById('nav-cta').innerHTML =
+    `<a href="/panel" class="btn btn-solido">Mi panel</a>`;
+}).catch(()=>{});
+
+buscar();
+</script>
+</body>
+</html>

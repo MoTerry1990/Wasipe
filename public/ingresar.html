@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="es-PE">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Ingresar · Wasipe</title>
+<meta name="robots" content="noindex">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,600;12..96,800&family=Instrument+Sans:wght@400;500;600&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/estilos.css">
+<style>
+main{min-height:100vh;display:grid;place-items:center;padding:clamp(24px,5vw,60px)}
+.caja{width:100%;max-width:400px}
+</style>
+</head>
+<body>
+<main>
+  <div class="caja">
+    <a href="/" class="marca" translate="no" style="margin-bottom:34px">
+      <svg viewBox="0 0 24 24" fill="none"><path d="M2 11.5 12 3l10 8.5" stroke="#E11D74" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/><path d="M5 12v8h14v-8" stroke="#1B2733" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      Wasipe
+    </a>
+
+    <h1 style="font-size:clamp(28px,3vw,38px);margin-bottom:8px">Ingresa a tu cuenta</h1>
+    <p style="color:var(--tinta-70);margin-bottom:26px;font-size:16px">
+      ¿Aún no tienes cuenta? <a href="/registro" style="color:var(--fucsia);font-weight:600">Créala gratis</a>.
+    </p>
+
+    <div id="alerta"></div>
+
+    <form id="f" novalidate>
+      <label class="campo-l"><span>Correo</span>
+        <input name="email" type="email" autocomplete="email" required autofocus>
+      </label>
+      <label class="campo-l"><span>Contraseña</span>
+        <span class="campo-pass">
+          <input id="pass" name="password" type="password" autocomplete="current-password" required>
+          <button type="button" class="ver-pass" id="ver-pass" aria-label="Mostrar contraseña">Ver</button>
+        </span>
+      </label>
+      <button class="btn btn-solido btn-grande btn-full" id="enviar" type="submit">Ingresar</button>
+    </form>
+    <p style="font-size:13px;color:var(--tinta-45);margin-top:16px;text-align:center">
+      ¿Olvidaste tu contraseña? La recuperación automática llega muy pronto.
+    </p>
+  </div>
+</main>
+
+<script type="module">
+const pass = document.getElementById('pass');
+document.getElementById('ver-pass').addEventListener('click', function () {
+  const ver = pass.type === 'password';
+  pass.type = ver ? 'text' : 'password';
+  this.textContent = ver ? 'Ocultar' : 'Ver';
+});
+
+import { api } from '/cuenta.js';
+const f = document.getElementById('f'), alerta = document.getElementById('alerta'), boton = document.getElementById('enviar');
+
+f.addEventListener('submit', async e => {
+  e.preventDefault();
+  alerta.innerHTML = '';
+  boton.disabled = true; boton.textContent = 'Ingresando…';
+  try {
+    await api('/cuentas/ingresar', { method: 'POST', body: Object.fromEntries(new FormData(f)) });
+    const destino = new URLSearchParams(location.search).get('volver');
+    location.href = destino && destino.startsWith('/') ? destino : '/panel';
+  } catch (err) {
+    alerta.innerHTML = `<div class="aviso aviso-mal">${err.message}</div>`;
+    boton.disabled = false; boton.textContent = 'Ingresar';
+  }
+});
+</script>
+</body>
+</html>

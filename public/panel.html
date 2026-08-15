@@ -1,0 +1,300 @@
+<!DOCTYPE html>
+<html lang="es-PE">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Mi panel · Wasipe</title>
+<meta name="robots" content="noindex">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,600;12..96,800&family=Instrument+Sans:wght@400;500;600&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/estilos.css">
+<style>
+.cabecera{padding-block:32px 0}
+.saludo{display:flex;justify-content:space-between;align-items:flex-end;gap:20px;flex-wrap:wrap}
+.pestanas{display:flex;gap:4px;margin-top:26px;border-bottom:1px solid var(--linea)}
+.pest{padding:11px 17px;font-weight:600;font-size:15px;color:var(--tinta-45);border-bottom:2.5px solid transparent;margin-bottom:-1px;transition:.18s}
+.pest[aria-selected="true"]{color:var(--tinta);border-bottom-color:var(--fucsia)}
+.pest:hover:not([aria-selected="true"]){color:var(--tinta)}
+.panel{padding-block:32px}
+.dos{display:grid;grid-template-columns:minmax(0,1fr) 380px;gap:24px;align-items:start}
+.cuota{display:flex;align-items:center;gap:9px;font-family:var(--dato);font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--tinta-45)}
+.rango{background:var(--tinta);color:var(--papel);border-radius:var(--radio);padding:22px;margin-top:18px}
+.rango-cifra{font-family:var(--display);font-size:clamp(30px,4vw,42px);font-weight:800;letter-spacing:-.04em;color:var(--maiz);line-height:1}
+.rango-banda{display:flex;justify-content:space-between;font-family:var(--dato);font-size:12px;color:rgba(239,241,236,.55);margin-top:12px;padding-top:12px;border-top:1px solid rgba(239,241,236,.15)}
+.factores{list-style:none;margin-top:14px;display:flex;flex-direction:column;gap:7px;font-size:13.5px;color:rgba(239,241,236,.65)}
+.factores li{display:flex;justify-content:space-between;gap:12px}
+.factores b{font-family:var(--dato);font-size:12.5px}
+.pos{color:var(--turquesa)}.neg{color:var(--fucsia)}
+.lista-prop{display:grid;gap:12px}
+.prop{display:flex;justify-content:space-between;gap:16px;align-items:flex-start;flex-wrap:wrap}
+.vacio{text-align:center;padding:56px 24px;border:1.5px dashed var(--linea);border-radius:var(--radio)}
+.cargando{color:var(--tinta-45);padding:30px 0;font-size:15px}
+@media(max-width:1000px){.dos{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+
+<nav class="nav" id="nav"><div class="wrap nav-in">
+  <a href="/" class="marca" translate="no">
+    <svg viewBox="0 0 24 24" fill="none"><path d="M2 11.5 12 3l10 8.5" stroke="#E11D74" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/><path d="M5 12v8h14v-8" stroke="#1B2733" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+    Wasipe
+  </a>
+  <div class="nav-cta" style="margin-left:auto">
+    <span id="quien" class="etiqueta"></span>
+    <button class="btn btn-linea" id="salir">Salir</button>
+  </div>
+</div></nav>
+
+<div class="wrap cabecera">
+  <div class="saludo">
+    <div>
+      <div class="eyebrow">Mi panel</div>
+      <h1 id="titulo" style="font-size:clamp(30px,4vw,46px);margin-top:8px">Cargando…</h1>
+    </div>
+  </div>
+  <div class="pestanas" role="tablist">
+    <button class="pest" role="tab" aria-selected="true" data-t="indice">Índice de precios</button>
+    <button class="pest" role="tab" aria-selected="false" data-t="inmuebles">Mis inmuebles</button>
+    <button class="pest" role="tab" aria-selected="false" data-t="perfil">Mi perfil</button>
+  </div>
+</div>
+
+<main class="wrap">
+
+  <!-- INDICE -->
+  <section class="panel" data-p="indice">
+    <div class="dos">
+      <div>
+        <div style="display:flex;justify-content:space-between;align-items:baseline;gap:16px;margin-bottom:14px;flex-wrap:wrap">
+          <h2 style="font-size:24px;margin:0">Precio por m² en Lima</h2>
+          <span class="cuota" id="cuota"></span>
+        </div>
+        <div class="tabla-caja"><table>
+          <thead><tr>
+            <th scope="col">Distrito</th><th scope="col">US$/m²</th>
+            <th scope="col">S/ alq. 2d</th><th scope="col">12 meses</th><th scope="col">Muestras</th>
+          </tr></thead>
+          <tbody id="tabla"><tr><td colspan="5" class="cargando">Cargando el índice…</td></tr></tbody>
+        </table></div>
+        <p style="font-size:12.5px;color:var(--tinta-45);margin-top:12px;max-width:56em">
+          Datos de tu cuenta. Referenciales y redondeados, calculados con avisos activos y cierres reportados en Wasipe. No reemplazan una tasación.
+        </p>
+      </div>
+
+      <aside class="tarjeta">
+        <div class="eyebrow">Asistente de precio</div>
+        <h3 style="margin:8px 0 6px">¿Cuánto pedir por tu propiedad?</h3>
+        <p style="font-size:14.5px;color:var(--tinta-70);margin-bottom:18px">Llena lo que sepas. Mientras más datos nos des, más ajustado sale el rango.</p>
+
+        <form id="fe">
+          <label class="campo-l"><span>Distrito</span>
+            <input name="distrito" list="d2" required placeholder="Miraflores"><datalist id="d2"></datalist>
+          </label>
+          <div class="fila">
+            <label class="campo-l"><span>Área (m²)</span><input name="area_m2" type="number" min="10" max="2000" required></label>
+            <label class="campo-l"><span>Operación</span>
+              <select name="operacion"><option value="venta">Venta</option><option value="alquiler">Alquiler</option></select>
+            </label>
+          </div>
+          <div class="fila">
+            <label class="campo-l"><span>Antigüedad (años)</span><input name="antiguedad" type="number" min="0" max="120"></label>
+            <label class="campo-l"><span>Piso</span><input name="piso" type="number" min="0" max="60"></label>
+          </div>
+          <button class="btn btn-solido btn-full" id="be" type="submit">Calcular rango</button>
+        </form>
+
+        <div id="resultado"></div>
+      </aside>
+    </div>
+  </section>
+
+  <!-- INMUEBLES -->
+  <section class="panel" data-p="inmuebles" hidden>
+    <div style="display:flex;justify-content:space-between;align-items:baseline;gap:16px;margin-bottom:18px;flex-wrap:wrap">
+      <h2 style="font-size:24px;margin:0">Mis inmuebles</h2>
+      <button class="btn btn-solido" id="nuevo">Publicar inmueble</button>
+    </div>
+    <div id="props" class="lista-prop"><p class="cargando">Cargando…</p></div>
+  </section>
+
+  <!-- PERFIL -->
+  <section class="panel" data-p="perfil" hidden>
+    <h2 style="font-size:24px;margin-bottom:18px">Mi perfil</h2>
+    <div id="alerta-perfil"></div>
+    <form id="fp" style="max-width:640px">
+      <div class="fila">
+        <label class="campo-l"><span>Nombre</span><input name="nombre"></label>
+        <label class="campo-l"><span>Celular</span><input name="telefono" type="tel"></label>
+      </div>
+      <div class="fila">
+        <label class="campo-l"><span>WhatsApp</span><input name="whatsapp" type="tel"></label>
+        <label class="campo-l"><span>Distrito</span><input name="distrito" list="d2"></label>
+      </div>
+      <div class="fila">
+        <label class="campo-l"><span>Empresa</span><input name="empresa"></label>
+        <label class="campo-l"><span>RUC</span><input name="ruc" inputmode="numeric" maxlength="11"></label>
+      </div>
+      <label class="campo-l"><span>Sitio web</span><input name="sitio_web" type="url" placeholder="https://"></label>
+      <label class="campo-l"><span>Foto de perfil (URL)</span><input name="foto_url" type="url" placeholder="https://"></label>
+      <label class="campo-l"><span>Sobre ti</span>
+        <textarea name="bio" maxlength="600" placeholder="Cuéntale a los interesados en qué zonas trabajas y desde cuándo."></textarea>
+      </label>
+      <button class="btn btn-solido" id="bp" type="submit">Guardar cambios</button>
+    </form>
+  </section>
+
+</main>
+
+<footer><div class="wrap foot-in">
+  <span>© 2026 Wasipe · Lima, Perú</span>
+  <span>Los datos del índice son de uso interno de tu cuenta.</span>
+</div></footer>
+
+<script type="module">
+import { api, dinero, fechaCorta } from '/cuenta.js';
+
+const DISTRITOS = ['Miraflores','San Isidro','Barranco','San Borja','Surco','Jesús María','Magdalena','Surquillo','Lince','Pueblo Libre','La Molina','San Miguel','Chorrillos','Breña','Los Olivos','Callao'];
+document.getElementById('d2').innerHTML = DISTRITOS.map(d => `<option value="${d}">`).join('');
+
+const ROL = { propietario: 'Propietario', agente: 'Agente', inmobiliaria: 'Inmobiliaria', admin: 'Admin' };
+let yo;
+
+// ---- sesión ----
+try {
+  const r = await api('/cuentas/yo');
+  yo = r.usuario;
+  document.getElementById('titulo').textContent = `Hola, ${yo.nombre.split(' ')[0]}`;
+  document.getElementById('quien').textContent = ROL[yo.rol] ?? yo.rol;
+  const fp = document.getElementById('fp');
+  for (const [k, v] of Object.entries({ ...r.perfil, nombre: yo.nombre, telefono: yo.telefono })) {
+    if (fp.elements[k] && v != null) fp.elements[k].value = v;
+  }
+} catch {
+  location.href = '/ingresar?volver=' + encodeURIComponent('/panel');
+}
+
+document.getElementById('salir').addEventListener('click', async () => {
+  await api('/cuentas/salir', { method: 'POST' });
+  location.href = '/';
+});
+
+// ---- pestañas ----
+document.querySelectorAll('.pest').forEach(p => p.addEventListener('click', () => {
+  document.querySelectorAll('.pest').forEach(x => x.setAttribute('aria-selected', String(x === p)));
+  document.querySelectorAll('.panel').forEach(s => s.hidden = s.dataset.p !== p.dataset.t);
+  if (p.dataset.t === 'inmuebles') cargarProps();
+}));
+
+// ---- índice ----
+const num = n => new Intl.NumberFormat('es-PE').format(n);
+try {
+  const d = await api('/indice');
+  document.getElementById('tabla').innerHTML = d.distritos.map(x => `
+    <tr><td translate="no">${x.distrito}</td>
+      <td>${num(x.precio_m2_usd)}</td>
+      <td>${x.alquiler_2d_pen ? num(x.alquiler_2d_pen) : '—'}</td>
+      <td class="${x.var_12m >= 0 ? 'sube' : 'baja'}">${x.var_12m >= 0 ? '+' : ''}${x.var_12m.toFixed(1)}%</td>
+      <td>${x.muestras}</td></tr>`).join('');
+  document.getElementById('cuota').textContent = d.cuota.tope
+    ? `${d.cuota.restantes} de ${d.cuota.tope} consultas este mes`
+    : `Consultas sin tope · ${d.periodo}`;
+} catch (e) {
+  document.getElementById('tabla').innerHTML =
+    `<tr><td colspan="5" class="cargando">${e.message}</td></tr>`;
+  document.getElementById('cuota').textContent = '';
+}
+
+// ---- estimador ----
+const fe = document.getElementById('fe'), be = document.getElementById('be'), out = document.getElementById('resultado');
+fe.addEventListener('submit', async e => {
+  e.preventDefault();
+  be.disabled = true; be.textContent = 'Calculando…'; out.innerHTML = '';
+  const d = Object.fromEntries(new FormData(fe));
+  const cuerpo = { distrito: d.distrito, operacion: d.operacion, area_m2: Number(d.area_m2) };
+  if (d.antiguedad) cuerpo.antiguedad = Number(d.antiguedad);
+  if (d.piso) cuerpo.piso = Number(d.piso);
+
+  try {
+    const r = await api('/indice/estimar', { method: 'POST', body: cuerpo });
+    out.innerHTML = `
+      <div class="rango">
+        <div class="eyebrow" style="color:rgba(239,241,236,.5)">Precio sugerido · <span translate="no">${r.distrito}</span></div>
+        <div class="rango-cifra" style="margin-top:8px">${dinero(r.rango.sugerido, r.moneda)}</div>
+        <div class="rango-banda">
+          <span>mín ${dinero(r.rango.min, r.moneda)}</span>
+          <span>máx ${dinero(r.rango.max, r.moneda)}</span>
+        </div>
+        <ul class="factores">
+          <li><span>Base del distrito</span><b>US$ ${num(r.base_m2_usd)}/m²</b></li>
+          ${r.factores.map(f => `<li><span>${f.nota}</span><b class="${f.valor >= 0 ? 'pos' : 'neg'}">${f.valor >= 0 ? '+' : ''}${(f.valor * 100).toFixed(1)}%</b></li>`).join('')}
+          <li><span>Confianza</span><b>${r.confianza} · ${r.muestras} muestras</b></li>
+        </ul>
+      </div>
+      <p style="font-size:12px;color:var(--tinta-45);margin-top:10px">${r.aviso}</p>`;
+  } catch (err) {
+    out.innerHTML = `<div class="aviso aviso-mal" style="margin-top:16px">${err.message}</div>`;
+  }
+  be.disabled = false; be.textContent = 'Calcular rango';
+});
+
+// ---- inmuebles ----
+let cargadas = false;
+async function cargarProps() {
+  if (cargadas) return;
+  cargadas = true;
+  const caja = document.getElementById('props');
+  try {
+    const { propiedades } = await api('/propiedades');
+    if (!propiedades.length) {
+      caja.innerHTML = `<div class="vacio">
+        <h3 style="margin-bottom:8px">Todavía no publicas nada</h3>
+        <p style="color:var(--tinta-70);margin-bottom:18px">Publicar es gratis. Antes de poner precio, usa el asistente del índice.</p>
+        <button class="btn btn-solido">Publicar mi primer inmueble</button></div>`;
+      return;
+    }
+    caja.innerHTML = propiedades.map(p => `
+      <article class="tarjeta prop">
+        <div>
+          <span class="etiqueta">${p.estado}</span>
+          <h3 style="margin:9px 0 5px">${p.titulo}</h3>
+          <p style="font-size:14.5px;color:var(--tinta-70)">
+            ${p.distrito} · ${p.area_m2 ?? '—'} m² · ${p.dormitorios ?? '—'} dorm · vence ${fechaCorta(p.vence_en)}
+          </p>
+        </div>
+        <div style="text-align:right">
+          <div style="font-family:var(--dato);font-weight:700;font-size:19px">${p.precio ? dinero(p.precio, p.moneda) : 'Sin precio'}</div>
+          <div style="font-size:13.5px;color:var(--tinta-45);margin-top:4px">${p.leads} contacto${p.leads === 1 ? '' : 's'} · ${p.vistas} vistas</div>
+        </div>
+      </article>`).join('');
+  } catch (e) {
+    caja.innerHTML = `<div class="aviso aviso-mal">${e.message}</div>`;
+  }
+}
+
+// ---- perfil ----
+const fp = document.getElementById('fp'), bp = document.getElementById('bp'), ap = document.getElementById('alerta-perfil');
+fp.addEventListener('submit', async e => {
+  e.preventDefault();
+  ap.innerHTML = ''; bp.disabled = true; bp.textContent = 'Guardando…';
+  const d = Object.fromEntries(new FormData(fp));
+  for (const k of Object.keys(d)) if (d[k] === '') d[k] = null;
+  try {
+    const r = await api('/perfil', { method: 'PATCH', body: d });
+    ap.innerHTML = `<div class="aviso aviso-bien">${r.mensaje}</div>`;
+  } catch (err) {
+    ap.innerHTML = `<div class="aviso aviso-mal">${err.message}</div>`;
+    const c = err.datos?.campo && fp.elements[err.datos.campo];
+    if (c) { c.setAttribute('aria-invalid', 'true'); c.focus(); }
+  }
+  bp.disabled = false; bp.textContent = 'Guardar cambios';
+});
+
+document.getElementById('nuevo').addEventListener('click', () =>
+  location.href = '/publicar');
+
+addEventListener('scroll', () =>
+  document.getElementById('nav').classList.toggle('pegado', scrollY > 10), { passive: true });
+</script>
+</body>
+</html>

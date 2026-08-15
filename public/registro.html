@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html lang="es-PE">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Crear cuenta · Wasipe</title>
+<meta name="robots" content="noindex">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,600;12..96,800&family=Instrument+Sans:wght@400;500;600&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/estilos.css">
+<style>
+.marco{display:grid;grid-template-columns:1fr 1fr;min-height:100vh}
+.lado{background:linear-gradient(170deg,#EAF4FE,#FDEBF3);color:var(--tinta);padding:clamp(32px,5vw,64px);display:flex;flex-direction:column;justify-content:space-between}
+.lado .marca{color:var(--tinta)}
+.lado h2{color:var(--tinta);font-size:clamp(28px,3.4vw,44px);max-width:14ch}
+.lado ul{list-style:none;display:flex;flex-direction:column;gap:14px;margin-top:26px}
+.lado li{display:flex;gap:12px;font-size:15.5px;color:var(--tinta-70);line-height:1.45}
+.lado li b{color:var(--fucsia);font-family:var(--dato);font-size:11px;letter-spacing:.1em;padding-top:4px;white-space:nowrap}
+.forma{padding:clamp(28px,4vw,56px);display:flex;align-items:center;justify-content:center}
+.forma-in{width:100%;max-width:480px}
+@media(max-width:900px){.marco{grid-template-columns:1fr}.lado{padding:28px 20px}.lado ul{display:none}}
+</style>
+</head>
+<body>
+<div class="marco">
+  <aside class="lado">
+    <div>
+      <a href="/" class="marca" translate="no" style="color:var(--tinta)">
+        <svg viewBox="0 0 24 24" fill="none"><path d="M2 11.5 12 3l10 8.5" stroke="#E11D74" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/><path d="M5 12v8h14v-8" stroke="#1B2733" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        Wasipe
+      </a>
+    </div>
+    <div>
+      <div class="eyebrow" style="color:var(--fucsia)">Crear cuenta</div>
+      <h2 style="margin-top:14px">Con tu cuenta se abre el índice de precios.</h2>
+      <ul>
+        <li><b>PRECIO</b><span>Consulta el precio por m² de 43 distritos y pide el rango sugerido para tu inmueble.</span></li>
+        <li><b>AVISOS</b><span>Publica, pausa y renueva desde un panel. Publicar es gratis.</span></li>
+        <li><b>CONTACTOS</b><span>Los interesados llegan a tu bandeja con nombre, teléfono y qué preguntaron.</span></li>
+      </ul>
+    </div>
+    <p style="font-size:13px;color:var(--tinta-45)">Los datos del índice son de uso interno de tu cuenta. No los republiques.</p>
+  </aside>
+
+  <main class="forma">
+    <div class="forma-in">
+      <h1 style="font-size:clamp(28px,3vw,38px);margin-bottom:8px">Crea tu cuenta</h1>
+      <p style="color:var(--tinta-70);margin-bottom:26px;font-size:16px">
+        ¿Ya tienes cuenta? <a href="/ingresar" style="color:var(--fucsia);font-weight:600">Ingresa aquí</a>.
+      </p>
+
+      <div id="alerta"></div>
+
+      <form id="f" novalidate>
+        <fieldset style="border:0;margin-bottom:6px">
+          <legend style="font-size:13.5px;font-weight:600;margin-bottom:9px">¿Cómo vas a usar Wasipe?</legend>
+          <div class="roles">
+            <label class="rol">
+              <input type="radio" name="rol" value="propietario" checked>
+              <b>Soy propietario</b>
+              <small>Vendo o alquilo una propiedad mía. Incluye 5 consultas al índice por mes.</small>
+            </label>
+            <label class="rol">
+              <input type="radio" name="rol" value="agente">
+              <b>Soy agente inmobiliario</b>
+              <small>Manejo cartera de clientes. Índice sin tope y panel de leads.</small>
+            </label>
+            <label class="rol">
+              <input type="radio" name="rol" value="inmobiliaria">
+              <b>Somos una inmobiliaria</b>
+              <small>Publicamos proyectos y unidades. Requiere RUC.</small>
+            </label>
+          </div>
+        </fieldset>
+
+        <label class="campo-l"><span>Nombre completo</span>
+          <input name="nombre" autocomplete="name" required>
+        </label>
+
+        <label class="campo-l"><span>Correo</span>
+          <input name="email" type="email" autocomplete="email" required placeholder="tucorreo@ejemplo.com">
+        </label>
+
+        <label class="campo-l"><span>Celular</span>
+          <span class="campo-tel">
+            <span class="prefijo" aria-hidden="true">🇵🇪 +51</span>
+            <input id="tel" name="telefono_digitos" type="tel" inputmode="numeric" autocomplete="tel-national" placeholder="999 999 999" maxlength="11">
+          </span>
+          <span class="pista">Solo los 9 dígitos. Los interesados te escriben por WhatsApp a este número.</span>
+        </label>
+
+        <div id="empresa-campos" hidden>
+          <div class="fila">
+            <label class="campo-l"><span>Razón social</span><input name="empresa"></label>
+            <label class="campo-l"><span>RUC</span><input name="ruc" inputmode="numeric" maxlength="11" placeholder="11 dígitos"></label>
+          </div>
+        </div>
+
+        <label class="campo-l"><span>Distrito donde operas</span>
+          <input name="distrito" list="distritos" placeholder="Miraflores">
+          <datalist id="distritos"></datalist>
+        </label>
+
+        <label class="campo-l"><span>Contraseña</span>
+          <span class="campo-pass">
+            <input id="pass" name="password" type="password" autocomplete="new-password" required minlength="10">
+            <button type="button" class="ver-pass" id="ver-pass" aria-label="Mostrar contraseña">Ver</button>
+          </span>
+          <span class="pista">Mínimo 10 caracteres. Una frase que recuerdes funciona mejor que una palabra corta.</span>
+        </label>
+
+        <button class="btn btn-solido btn-grande btn-full" id="enviar" type="submit">Crear mi cuenta</button>
+        <p style="font-size:12.5px;color:var(--tinta-45);margin-top:14px;text-align:center">
+          Al crear tu cuenta aceptas los términos y la política de privacidad de Wasipe.
+        </p>
+      </form>
+    </div>
+  </main>
+</div>
+
+<script type="module">
+import { api } from '/cuenta.js';
+
+const f = document.getElementById('f');
+const alerta = document.getElementById('alerta');
+const boton = document.getElementById('enviar');
+const camposEmpresa = document.getElementById('empresa-campos');
+
+document.querySelectorAll('input[name="rol"]').forEach(r =>
+  r.addEventListener('change', e => {
+    camposEmpresa.hidden = e.target.value !== 'inmobiliaria';
+  })
+);
+
+// Rol preseleccionado desde el home: /registro?rol=agente
+const rolPedido = new URLSearchParams(location.search).get('rol');
+if (rolPedido) {
+  const opcion = document.querySelector(`input[name="rol"][value="${CSS.escape(rolPedido)}"]`);
+  if (opcion) { opcion.checked = true; opcion.dispatchEvent(new Event('change', { bubbles: true })); }
+}
+
+document.getElementById('distritos').innerHTML =
+  ['Miraflores','San Isidro','Barranco','San Borja','Surco','Jesús María','Magdalena','Surquillo','Lince','Pueblo Libre','La Molina','San Miguel','Chorrillos','Breña','Los Olivos','Callao']
+  .map(d => `<option value="${d}">`).join('');
+
+
+// Celular: solo digitos, agrupado 999 999 999
+const tel = document.getElementById('tel');
+tel.addEventListener('input', () => {
+  const dig = tel.value.replace(/\D/g, '').slice(0, 9);
+  tel.value = dig.replace(/(\d{3})(?=\d)/g, '$1 ').trim();
+});
+
+// Ver / ocultar contraseña
+const pass = document.getElementById('pass');
+document.getElementById('ver-pass').addEventListener('click', function () {
+  const ver = pass.type === 'password';
+  pass.type = ver ? 'text' : 'password';
+  this.textContent = ver ? 'Ocultar' : 'Ver';
+  this.setAttribute('aria-label', ver ? 'Ocultar contraseña' : 'Mostrar contraseña');
+});
+
+f.addEventListener('submit', async e => {
+  e.preventDefault();
+  alerta.innerHTML = '';
+  f.querySelectorAll('[aria-invalid]').forEach(i => i.removeAttribute('aria-invalid'));
+  boton.disabled = true;
+  boton.textContent = 'Creando…';
+
+  const d = Object.fromEntries(new FormData(f));
+  for (const k of Object.keys(d)) if (d[k] === '') delete d[k];
+  if (d.telefono_digitos) {
+    d.telefono = '+51' + d.telefono_digitos.replace(/\D/g, '');
+  }
+  delete d.telefono_digitos;
+
+  try {
+    await api('/cuentas/registro', { method: 'POST', body: d });
+    location.href = '/panel';
+  } catch (err) {
+    alerta.innerHTML = `<div class="aviso aviso-mal">${err.message}</div>`;
+    const campo = err.datos?.campo && f.elements[err.datos.campo];
+    if (campo) { campo.setAttribute('aria-invalid', 'true'); campo.focus(); }
+    boton.disabled = false;
+    boton.textContent = 'Crear mi cuenta';
+  }
+});
+</script>
+</body>
+</html>

@@ -1,0 +1,671 @@
+<!DOCTYPE html>
+<html lang="es-PE">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Wasipe · Departamentos, casas y proyectos en venta y alquiler en el Perú</title>
+<meta name="description" content="Busca departamentos, casas, terrenos y proyectos en venta y alquiler en todo el Perú. Publica gratis y consulta con tu cuenta el precio por m² de tu distrito.">
+<meta name="theme-color" content="#FFFFFF">
+<link rel="canonical" href="https://wasipe.netlify.app/">
+<meta property="og:title" content="Wasipe · Portal inmobiliario del Perú">
+<meta property="og:description" content="Busca, publica gratis y descubre cuánto vale tu propiedad por distrito y metro cuadrado.">
+<meta property="og:type" content="website">
+<meta property="og:url" content="https://wasipe.netlify.app/">
+<meta property="og:site_name" content="Wasipe">
+<meta property="og:locale" content="es_PE">
+<meta property="og:image" content="https://wasipe.netlify.app/og.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="Wasipe · Ve el precio antes de preguntar">
+<meta name="twitter:card" content="summary_large_image">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,800&family=Instrument+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --tinta:#1B2733; --tinta-60:#51606D; --tinta-40:#8494A1;
+  --niebla:#F4F6F8; --blanco:#FFFFFF; --linea:#E3E8ED;
+  --fucsia:#E11D74; --fucsia-osc:#C01562; --fucsia-suave:#FDEBF3;
+  --turquesa:#0FA3A0; --turquesa-suave:#E6F6F5;
+  --cielo1:#EAF4FE; --cielo2:#F6FAFF;
+  --display:'Bricolage Grotesque',system-ui,sans-serif;
+  --texto:'Instrument Sans',system-ui,sans-serif;
+  --dato:'JetBrains Mono',ui-monospace,monospace;
+  --radio:16px; --sombra:0 6px 24px -10px rgba(27,39,51,.16);
+  --gutter:clamp(16px,4vw,48px);
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html{scroll-behavior:smooth;-webkit-text-size-adjust:100%}
+body{background:var(--niebla);color:var(--tinta);font-family:var(--texto);font-size:16.5px;line-height:1.55;-webkit-font-smoothing:antialiased;overflow-x:hidden}
+img,svg{max-width:100%;display:block}
+a{color:inherit;text-decoration:none}
+button{font:inherit;color:inherit;cursor:pointer;border:0;background:none}
+:focus-visible{outline:3px solid var(--fucsia);outline-offset:2px;border-radius:6px}
+.wrap{max-width:1200px;margin:0 auto;padding-inline:var(--gutter)}
+h1,h2,h3{font-family:var(--display);font-weight:800;line-height:1.06;letter-spacing:-.025em}
+h2{font-size:clamp(24px,3.4vw,34px)}
+.sub{color:var(--tinta-60);margin-top:8px;max-width:52ch}
+
+/* ---------- nav ---------- */
+.nav{position:sticky;top:0;z-index:60;background:var(--blanco);border-bottom:1px solid var(--linea)}
+.nav-in{display:flex;align-items:center;gap:26px;height:64px}
+.marca{display:flex;align-items:center;gap:8px;font-family:var(--display);font-weight:800;font-size:22px;letter-spacing:-.04em}
+.marca svg{width:20px;height:20px;flex:none}
+.nav-links{display:flex;gap:22px;font-size:15px;font-weight:600;color:var(--tinta-60);margin-left:8px}
+.nav-links a{padding:6px 2px;border-bottom:2px solid transparent}
+.nav-links a:hover{color:var(--tinta);border-bottom-color:var(--fucsia)}
+.nav-cta{display:flex;gap:10px;margin-left:auto;align-items:center}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;padding:11px 20px;border-radius:12px;font-weight:700;font-size:15px;transition:transform .15s,background .2s,box-shadow .2s}
+.btn-primario{background:var(--fucsia);color:#fff;box-shadow:0 6px 16px -6px rgba(225,29,116,.5)}
+.btn-primario:hover{background:var(--fucsia-osc);transform:translateY(-1px)}
+.btn-blanco{background:var(--blanco);border:1.5px solid var(--linea)}
+.btn-blanco:hover{border-color:var(--tinta-40);transform:translateY(-1px)}
+.btn-grande{padding:14px 26px;font-size:16px}
+
+/* ---------- hero ---------- */
+.hero{background:linear-gradient(180deg,#C9E3F9,#E4F1FC 58%,var(--niebla));position:relative;overflow:hidden}
+.hero-in{position:relative;z-index:2;padding:clamp(36px,6vw,64px) 0 clamp(190px,24vw,280px);text-align:center}
+.hero h1{font-size:clamp(28px,4.6vw,46px);max-width:22ch;margin:0 auto}
+.hero p{color:var(--tinta-60);font-size:clamp(15.5px,1.6vw,18px);margin:12px auto 26px;max-width:44ch}
+.skyline{position:absolute;inset:auto 0 -2px 0;z-index:1;pointer-events:none}
+.skyline svg{width:100%;height:auto;display:block}
+
+/* buscador */
+.busca{max-width:760px;margin:0 auto;background:var(--blanco);border-radius:var(--radio);box-shadow:var(--sombra);border:1px solid var(--linea);text-align:left}
+.tabs{display:flex;gap:2px;padding:8px 8px 0}
+.tab{flex:0 0 auto;padding:10px 18px;border-radius:10px 10px 0 0;font-weight:700;font-size:15px;color:var(--tinta-60);border-bottom:3px solid transparent}
+.tab[aria-selected="true"]{color:var(--fucsia);border-bottom-color:var(--fucsia)}
+.tab:hover:not([aria-selected="true"]){color:var(--tinta)}
+.busca-fila{display:flex;gap:10px;padding:14px;border-top:1px solid var(--linea);flex-wrap:wrap}
+.campo-busca{flex:1 1 260px;display:flex;align-items:center;gap:10px;background:var(--niebla);border:1.5px solid var(--linea);border-radius:12px;padding:0 14px}
+.campo-busca:focus-within{border-color:var(--fucsia);background:var(--blanco)}
+.campo-busca svg{flex:none;color:var(--tinta-40)}
+.campo-busca input{flex:1;min-width:0;border:0;background:none;font-size:16px;padding:13px 0;color:var(--tinta)}
+.campo-busca input:focus{outline:none}
+select.tipo{flex:0 1 190px;border:1.5px solid var(--linea);border-radius:12px;background:var(--niebla);padding:0 12px;font-size:15.5px;font-weight:600;color:var(--tinta)}
+select.tipo:focus{outline:none;border-color:var(--fucsia)}
+.chips{display:flex;gap:8px;justify-content:center;flex-wrap:wrap;margin-top:18px}
+.chip{background:rgba(255,255,255,.8);border:1px solid var(--linea);border-radius:999px;padding:7px 14px;font-size:13.5px;font-weight:600;color:var(--tinta-60);transition:.15s}
+.chip:hover{border-color:var(--fucsia);color:var(--fucsia);background:var(--blanco)}
+
+/* garantias bajo el buscador */
+.garantias{display:flex;gap:8px 20px;justify-content:center;flex-wrap:wrap;margin-top:22px;list-style:none;font-size:13.5px;font-weight:600;color:var(--tinta-60)}
+.garantias li{display:flex;align-items:center;gap:7px}
+.garantias li::before{content:"";width:16px;height:16px;border-radius:50%;flex:none;background:#fff;border:1.5px solid var(--turquesa);background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%230FA3A0' stroke-width='4' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M20 6 9 17l-5-5'/%3E%3C/svg%3E");background-size:10px;background-position:center;background-repeat:no-repeat}
+
+/* ---------- secciones ---------- */
+.seccion{padding-block:clamp(36px,5vw,60px)}
+.seccion-cab{display:flex;justify-content:space-between;align-items:end;gap:16px;margin-bottom:22px;flex-wrap:wrap}
+.ver-mas{font-weight:700;color:var(--fucsia);font-size:15px;white-space:nowrap}
+.ver-mas:hover{text-decoration:underline}
+
+/* tarjetas de propiedades */
+.props{display:grid;grid-template-columns:repeat(auto-fill,minmax(255px,1fr));gap:16px}
+.prop{background:var(--blanco);border:1px solid var(--linea);border-radius:var(--radio);overflow:hidden;transition:transform .18s,box-shadow .18s;display:flex;flex-direction:column}
+.prop:hover{transform:translateY(-4px);box-shadow:var(--sombra)}
+.prop-foto{aspect-ratio:4/3;background:linear-gradient(135deg,#E8EEF4,#F4F6F8);display:grid;place-items:center;color:var(--tinta-40);position:relative}
+.prop-foto img{width:100%;height:100%;object-fit:cover;position:absolute;inset:0}
+.prop-tag{position:absolute;top:10px;left:10px;background:var(--blanco);border-radius:8px;padding:4px 10px;font-size:12px;font-weight:700;color:var(--tinta-60);box-shadow:0 2px 8px rgba(27,39,51,.12)}
+.prop-info{padding:14px 16px 16px;display:flex;flex-direction:column;gap:5px}
+.prop-precio{font-family:var(--dato);font-weight:700;font-size:19px;letter-spacing:-.02em}
+.prop-titulo{font-weight:600;font-size:15px;line-height:1.35;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.prop-lugar{font-size:13.5px;color:var(--tinta-60)}
+.prop-quien{font-size:12.5px;color:var(--tinta-40);display:flex;align-items:center;gap:5px;margin-top:1px}
+.prop-quien .ver{color:var(--turquesa);font-weight:700}
+.prop-datos{display:flex;gap:12px;font-size:13px;color:var(--tinta-60);margin-top:5px;padding-top:9px;border-top:1px solid var(--linea)}
+.prop-datos .fresco{margin-left:auto;color:var(--tinta-40);font-size:12.5px}
+.vacio{grid-column:1/-1;background:var(--blanco);border:1.5px dashed var(--linea);border-radius:var(--radio);padding:44px 24px;text-align:center}
+.vacio h3{font-size:19px;margin-bottom:6px}
+.vacio p{color:var(--tinta-60);margin-bottom:18px}
+
+/* distritos rapidos */
+.zonas{display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:12px}
+.zona{background:var(--blanco);border:1px solid var(--linea);border-radius:14px;padding:16px;transition:.15s;display:flex;flex-direction:column;gap:2px}
+.zona:hover{border-color:var(--fucsia);transform:translateY(-2px);box-shadow:var(--sombra)}
+.zona b{font-size:15.5px}
+.zona span{font-size:12.5px;color:var(--tinta-60)}
+
+/* indice (firma) */
+.indice-card{background:var(--blanco);border:1px solid var(--linea);border-radius:var(--radio);box-shadow:var(--sombra);display:grid;grid-template-columns:1.05fr .95fr;overflow:hidden}
+.indice-tx{padding:clamp(24px,3.4vw,40px)}
+.candado-pill{display:inline-flex;align-items:center;gap:7px;background:var(--fucsia-suave);color:var(--fucsia);border-radius:999px;padding:6px 13px;font-size:12.5px;font-weight:700;margin-bottom:14px}
+.indice-tx ul{list-style:none;display:flex;flex-direction:column;gap:10px;margin:18px 0 22px}
+.indice-tx li{display:flex;gap:10px;align-items:flex-start;font-size:15px;color:var(--tinta-60)}
+.check{flex:none;width:20px;height:20px;border-radius:50%;background:var(--turquesa-suave);color:var(--turquesa);display:grid;place-items:center;margin-top:1px}
+.indice-demo{background:linear-gradient(160deg,#FFF7FB,#F2FBFA);border-left:1px solid var(--linea);padding:clamp(20px,3vw,30px);display:flex;flex-direction:column;gap:8px;justify-content:center}
+.fila-d{display:flex;align-items:center;justify-content:space-between;background:var(--blanco);border:1px solid var(--linea);border-radius:11px;padding:10px 14px}
+.fila-d b{font-size:14px}
+.tapado{display:flex;gap:4px;align-items:center}
+.tapado i{display:block;height:10px;border-radius:3px;background:var(--linea)}
+.tapado svg{color:var(--fucsia);margin-left:4px}
+.fila-abierta{border-color:var(--turquesa);background:var(--turquesa-suave)}
+.fila-abierta .precio-d{font-family:var(--dato);font-weight:700;color:var(--turquesa)}
+
+/* publica: 3 perfiles */
+.perfiles{display:grid;grid-template-columns:repeat(3,1fr);gap:14px}
+.perfil{background:var(--blanco);border:1px solid var(--linea);border-radius:var(--radio);padding:22px;display:flex;flex-direction:column;gap:10px;transition:.15s}
+.perfil:hover{transform:translateY(-3px);box-shadow:var(--sombra);border-color:var(--fucsia)}
+.perfil-ico{width:42px;height:42px;border-radius:12px;display:grid;place-items:center}
+.perfil h3{font-size:17.5px}
+.perfil p{font-size:14.5px;color:var(--tinta-60)}
+.perfil a{font-weight:700;color:var(--fucsia);font-size:14.5px;margin-top:auto;padding-top:6px}
+.perfil a:hover{text-decoration:underline}
+
+/* IA */
+.ia{background:var(--blanco);border:1px solid var(--linea);border-radius:var(--radio)}
+.ia-in{padding:clamp(24px,4vw,44px)}
+.pasos{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-top:24px}
+.paso{background:var(--niebla);border-radius:14px;padding:18px}
+.paso-n{width:30px;height:30px;border-radius:9px;background:var(--fucsia-suave);color:var(--fucsia);display:grid;place-items:center;font-family:var(--dato);font-size:13px;font-weight:700;margin-bottom:10px}
+.paso-estado{display:inline-block;font-size:10.5px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;padding:3px 8px;border-radius:6px;margin-bottom:8px}
+.paso-ya{background:var(--turquesa-suave);color:var(--turquesa)}
+.paso-pronto{background:#EAEEF2;color:var(--tinta-40)}
+.paso h3{font-size:15.5px;margin-bottom:5px}
+.paso p{font-size:13.5px;color:var(--tinta-60)}
+
+/* cierre + footer */
+.cierre{text-align:center;padding-block:clamp(44px,6vw,72px)}
+.cierre h2{font-size:clamp(26px,4vw,40px)}
+.cierre p{color:var(--tinta-60);margin:10px auto 24px;max-width:42ch}
+footer{background:var(--blanco);border-top:1px solid var(--linea);padding-block:36px 26px;font-size:14px}
+.foot-grid{display:grid;grid-template-columns:1.4fr repeat(3,1fr);gap:28px}
+.foot-col h4{font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:var(--tinta-40);font-weight:700;margin-bottom:11px}
+.foot-col a{display:block;padding:4px 0;color:var(--tinta-60)}
+.foot-col a:hover{color:var(--fucsia)}
+.foot-bajo{display:flex;justify-content:space-between;gap:16px;flex-wrap:wrap;margin-top:30px;padding-top:18px;border-top:1px solid var(--linea);font-size:13px;color:var(--tinta-40)}
+
+.cielo-deco{position:absolute;inset:0;z-index:1;pointer-events:none;overflow:hidden}
+.sol{position:absolute;top:56px;right:5%;width:124px}
+.nube{position:absolute;width:120px}
+.nube-i1{top:74px;left:3%}
+.nube-i2{top:158px;left:10%;width:82px;opacity:.75}
+.nube-d1{top:150px;right:15%;width:104px}
+.nube-d2{top:64px;right:20%;width:78px;opacity:.75}
+.aves-sol{position:absolute;top:190px;right:12%;width:150px}
+@media(max-width:720px){.sol{width:88px;top:34px;right:3%}.nube-i2,.nube-d2,.aves-sol{display:none}}
+@keyframes flota{0%,100%{transform:translateY(0)}50%{transform:translateY(-9px)}}
+@keyframes deriva{0%{transform:translateX(0)}100%{transform:translateX(46px)}}
+@keyframes brisa{0%,100%{transform:rotate(-2.5deg)}50%{transform:rotate(2.5deg)}}
+@keyframes ola{0%{transform:translateX(0)}100%{transform:translateX(-70px)}}
+.rev{opacity:0;transform:translateY(16px);transition:opacity .5s ease,transform .5s ease}
+.rev.visto{opacity:1;transform:none}
+
+@media(max-width:900px){
+  .nav-links{display:none}
+  .indice-card{grid-template-columns:1fr}
+  .indice-demo{border-left:0;border-top:1px solid var(--linea)}
+  .perfiles{grid-template-columns:1fr}
+  .pasos{grid-template-columns:repeat(2,1fr)}
+  .foot-grid{grid-template-columns:1fr 1fr}
+}
+@media(max-width:560px){
+  .pasos{grid-template-columns:1fr}
+  .foot-grid{grid-template-columns:1fr}
+  .nav-cta .btn-blanco{display:none}
+}
+@media(prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}.rev{opacity:1;transform:none}}
+</style>
+</head>
+<body>
+
+<nav class="nav"><div class="wrap nav-in">
+  <a href="/" class="marca" translate="no">
+    <svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M2 11.5 12 3l10 8.5" stroke="#E11D74" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/><path d="M5 12v8h14v-8" stroke="#1B2733" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+    Wasipe
+  </a>
+  <div class="nav-links">
+    <a href="/buscar?operacion=venta">Comprar</a>
+    <a href="/buscar?operacion=alquiler">Alquilar</a>
+    <a href="/buscar?operacion=proyecto">Proyectos</a>
+    <a href="#indice">Índice de precios</a>
+  </div>
+  <div class="nav-cta" id="nav-cta">
+    <a href="/ingresar" class="btn btn-blanco">Ingresar</a>
+    <a href="/registro" class="btn btn-primario">Publicar gratis</a>
+  </div>
+</div></nav>
+
+<!-- HERO -->
+<header class="hero">
+  <div class="cielo-deco" aria-hidden="true">
+    <svg class="sol" viewBox="0 0 124 124" style="animation:flota 9s ease-in-out infinite">
+      <circle cx="62" cy="62" r="60" fill="#FFE3B3" opacity=".32"/>
+      <circle cx="62" cy="62" r="42" fill="#FFDf9E"/>
+    </svg>
+    <svg class="nube nube-i1" viewBox="0 0 120 44"><path d="M18 40a16 16 0 0 1 8-28 20 20 0 0 1 38-6 15 15 0 0 1 26 6 14 14 0 0 1 12 28Z" fill="#FFFFFF" opacity=".95"/></svg>
+    <svg class="nube nube-i2" viewBox="0 0 120 44"><path d="M18 40a16 16 0 0 1 8-28 20 20 0 0 1 38-6 15 15 0 0 1 26 6 14 14 0 0 1 12 28Z" fill="#FFFFFF" opacity=".95"/></svg>
+    <svg class="nube nube-d1" viewBox="0 0 120 44"><path d="M18 40a16 16 0 0 1 8-28 20 20 0 0 1 38-6 15 15 0 0 1 26 6 14 14 0 0 1 12 28Z" fill="#FFFFFF" opacity=".95"/></svg>
+    <svg class="nube nube-d2" viewBox="0 0 120 44"><path d="M18 40a16 16 0 0 1 8-28 20 20 0 0 1 38-6 15 15 0 0 1 26 6 14 14 0 0 1 12 28Z" fill="#FFFFFF" opacity=".95"/></svg>
+    <svg class="aves-sol" viewBox="0 0 150 60" stroke="#7E97AC" stroke-width="3" fill="none" stroke-linecap="round" style="animation:deriva 20s linear infinite alternate">
+      <path d="M8 26c7-8 14-8 21 0M29 26c7-8 14-8 21 0"/>
+      <path d="M76 12c6-7 12-7 18 0M94 12c6-7 12-7 18 0"/>
+      <path d="M104 44c5-6 10-6 15 0M119 44c5-6 10-6 15 0"/>
+    </svg>
+  </div>
+  <div class="wrap hero-in">
+    <h1>Encuentra tu próximo hogar sabiendo cuánto vale</h1>
+    <p>Departamentos, casas y terrenos en todo el Perú. Con precio a la vista y el valor por m² de cada distrito.</p>
+
+    <form class="busca" id="busca-hero">
+      <div class="tabs" role="tablist" aria-label="Tipo de operación">
+        <button class="tab" role="tab" aria-selected="true">Comprar</button>
+        <button class="tab" role="tab" aria-selected="false">Alquilar</button>
+        <button class="tab" role="tab" aria-selected="false">Proyectos</button>
+      </div>
+      <div class="busca-fila">
+        <select class="tipo" aria-label="Tipo de propiedad">
+          <option>Departamentos</option><option>Casas</option>
+          <option>Terrenos</option><option>Oficinas</option><option>Locales</option>
+        </select>
+        <div class="campo-busca">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none"><circle cx="11" cy="11" r="7" stroke="currentColor" stroke-width="2.2"/><path d="m20 20-3.5-3.5" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/></svg>
+          <input type="search" id="q" placeholder="¿En qué distrito buscas?" aria-label="Distrito o zona">
+        </div>
+        <button class="btn btn-primario" style="padding:13px 28px" type="submit">Buscar</button>
+      </div>
+    </form>
+
+    <div class="chips" translate="no">
+      <button type="button" class="chip">Miraflores</button><button type="button" class="chip">San Isidro</button>
+      <button type="button" class="chip">Barranco</button><button type="button" class="chip">Surco</button>
+      <button type="button" class="chip">Jesús María</button><button type="button" class="chip">San Miguel</button>
+    </div>
+
+    <ul class="garantias">
+      <li>Precio siempre visible</li>
+      <li>Sin propiedades ya vendidas</li>
+      <li>Publicar es gratis</li>
+    </ul>
+  </div>
+
+  <!-- Skyline de Lima dibujado, sin fotos de terceros -->
+  <div class="skyline" aria-hidden="true">
+    <svg viewBox="0 0 1440 300" preserveAspectRatio="none">
+      <!-- sol -->
+      
+      
+      
+
+      
+
+      <!-- parapente fucsia: vela con celdas, lineas y piloto -->
+      <g style="animation:flota 6.5s ease-in-out infinite">
+        <path d="M300 66Q315 26 365 22q50 4 65 44-9-8-18 0-8-8-17 0-8-8-16 0-8-8-16 0-9-8-18 0-8-8-16 0-9-8-19 0Z" fill="#E11D74"/>
+        <path d="M304 64 358 118M426 64 372 118M330 60l36 56M400 60l-24 58" stroke="#B0BDC9" stroke-width="1.4"/>
+        <circle cx="366" cy="122" r="6" fill="#1B2733"/>
+        <path d="M360 128h13l-3 14h-7Z" fill="#51606D"/>
+      </g>
+
+      <!-- parapente turquesa, mas lejos -->
+      <g style="animation:flota 8s ease-in-out infinite reverse">
+        <path d="M158 98q10-28 44-31 34 3 44 31-6-6-13 0-6-6-12 0-6-6-12 0-6-6-13 0-6-6-12 0-6-6-13 0Z" fill="#0FA3A0"/>
+        <path d="M162 96l38 38M244 96l-38 38" stroke="#B8C4CF" stroke-width="1.2"/>
+        <circle cx="201" cy="137" r="4.4" fill="#1B2733"/>
+        <path d="M197 141h9l-2 10h-5Z" fill="#51606D"/>
+      </g>
+
+      <!-- edificios y casitas sobre el acantilado -->
+      <g>
+        <rect x="0" y="118" width="48" height="68" fill="#D5E4F2"/>
+        <path d="M54 150h68v36h-68Z" fill="#F2DAC4"/><path d="M50 152 88 126 126 152Z" fill="#E0B893"/><rect x="80" y="164" width="13" height="22" rx="2" fill="#FFFFFF" opacity=".85"/><rect x="64" y="158" width="11" height="11" rx="2" fill="#FFFFFF" opacity=".8"/><rect x="101" y="158" width="11" height="11" rx="2" fill="#FFFFFF" opacity=".8"/>
+        <rect x="132" y="102" width="54" height="84" fill="#C3D7EA"/>
+        <rect x="196" y="124" width="50" height="62" fill="#D5E4F2"/>
+        <path d="M254 150h68v36h-68Z" fill="#EFD0DE"/><path d="M250 152 288 126 326 152Z" fill="#D9A6BE"/><rect x="280" y="164" width="13" height="22" rx="2" fill="#FFFFFF" opacity=".85"/><rect x="264" y="158" width="11" height="11" rx="2" fill="#FFFFFF" opacity=".8"/><rect x="301" y="158" width="11" height="11" rx="2" fill="#FFFFFF" opacity=".8"/>
+        <rect x="328" y="100" width="60" height="86" fill="#C3D7EA"/>
+        <rect x="398" y="120" width="50" height="66" fill="#D5E4F2"/>
+        <rect x="454" y="130" width="38" height="56" fill="#C3D7EA"/>
+        <rect x="530" y="118" width="52" height="68" fill="#D5E4F2"/>
+        <path d="M590 150h68v36h-68Z" fill="#F2E6C4"/><path d="M586 152 624 126 662 152Z" fill="#DCC98C"/><rect x="616" y="164" width="13" height="22" rx="2" fill="#FFFFFF" opacity=".85"/><rect x="600" y="158" width="11" height="11" rx="2" fill="#FFFFFF" opacity=".8"/><rect x="637" y="158" width="11" height="11" rx="2" fill="#FFFFFF" opacity=".8"/>
+        <rect x="666" y="98" width="58" height="88" fill="#C3D7EA"/>
+        <rect x="734" y="122" width="50" height="64" fill="#D5E4F2"/>
+        <path d="M792 150h68v36h-68Z" fill="#D8E8DC"/><path d="M788 152 826 126 864 152Z" fill="#A9CDB4"/><rect x="818" y="164" width="13" height="22" rx="2" fill="#FFFFFF" opacity=".85"/><rect x="802" y="158" width="11" height="11" rx="2" fill="#FFFFFF" opacity=".8"/><rect x="839" y="158" width="11" height="11" rx="2" fill="#FFFFFF" opacity=".8"/>
+        <rect x="866" y="104" width="56" height="82" fill="#C3D7EA"/>
+        <rect x="930" y="126" width="50" height="60" fill="#D5E4F2"/>
+        <path d="M988 150h68v36h-68Z" fill="#F2DAC4"/><path d="M984 152 1022 126 1060 152Z" fill="#E0B893"/><rect x="1014" y="164" width="13" height="22" rx="2" fill="#FFFFFF" opacity=".85"/><rect x="998" y="158" width="11" height="11" rx="2" fill="#FFFFFF" opacity=".8"/><rect x="1035" y="158" width="11" height="11" rx="2" fill="#FFFFFF" opacity=".8"/>
+        <rect x="1064" y="110" width="54" height="76" fill="#C3D7EA"/>
+        <rect x="1126" y="124" width="48" height="62" fill="#D5E4F2"/>
+        <path d="M1182 150h68v36h-68Z" fill="#EFD0DE"/><path d="M1178 152 1216 126 1254 152Z" fill="#D9A6BE"/><rect x="1208" y="164" width="13" height="22" rx="2" fill="#FFFFFF" opacity=".85"/><rect x="1192" y="158" width="11" height="11" rx="2" fill="#FFFFFF" opacity=".8"/><rect x="1229" y="158" width="11" height="11" rx="2" fill="#FFFFFF" opacity=".8"/>
+        <rect x="1256" y="100" width="58" height="86" fill="#C3D7EA"/>
+        <rect x="1324" y="120" width="50" height="66" fill="#D5E4F2"/>
+        <path d="M1380 150h68v36h-68Z" fill="#F2E6C4"/><path d="M1376 152 1414 126 1452 152Z" fill="#DCC98C"/><rect x="1406" y="164" width="13" height="22" rx="2" fill="#FFFFFF" opacity=".85"/><rect x="1390" y="158" width="11" height="11" rx="2" fill="#FFFFFF" opacity=".8"/><rect x="1427" y="158" width="11" height="11" rx="2" fill="#FFFFFF" opacity=".8"/>
+      </g>
+      <g fill="#EFF6FC">
+        <rect x="10" y="130" width="9" height="9"/><rect x="26" y="130" width="9" height="9"/>
+        <rect x="142" y="114" width="9" height="9"/><rect x="158" y="114" width="9" height="9"/><rect x="142" y="132" width="9" height="9"/>
+        <rect x="206" y="136" width="9" height="9"/><rect x="222" y="136" width="9" height="9"/>
+        <rect x="338" y="112" width="9" height="9"/><rect x="354" y="112" width="9" height="9"/><rect x="338" y="130" width="9" height="9"/>
+        <rect x="408" y="132" width="9" height="9"/><rect x="424" y="132" width="9" height="9"/>
+        <rect x="464" y="142" width="9" height="9"/><rect x="480" y="142" width="9" height="9"/>
+        <rect x="540" y="130" width="9" height="9"/><rect x="556" y="130" width="9" height="9"/>
+        <rect x="676" y="110" width="9" height="9"/><rect x="692" y="110" width="9" height="9"/><rect x="676" y="128" width="9" height="9"/>
+        <rect x="744" y="134" width="9" height="9"/><rect x="760" y="134" width="9" height="9"/>
+        <rect x="876" y="116" width="9" height="9"/><rect x="892" y="116" width="9" height="9"/><rect x="876" y="134" width="9" height="9"/>
+        <rect x="940" y="138" width="9" height="9"/><rect x="956" y="138" width="9" height="9"/>
+        <rect x="1074" y="122" width="9" height="9"/><rect x="1090" y="122" width="9" height="9"/><rect x="1074" y="140" width="9" height="9"/>
+        <rect x="1136" y="136" width="9" height="9"/><rect x="1152" y="136" width="9" height="9"/>
+        <rect x="1266" y="112" width="9" height="9"/><rect x="1282" y="112" width="9" height="9"/><rect x="1266" y="130" width="9" height="9"/>
+        <rect x="1334" y="132" width="9" height="9"/><rect x="1350" y="132" width="9" height="9"/>
+      </g>
+      <!-- faro de la Marina -->
+      <g>
+        <path d="M496 186V128l10-6 10 6v58Z" fill="#FFFFFF"/>
+        <path d="M496 136h20v10h-20ZM496 156h20v10h-20Z" fill="#F0B32E"/>
+        <rect x="500" y="118" width="12" height="10" rx="2" fill="#1B2733"/>
+        <circle cx="506" cy="123" r="2.6" fill="#FFE3B3"/>
+      </g>
+
+      <!-- palmeras del malecon -->
+      <g style="transform-origin:246px 182px;animation:brisa 7s ease-in-out infinite">
+        <path d="M244 183c2-20 0-34-4-44" stroke="#C9A87A" stroke-width="6" fill="none" stroke-linecap="round"/>
+        <path d="M240 140c-14-8-26-6-34 2 12 2 24 2 34-2ZM240 140c-2-14 2-24 12-30-4 12-8 22-12 30ZM240 140c10-10 22-12 32-8-10 6-22 8-32 8ZM240 140c-12-2-22-8-26-18 10 2 20 8 26 18Z" fill="#6FBF95"/>
+      </g>
+      <g style="transform-origin:1148px 182px;animation:brisa 8.5s ease-in-out infinite reverse">
+        <path d="M1146 183c2-17 0-29-3-37" stroke="#C9A87A" stroke-width="5" fill="none" stroke-linecap="round"/>
+        <path d="M1143 147c-12-7-22-5-29 2 10 2 20 2 29-2ZM1143 147c-2-12 2-20 10-25-3 10-7 18-10 25ZM1143 147c8-8 18-10 27-7-9 5-18 7-27 7Z" fill="#6FBF95"/>
+      </g>
+
+      <!-- paseo del malecon -->
+      <rect x="0" y="180" width="1440" height="9" fill="#E8F0F7"/>
+      <g style="transform-origin:642px 182px;animation:brisa 7.8s ease-in-out infinite">
+        <path d="M640 183c2-16 0-27-3-34" stroke="#C9A87A" stroke-width="5" fill="none" stroke-linecap="round"/>
+        <path d="M637 149c-11-6-20-5-27 2 9 2 19 1 27-2ZM637 149c-2-11 2-19 9-23-3 9-6 16-9 23ZM637 149c8-8 17-9 25-6-8 4-17 6-25 6ZM637 149c-10-2-17-6-20-14 8 2 15 7 20 14Z" fill="#6FBF95"/>
+      </g>
+      <g style="transform-origin:1392px 182px;animation:brisa 6.6s ease-in-out infinite reverse">
+        <path d="M1390 183c2-18 0-30-4-38" stroke="#C9A87A" stroke-width="5.5" fill="none" stroke-linecap="round"/>
+        <path d="M1386 145c-12-7-22-5-29 2 10 2 20 2 29-2ZM1386 145c-2-12 2-20 10-25-3 10-7 18-10 25ZM1386 145c8-8 18-10 27-7-9 5-18 7-27 7ZM1386 145c-11-2-19-7-22-15 9 2 16 8 22 15Z" fill="#6FBF95"/>
+      </g>
+      <!-- baranda del malecon -->
+      <path d="M0 180h1440" stroke="#9FB4C6" stroke-width="2.5"/>
+      <g stroke="#9FB4C6" stroke-width="2">
+        <path d="M30 180v-8M110 180v-8M330 180v-8M470 180v-8M650 180v-8M830 180v-8M990 180v-8M1120 180v-8M1310 180v-8M1420 180v-8"/>
+      </g>
+
+      <!-- acantilado: capa de vegetacion + pared de tierra -->
+      <path d="M0 186q120-8 240 2t240-4 250 6 240-4 240 4 230-4v22q-114 10-236 2t-244 4-248-6-238 4-238-4-236 4Z" fill="#8FC9A4"/>
+      <path d="M0 204q118 10 236-4t248 6 238-4 244-4 236 6 238-2v50H0Z" fill="#DCCBA6"/>
+      <g stroke="#CBB88F" stroke-width="3" stroke-linecap="round">
+        <path d="M120 216v28M320 214v30M540 218v26M760 214v30M980 216v28M1180 214v30M1360 218v24"/>
+      </g>
+      <!-- manchas de enredadera en la pared -->
+      <g fill="#A8D5B6" opacity=".8">
+        <path d="M210 214q16 12 4 26-14-8-4-26ZM650 216q14 10 4 24-12-8-4-24ZM1080 214q16 12 4 26-14-8-4-26Z"/>
+      </g>
+
+      <!-- pista de la Costa Verde -->
+      <path d="M0 254h1440" stroke="#F2F6FA" stroke-width="7"/>
+      <path d="M20 254h34M110 254h34M200 254h34M290 254h34M380 254h34M470 254h34M560 254h34M650 254h34M740 254h34M830 254h34M920 254h34M1010 254h34M1100 254h34M1190 254h34M1280 254h34M1370 254h34" stroke="#C9D6E2" stroke-width="2.4" stroke-dasharray="0"/>
+
+      <!-- carros -->
+      <g transform="translate(320,0)"><g style="animation:deriva 9s ease-in-out infinite alternate">
+        <rect x="0" y="240" width="40" height="12" rx="6" fill="#E11D74"/>
+        <path d="M8 240c2-6 8-9 14-9h6c6 0 10 4 12 9Z" fill="#E11D74"/>
+        <rect x="14" y="234" width="12" height="6" rx="2" fill="#DDF0FA"/>
+        <circle cx="10" cy="252" r="4.5" fill="#1B2733"/><circle cx="30" cy="252" r="4.5" fill="#1B2733"/>
+      </g></g>
+      <g transform="translate(880,0)"><g style="animation:deriva 11s ease-in-out infinite alternate-reverse">
+        <rect x="0" y="241" width="34" height="11" rx="5" fill="#F0B32E"/>
+        <path d="M7 241c2-5 7-8 12-8h5c5 0 8 3 10 8Z" fill="#F0B32E"/>
+        <rect x="12" y="236" width="10" height="5" rx="2" fill="#FFF8E8"/>
+        <circle cx="9" cy="252" r="4" fill="#1B2733"/><circle cx="26" cy="252" r="4" fill="#1B2733"/>
+      </g></g>
+      <g transform="translate(1160,0)"><g style="animation:deriva 10s ease-in-out infinite alternate-reverse">
+        <rect x="0" y="240" width="40" height="12" rx="6" fill="#0FA3A0"/>
+        <path d="M8 240c2-6 8-9 14-9h6c6 0 10 4 12 9Z" fill="#0FA3A0"/>
+        <rect x="14" y="234" width="12" height="6" rx="2" fill="#DFF6F5"/>
+        <circle cx="10" cy="252" r="4.5" fill="#1B2733"/><circle cx="30" cy="252" r="4.5" fill="#1B2733"/>
+      </g></g>
+      <g transform="translate(560,0)"><g style="animation:deriva 12s ease-in-out infinite alternate">
+        <rect x="0" y="241" width="34" height="11" rx="5" fill="#51606D"/>
+        <path d="M7 241c2-5 7-8 12-8h5c5 0 8 3 10 8Z" fill="#51606D"/>
+        <rect x="12" y="236" width="10" height="5" rx="2" fill="#E6ECF1"/>
+        <circle cx="9" cy="252" r="4" fill="#1B2733"/><circle cx="26" cy="252" r="4" fill="#1B2733"/>
+      </g></g>
+      <!-- arena -->
+      <path d="M0 258h1440v14H0Z" fill="#F2E3C4"/>
+
+      <!-- mar en capas con espuma -->
+      <path d="M0 300v-30q90-8 180 0t180 0 180 0 180 0 180 0 180 0 180 0 180 0v30Z" fill="#9FC4E6"/>
+      <g style="animation:ola 9s ease-in-out infinite alternate">
+        <path d="M-80 300v-22q95-9 190 0t190 0 190 0 190 0 190 0 190 0 190 0 190 0 150 0v22Z" fill="#7FB1DC"/>
+        <path d="M-80 279q95-9 190 0t190 0 190 0 190 0 190 0 190 0 190 0 190 0 150 0" stroke="#EAF4FE" stroke-width="4" fill="none" stroke-linecap="round"/>
+      </g>
+      <path d="M0 300v-12q120-6 240 0t240 0 240 0 240 0 240 0 240 0v12Z" fill="#6FA6D6"/>
+    </svg>
+  </div>
+</header>
+
+<main>
+
+<!-- INDICE (firma) -->
+<section class="seccion wrap rev" id="indice">
+  <div class="indice-card">
+    <div class="indice-tx">
+      <span class="candado-pill">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none"><rect x="4" y="10" width="16" height="11" rx="2" stroke="currentColor" stroke-width="2.6"/><path d="M8 10V7a4 4 0 0 1 8 0v3" stroke="currentColor" stroke-width="2.6"/></svg>
+        Exclusivo con tu cuenta gratis
+      </span>
+      <h2>¿Cuánto vale tu propiedad? Wasipe te lo dice.</h2>
+      <ul>
+        <li><span class="check">✓</span>Precio por m² de los principales distritos de Lima, actualizado cada mes</li>
+        <li><span class="check">✓</span>Rango sugerido para tu propiedad según metraje, piso y antigüedad</li>
+        <li><span class="check">✓</span>Variación de los últimos 12 meses, distrito por distrito</li>
+      </ul>
+      <div style="display:flex;gap:10px;flex-wrap:wrap">
+        <a href="/registro" class="btn btn-primario">Crear cuenta gratis</a>
+        <a href="/ingresar" class="btn btn-blanco">Ya tengo cuenta</a>
+      </div>
+    </div>
+    <div class="indice-demo" translate="no" aria-label="Vista previa del índice de precios">
+      <div class="fila-d"><b>Miraflores</b><span class="tapado"><i style="width:34px"></i><i style="width:18px"></i><svg width="13" height="13" viewBox="0 0 24 24" fill="none"><rect x="4" y="10" width="16" height="11" rx="2" stroke="currentColor" stroke-width="2.8"/><path d="M8 10V7a4 4 0 0 1 8 0v3" stroke="currentColor" stroke-width="2.8"/></svg></span></div>
+      <div class="fila-d"><b>San Isidro</b><span class="tapado"><i style="width:40px"></i><i style="width:14px"></i><svg width="13" height="13" viewBox="0 0 24 24" fill="none"><rect x="4" y="10" width="16" height="11" rx="2" stroke="currentColor" stroke-width="2.8"/><path d="M8 10V7a4 4 0 0 1 8 0v3" stroke="currentColor" stroke-width="2.8"/></svg></span></div>
+      <div class="fila-d fila-abierta"><b>Tu distrito</b><span class="precio-d">US$ •••• /m²</span></div>
+      <div class="fila-d"><b>Barranco</b><span class="tapado"><i style="width:28px"></i><i style="width:22px"></i><svg width="13" height="13" viewBox="0 0 24 24" fill="none"><rect x="4" y="10" width="16" height="11" rx="2" stroke="currentColor" stroke-width="2.8"/><path d="M8 10V7a4 4 0 0 1 8 0v3" stroke="currentColor" stroke-width="2.8"/></svg></span></div>
+      <p style="font-size:12px;color:var(--tinta-40);margin-top:6px">Con tu cuenta se abren todos los distritos y el asistente de precio.</p>
+    </div>
+  </div>
+</section>
+
+<!-- PROPIEDADES -->
+<section class="seccion wrap rev" id="propiedades">
+  <div class="seccion-cab">
+    <div>
+      <h2>Publicadas y confirmadas</h2>
+      <p class="sub">Cada aviso se confirma cada 90 días. Acá no vas a encontrar propiedades que se vendieron hace meses.</p>
+    </div>
+    <a href="/buscar" class="ver-mas">Ver todas →</a>
+  </div>
+  <div class="props" id="grilla-props">
+    <div class="vacio">
+      <h3>Cargando propiedades…</h3>
+    </div>
+  </div>
+</section>
+
+<!-- ZONAS -->
+<section class="seccion wrap rev">
+  <div class="seccion-cab">
+    <div>
+      <h2>Busca por distrito</h2>
+      <p class="sub">Los distritos más buscados de Lima.</p>
+    </div>
+  </div>
+  <div class="zonas" id="zonas" translate="no"></div>
+</section>
+
+<!-- PUBLICA -->
+<section class="seccion wrap rev">
+  <div class="seccion-cab">
+    <div>
+      <h2>Publica gratis, seas quien seas</h2>
+      <p class="sub">Propietarios, agentes e inmobiliarias trabajan en el mismo portal, cada uno con su panel.</p>
+    </div>
+  </div>
+  <div class="perfiles">
+    <article class="perfil">
+      <div class="perfil-ico" style="background:var(--turquesa-suave);color:var(--turquesa)">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none"><path d="M3 11 12 4l9 7" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/><path d="M5 11v9h14v-9" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      </div>
+      <h3>Soy propietario</h3>
+      <p>Publica desde tu celular, sin intermediarios. <b>1 aviso gratis y 5 consultas al índice por mes.</b></p>
+      <a href="/registro?rol=propietario">Publicar mi propiedad →</a>
+    </article>
+    <article class="perfil">
+      <div class="perfil-ico" style="background:#FFF4E0;color:#C98A00">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="8" r="4" stroke="currentColor" stroke-width="2.2"/><path d="M4 20c1.5-3.5 4.5-5 8-5s6.5 1.5 8 5" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/></svg>
+      </div>
+      <h3>Soy agente inmobiliario</h3>
+      <p>Tu cartera en un panel, con bandeja de contactos. <b>Índice sin tope y perfil público propio.</b></p>
+      <a href="/registro?rol=agente">Crear cuenta de agente →</a>
+    </article>
+    <article class="perfil">
+      <div class="perfil-ico" style="background:var(--fucsia-suave);color:var(--fucsia)">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none"><path d="M4 21V5l7-2v18M11 21h9V9l-9-3" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/><path d="M7 9h1M7 13h1M15 13h1M15 17h1" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/></svg>
+      </div>
+      <h3>Somos una inmobiliaria</h3>
+      <p>Proyectos con tipologías, avance de obra y stock. <b>Tu equipo, en un solo panel.</b></p>
+      <a href="/registro?rol=inmobiliaria">Publicar un proyecto →</a>
+    </article>
+  </div>
+</section>
+
+<!-- IA -->
+<section class="seccion wrap rev">
+  <div class="ia"><div class="ia-in">
+    <h2>La parte difícil de publicar la hace Wasipe</h2>
+    <p class="sub">Fotos, precio y redacción: resuelto antes de que tu aviso salga.</p>
+    <div class="pasos">
+      <div class="paso"><div class="paso-n">1</div><span class="paso-estado paso-pronto">Muy pronto</span><h3>Ordena tus fotos</h3><p>Elige la portada, agrupa por ambiente y te avisa cuáles salieron oscuras o repetidas.</p></div>
+      <div class="paso"><div class="paso-n">2</div><span class="paso-estado paso-ya">Disponible</span><h3>Sugiere el precio</h3><p>Compara tu metraje, piso y antigüedad con el índice de tu distrito y te da un rango.</p></div>
+      <div class="paso"><div class="paso-n">3</div><span class="paso-estado paso-pronto">Muy pronto</span><h3>Escribe el aviso</h3><p>Redacta el título y la descripción en español claro. Tú apruebas antes de publicar.</p></div>
+      <div class="paso"><div class="paso-n">4</div><span class="paso-estado paso-pronto">Muy pronto</span><h3>Responde por ti</h3><p>Contesta las preguntas de siempre a cualquier hora y te pasa solo a quien va en serio.</p></div>
+    </div>
+  </div></div>
+</section>
+
+<!-- CIERRE -->
+<section class="cierre wrap rev">
+  <h2>Publica tu propiedad en 3 minutos</h2>
+  <p>Crea tu cuenta gratis, mira cuánto vale y sube las fotos desde tu celular.</p>
+  <a href="/registro" class="btn btn-primario btn-grande">Publicar gratis</a>
+</section>
+
+</main>
+
+<footer><div class="wrap">
+  <div class="foot-grid">
+    <div>
+      <a href="/" class="marca" translate="no" style="margin-bottom:10px">
+        <svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M2 11.5 12 3l10 8.5" stroke="#E11D74" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/><path d="M5 12v8h14v-8" stroke="#1B2733" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        Wasipe
+      </a>
+      <p style="color:var(--tinta-60);max-width:26em;font-size:13.5px">El portal inmobiliario peruano donde ves el precio antes de preguntar.</p>
+    </div>
+    <div class="foot-col"><h4>Buscar</h4>
+      <a href="/buscar?tipo=departamento&operacion=venta">Departamentos en venta</a><a href="/buscar?tipo=departamento&operacion=alquiler">Departamentos en alquiler</a>
+      <a href="/buscar?tipo=casa">Casas</a><a href="/buscar?operacion=proyecto">Proyectos en planos</a><a href="/buscar?tipo=terreno">Terrenos</a></div>
+    <div class="foot-col"><h4>Publicar</h4>
+      <a href="/registro">Soy propietario</a><a href="/registro">Soy agente inmobiliario</a>
+      <a href="/registro">Somos inmobiliaria</a></div>
+    <div class="foot-col"><h4>Wasipe</h4>
+      <a href="#indice">Índice de precios</a><a href="/ingresar">Ingresar a mi cuenta</a>
+      <a href="#">Centro de ayuda</a></div>
+  </div>
+  <div class="foot-bajo">
+    <span>© 2026 Wasipe · Lima, Perú</span>
+    <span>Términos · Privacidad · Libro de reclamaciones</span>
+  </div>
+</div></footer>
+
+<script type="module">
+import { dinero } from '/cuenta.js';
+
+
+// --- propiedades reales de la API pública ---
+const caja = document.getElementById('grilla-props');
+try {
+  const r = await fetch('/api/propiedades/buscar', {credentials:'same-origin'});
+  const d = await r.json();
+  if (!r.ok) throw new Error(d.error);
+  if (!d.resultados?.length) {
+    caja.innerHTML = `<div class="vacio">
+      <h3>Sé el primero en publicar</h3>
+      <p>El portal acaba de abrir. Tu propiedad puede ser la primera que vean todos.</p>
+      <a href="/registro" class="btn btn-primario">Publicar gratis</a></div>`;
+  } else {
+    caja.innerHTML = d.resultados.slice(0,8).map(p => `
+      <a class="prop" href="/buscar">
+        <div class="prop-foto">
+          ${p.portada ? `<img src="${p.portada}" alt="" loading="lazy">` :
+            `<svg width="40" height="40" viewBox="0 0 24 24" fill="none"><path d="M3 11 12 4l9 7" stroke="currentColor" stroke-width="2"/><path d="M5 11v9h14v-9" stroke="currentColor" stroke-width="2"/></svg>`}
+          <span class="prop-tag">${p.operacion === 'alquiler' ? 'Alquiler' : p.operacion === 'proyecto' ? 'Proyecto' : 'Venta'}</span>
+        </div>
+        <div class="prop-info">
+          <div class="prop-precio">${p.precio ? dinero(p.precio, p.moneda) : 'Consultar precio'}</div>
+          <div class="prop-titulo">${p.titulo}</div>
+          <div class="prop-lugar" translate="no">${p.distrito}, ${p.provincia}</div>
+          <div class="prop-quien">${
+            p.publica_rol === 'inmobiliaria' ? 'Inmobiliaria'
+          : p.publica_rol === 'agente'       ? 'Agente'
+          :                                    'Dueño directo'
+          }${p.publica_verificado ? '<span class="ver">✓ verificado</span>' : ''}</div>
+          <div class="prop-datos">
+            ${p.area_m2 ? `<span>${p.area_m2} m²</span>` : ''}
+            ${p.dormitorios != null ? `<span>${p.dormitorios} dorm.</span>` : ''}
+            ${p.banos != null ? `<span>${p.banos} baños</span>` : ''}
+          </div>
+        </div>
+      </a>`).join('');
+  }
+} catch {
+  caja.innerHTML = `<div class="vacio">
+    <h3>Sé el primero en publicar</h3>
+    <p>Publicar tu propiedad es gratis y toma 3 minutos.</p>
+    <a href="/registro" class="btn btn-primario">Publicar gratis</a></div>`;
+}
+
+// --- distritos rápidos ---
+const ZONAS = [
+  ['Miraflores','Frente al mar'],['San Isidro','Centro financiero'],
+  ['Barranco','Bohemio y cultural'],['Surco','Familiar y verde'],
+  ['Jesús María','Céntrico y conectado'],['San Miguel','Cerca a todo'],
+  ['Pueblo Libre','Tradicional'],['La Molina','Amplio y tranquilo'],
+];
+document.getElementById('zonas').innerHTML = ZONAS.map(([n, d]) =>
+  `<a class="zona" href="/buscar?distrito=${encodeURIComponent(n)}"><b>${n}</b><span>${d}</span></a>`).join('');
+
+// --- sesión: si ya entró, la barra cambia ---
+fetch('/api/cuentas/yo',{credentials:'same-origin'}).then(r=>r.ok?r.json():null).then(d=>{
+  if(!d) return;
+  document.getElementById('nav-cta').innerHTML =
+    `<a href="/panel" class="btn btn-primario">Ir a mi panel</a>`;
+}).catch(()=>{});
+
+// --- interacciones ---
+
+// buscador del hero -> pagina de resultados
+const OPS = {Comprar:'venta', Alquilar:'alquiler', Proyectos:'proyecto'};
+const TPS = {Departamentos:'departamento', Casas:'casa', Terrenos:'terreno', Oficinas:'oficina', Locales:'local'};
+document.getElementById('busca-hero').addEventListener('submit', e => {
+  e.preventDefault();
+  const qs = new URLSearchParams();
+  const tab = document.querySelector('.tab[aria-selected="true"]');
+  if (tab && OPS[tab.textContent.trim()]) qs.set('operacion', OPS[tab.textContent.trim()]);
+  const tipo = document.querySelector('select.tipo').value;
+  if (TPS[tipo]) qs.set('tipo', TPS[tipo]);
+  const d = document.getElementById('q').value.trim();
+  if (d) qs.set('distrito', d);
+  location.href = '/buscar' + (qs.toString() ? '?' + qs : '');
+});
+document.querySelectorAll('.tab').forEach(t=>t.addEventListener('click',()=>{
+  document.querySelectorAll('.tab').forEach(x=>x.setAttribute('aria-selected',String(x===t)));
+}));
+document.querySelectorAll('.chip').forEach(c=>c.addEventListener('click',()=>{
+  location.href = '/buscar?distrito=' + encodeURIComponent(c.textContent.trim());
+}));
+const io=new IntersectionObserver(es=>es.forEach(e=>{
+  if(e.isIntersecting){e.target.classList.add('visto');io.unobserve(e.target)}
+}),{threshold:.1});
+document.querySelectorAll('.rev').forEach(e=>io.observe(e));
+</script>
+</body>
+</html>

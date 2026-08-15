@@ -1,0 +1,347 @@
+<!DOCTYPE html>
+<html lang="es-PE">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Cargando… · Wasipe</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,800&family=Instrument+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --tinta:#1B2733; --tinta-60:#51606D; --tinta-40:#8494A1;
+  --niebla:#F4F6F8; --blanco:#FFFFFF; --linea:#E3E8ED;
+  --fucsia:#E11D74; --fucsia-osc:#C01562; --fucsia-suave:#FDEBF3;
+  --turquesa:#0FA3A0; --turquesa-suave:#E6F6F5;
+  --display:'Bricolage Grotesque',system-ui,sans-serif;
+  --texto:'Instrument Sans',system-ui,sans-serif;
+  --dato:'JetBrains Mono',ui-monospace,monospace;
+  --radio:16px; --sombra:0 6px 24px -10px rgba(27,39,51,.16);
+  --gutter:clamp(16px,4vw,48px);
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--niebla);color:var(--tinta);font-family:var(--texto);font-size:16.5px;line-height:1.55;-webkit-font-smoothing:antialiased}
+img,svg{max-width:100%;display:block}
+a{color:inherit;text-decoration:none}
+button{font:inherit;color:inherit;cursor:pointer;border:0;background:none}
+:focus-visible{outline:3px solid var(--fucsia);outline-offset:2px;border-radius:6px}
+h1,h2,h3{font-family:var(--display);font-weight:800;line-height:1.1;letter-spacing:-.025em}
+.wrap{max-width:1200px;margin:0 auto;padding-inline:var(--gutter)}
+.nav{position:sticky;top:0;z-index:60;background:var(--blanco);border-bottom:1px solid var(--linea)}
+.nav-in{display:flex;align-items:center;gap:20px;height:64px}
+.marca{display:flex;align-items:center;gap:8px;font-family:var(--display);font-weight:800;font-size:22px;letter-spacing:-.04em}
+.marca svg{width:20px;height:20px;flex:none}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;padding:11px 20px;border-radius:12px;font-weight:700;font-size:15px;transition:.15s}
+.btn-primario{background:var(--fucsia);color:#fff}
+.btn-primario:hover{background:var(--fucsia-osc)}
+.btn-blanco{background:var(--blanco);border:1.5px solid var(--linea)}
+.btn-full{width:100%}
+.btn-wa{background:#25D366;color:#fff}
+
+.miga{font-size:13.5px;color:var(--tinta-60);padding-block:16px 0}
+.miga a:hover{color:var(--fucsia)}
+
+.galeria{display:grid;grid-template-columns:2fr 1fr;gap:8px;margin-top:14px;border-radius:var(--radio);overflow:hidden}
+.galeria img{width:100%;height:100%;object-fit:cover;background:var(--linea);cursor:zoom-in}
+.g-principal{aspect-ratio:4/3}
+.g-lado{display:grid;grid-template-rows:1fr 1fr;gap:8px}
+.g-lado img{aspect-ratio:4/3}
+.g-mas{position:relative}
+.g-mas span{position:absolute;inset:0;display:grid;place-items:center;background:rgba(27,39,51,.6);color:#fff;font-weight:700;font-size:18px;pointer-events:none}
+
+.dos{display:grid;grid-template-columns:minmax(0,1fr) 360px;gap:28px;align-items:start;padding-block:26px 60px}
+.tarjeta{background:var(--blanco);border:1px solid var(--linea);border-radius:var(--radio);padding:22px}
+
+.precio{font-family:var(--dato);font-size:clamp(26px,4vw,34px);font-weight:700;letter-spacing:-.02em}
+.mant{font-size:14px;color:var(--tinta-60);font-weight:400;font-family:var(--texto)}
+.vs{display:inline-flex;align-items:center;gap:7px;border-radius:999px;padding:6px 13px;font-size:13.5px;font-weight:700;margin-top:10px}
+.vs-bajo{background:var(--turquesa-suave);color:var(--turquesa)}
+.vs-alto{background:var(--fucsia-suave);color:var(--fucsia)}
+.vs-igual{background:var(--niebla);color:var(--tinta-60)}
+.vs-nota{font-size:12px;color:var(--tinta-40);margin-top:6px}
+
+.datos{display:flex;gap:20px;flex-wrap:wrap;margin-top:18px;padding-top:18px;border-top:1px solid var(--linea)}
+.dato b{display:block;font-family:var(--dato);font-size:18px}
+.dato span{font-size:13px;color:var(--tinta-60)}
+.seccion{margin-top:26px}
+.seccion h2{font-size:20px;margin-bottom:12px}
+.desc{white-space:pre-wrap;color:var(--tinta-60)}
+.caract{display:flex;flex-wrap:wrap;gap:8px;list-style:none}
+.caract li{background:var(--niebla);border:1px solid var(--linea);border-radius:999px;padding:6px 13px;font-size:14px}
+.mapa{aspect-ratio:16/9;border-radius:12px;background:var(--niebla);display:grid;place-items:center;color:var(--tinta-40);font-size:14px;border:1px solid var(--linea);text-align:center;padding:16px}
+
+.publica{display:flex;align-items:center;gap:12px}
+.publica img,.publica .ini{width:48px;height:48px;border-radius:50%;object-fit:cover;background:var(--fucsia-suave);color:var(--fucsia);display:grid;place-items:center;font-weight:800;flex:none}
+.etiq{display:inline-block;font-size:11.5px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--tinta-40)}
+.verif{color:var(--turquesa);font-weight:700;font-size:13px}
+.campo{display:block;margin-bottom:12px}
+.campo span{display:block;font-size:13.5px;font-weight:600;margin-bottom:5px}
+.campo input,.campo textarea{width:100%;border:1.5px solid var(--linea);border-radius:10px;padding:11px 13px;font:inherit;font-size:15.5px;background:var(--niebla)}
+.campo input:focus,.campo textarea:focus{outline:none;border-color:var(--fucsia);background:#fff}
+.aviso{border-radius:10px;padding:11px 14px;font-size:14.5px;margin-bottom:12px}
+.aviso-bien{background:var(--turquesa-suave);color:#0a6b69}
+.aviso-mal{background:var(--fucsia-suave);color:var(--fucsia-osc)}
+.similares{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:16px}
+.sim{background:var(--blanco);border:1px solid var(--linea);border-radius:14px;overflow:hidden}
+.sim:hover{box-shadow:var(--sombra)}
+.sim img{aspect-ratio:4/3;object-fit:cover;width:100%;background:var(--linea)}
+.sim div{padding:12px 14px}
+.sim b{font-family:var(--dato);font-size:16px}
+.sim p{font-size:13.5px;color:var(--tinta-60);margin-top:3px}
+footer{background:var(--blanco);border-top:1px solid var(--linea);padding-block:26px;font-size:13.5px;color:var(--tinta-60)}
+@media(max-width:900px){
+  .dos{grid-template-columns:1fr}
+  .galeria{grid-template-columns:1fr}
+  .g-lado{grid-template-columns:1fr 1fr;grid-template-rows:none}
+  .contacto{position:sticky;bottom:0;z-index:50}
+}
+</style>
+</head>
+<body>
+
+<nav class="nav"><div class="wrap nav-in">
+  <a href="/" class="marca" translate="no">
+    <svg viewBox="0 0 24 24" fill="none"><path d="M2 11.5 12 3l10 8.5" stroke="#E11D74" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/><path d="M5 12v8h14v-8" stroke="#1B2733" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+    Wasipe
+  </a>
+  <div style="margin-left:auto" id="nav-cta">
+    <a href="/buscar" class="btn btn-blanco">Buscar</a>
+  </div>
+</div></nav>
+
+<main class="wrap" id="cuerpo">
+  <p class="miga" id="cargando">Cargando…</p>
+</main>
+
+<footer><div class="wrap">© 2026 Wasipe · Lima, Perú</div></footer>
+
+<script type="module">
+import { api, dinero, numero } from '/cuenta.js';
+
+const slug = location.pathname.replace(/^\/propiedad\//, '').replace(/\/$/, '');
+const cuerpo = document.getElementById('cuerpo');
+const esc = (s) => String(s ?? '').replace(/[&<>"]/g, (c) =>
+  ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+
+try {
+  const { propiedad: p, similares } = await api(`/propiedades/${encodeURIComponent(slug)}`);
+  pintar(p, similares);
+} catch (e) {
+  if (e.datos?.redirigir_a) { location.replace(e.datos.redirigir_a); }
+  else {
+    cuerpo.innerHTML = `<div style="padding:70px 0;text-align:center">
+      <h1 style="font-size:26px;margin-bottom:8px">Este aviso ya no está disponible</h1>
+      <p style="color:var(--tinta-60);margin-bottom:20px">Puede que se haya vendido o vencido.</p>
+      <a href="/buscar" class="btn btn-primario">Ver otras propiedades</a></div>`;
+  }
+}
+
+function pintar(p, similares) {
+  const lugar = `${p.ubicacion?.distrito ?? ''}, ${p.ubicacion?.provincia ?? ''}`;
+  document.title = `${p.titulo} · ${p.ubicacion?.distrito} · Wasipe`;
+  meta('description', (p.descripcion ?? p.titulo).slice(0, 155));
+  metaProp('og:title', p.titulo);
+  metaProp('og:description', (p.descripcion ?? '').slice(0, 155));
+  if (p.medios[0]) metaProp('og:image', p.medios[0].variantes.og);
+  canonical(`${location.origin}/propiedad/${p.slug}`);
+  jsonLd(p, lugar);
+
+  const fotos = p.medios.filter((m) => m.tipo === 'foto');
+  const galeria = fotos.length
+    ? `<div class="galeria">
+        <img class="g-principal" src="${fotos[0].variantes.ficha}" alt="${esc(p.titulo)}" fetchpriority="high">
+        ${fotos.length > 1 ? `<div class="g-lado">
+          <img src="${fotos[1].variantes.miniatura}" alt="" loading="lazy">
+          ${fotos[2] ? `<div class="g-mas"><img src="${fotos[2].variantes.miniatura}" alt="" loading="lazy">
+            ${fotos.length > 3 ? `<span>+${fotos.length - 3}</span>` : ''}</div>` : ''}
+        </div>` : ''}
+      </div>` : '';
+
+  const vs = p.vs_mercado;
+  const badge = vs ? `
+    <div class="vs ${vs.porcentaje < -3 ? 'vs-bajo' : vs.porcentaje > 3 ? 'vs-alto' : 'vs-igual'}">
+      ${vs.porcentaje < 0 ? `${Math.abs(vs.porcentaje)}% debajo del promedio de ${esc(p.ubicacion.distrito)}`
+        : vs.porcentaje > 0 ? `${vs.porcentaje}% encima del promedio de ${esc(p.ubicacion.distrito)}`
+        : `En el promedio de ${esc(p.ubicacion.distrito)}`}
+    </div>
+    <p class="vs-nota">US$ ${numero(vs.precio_m2)}/m² · el distrito está en US$ ${numero(vs.indice_m2)}/m²
+       · confianza ${vs.confianza} (${vs.muestras} muestras)</p>` : '';
+
+  const dato = (v, etiqueta) => v == null ? '' :
+    `<div class="dato"><b>${esc(v)}</b><span>${etiqueta}</span></div>`;
+
+  const pub = p.publica ?? {};
+  const inicial = (pub.nombre ?? '?').trim()[0]?.toUpperCase() ?? '?';
+
+  cuerpo.innerHTML = `
+    <p class="miga">
+      <a href="/">Inicio</a> ›
+      <a href="/buscar?distrito=${esc(p.ubicacion?.slug)}">${esc(p.ubicacion?.distrito)}</a> ›
+      <span>${esc(p.codigo)}</span>
+    </p>
+    ${galeria}
+    <div class="dos">
+      <div>
+        <div class="tarjeta">
+          <div class="precio">${p.precio ? dinero(p.precio, p.moneda) : 'Consultar precio'}
+            ${p.mantenimiento ? `<span class="mant">+ ${dinero(p.mantenimiento, 'PEN')} mant.</span>` : ''}
+          </div>
+          ${badge}
+          <h1 style="font-size:clamp(21px,3vw,27px);margin-top:14px">${esc(p.titulo)}</h1>
+          <p style="color:var(--tinta-60);margin-top:4px">${esc(lugar)}</p>
+          <div class="datos">
+            ${dato(p.area_m2 && `${p.area_m2} m²`, 'Área total')}
+            ${dato(p.dormitorios, 'Dormitorios')}
+            ${dato(p.banos, 'Baños')}
+            ${dato(p.cocheras, 'Cocheras')}
+            ${dato(p.piso, 'Piso')}
+            ${dato(p.antiguedad != null && `${p.antiguedad} años`, 'Antigüedad')}
+          </div>
+        </div>
+
+        ${p.descripcion ? `<div class="tarjeta seccion"><h2>Descripción</h2>
+          <p class="desc">${esc(p.descripcion)}</p></div>` : ''}
+
+        ${p.caracteristicas?.length ? `<div class="tarjeta seccion"><h2>Características</h2>
+          <ul class="caract">${p.caracteristicas.map((c) =>
+            `<li>${esc(c.replace(/-/g, ' '))}</li>`).join('')}</ul></div>` : ''}
+
+        <div class="tarjeta seccion"><h2>Ubicación</h2>
+          <p style="color:var(--tinta-60);margin-bottom:10px">${esc(p.referencia ?? lugar)}</p>
+          <div class="mapa">${p.lat
+            ? `Zona aproximada · ${esc(p.ubicacion.distrito)}${p.mapa_aproximado
+                ? '<br><small>La ubicación exacta se comparte al contactar</small>' : ''}`
+            : esc(p.ubicacion.distrito)}</div>
+        </div>
+      </div>
+
+      <aside>
+        <div class="tarjeta contacto">
+          <div class="publica">
+            ${pub.foto_url ? `<img src="${esc(pub.foto_url)}" alt="">`
+                           : `<div class="ini">${esc(inicial)}</div>`}
+            <div>
+              <span class="etiq">${esc(pub.etiqueta ?? 'Publica')}</span>
+              <div style="font-weight:700">${esc(pub.nombre ?? '')}
+                ${pub.verificado ? '<span class="verif">✓ verificado</span>' : ''}</div>
+              ${pub.agencia ? `<div style="font-size:13.5px;color:var(--tinta-60)">${esc(pub.agencia.nombre)}</div>` : ''}
+            </div>
+          </div>
+
+          ${pub.whatsapp_url ? `<a class="btn btn-wa btn-full" style="margin-top:16px"
+              href="${esc(pub.whatsapp_url)}?text=${encodeURIComponent(`Hola, vi ${p.codigo} en Wasipe`)}"
+              target="_blank" rel="noopener">Escribir por WhatsApp</a>` : ''}
+
+          <form id="f-contacto" style="margin-top:16px">
+            <div id="alerta"></div>
+            <label class="campo"><span>Tu nombre</span><input name="nombre" required maxlength="120"></label>
+            <label class="campo"><span>Tu celular</span>
+              <input name="telefono_digitos" type="tel" inputmode="numeric" placeholder="999 999 999" maxlength="11"></label>
+            <label class="campo"><span>Tu correo</span><input name="email" type="email"></label>
+            <label class="campo"><span>Mensaje</span>
+              <textarea name="mensaje" rows="3">Hola, ¿sigue disponible? Me gustaría visitarlo.</textarea></label>
+            <input type="text" name="_hp" tabindex="-1" autocomplete="off"
+                   style="position:absolute;left:-9999px" aria-hidden="true">
+            <button class="btn btn-primario btn-full" id="b-enviar" type="submit">Enviar mensaje</button>
+          </form>
+          <p style="font-size:12px;color:var(--tinta-40);margin-top:10px">
+            Publicado ${p.actualizado_hace_dias === 0 ? 'hoy' : `hace ${p.actualizado_hace_dias} días`}
+            · Código ${esc(p.codigo)}
+          </p>
+        </div>
+      </aside>
+    </div>
+
+    ${similares?.length ? `<section style="padding-bottom:60px">
+      <h2 style="font-size:22px;margin-bottom:14px">Parecidas en ${esc(p.ubicacion.distrito)}</h2>
+      <div class="similares">${similares.map((s) => `
+        <a class="sim" href="/propiedad/${esc(s.slug)}">
+          ${s.portada ? `<img src="${esc(s.portada)}" alt="" loading="lazy">` : '<img alt="">'}
+          <div><b>${s.precio ? dinero(s.precio, s.moneda) : 'Consultar'}</b>
+            <p>${esc(s.titulo)}</p></div>
+        </a>`).join('')}</div>
+    </section>` : ''}
+  `;
+
+  contacto(p);
+}
+
+function contacto(p) {
+  const f = document.getElementById('f-contacto');
+  const alerta = document.getElementById('alerta');
+  const boton = document.getElementById('b-enviar');
+  const tel = f.elements.telefono_digitos;
+
+  tel.addEventListener('input', () => {
+    const d = tel.value.replace(/\D/g, '').slice(0, 9);
+    tel.value = d.replace(/(\d{3})(?=\d)/g, '$1 ').trim();
+  });
+
+  f.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    boton.disabled = true; boton.textContent = 'Enviando…'; alerta.innerHTML = '';
+    const d = Object.fromEntries(new FormData(f));
+    const cuerpo = { nombre: d.nombre, mensaje: d.mensaje || undefined, _hp: d._hp || '' };
+    const dig = (d.telefono_digitos ?? '').replace(/\D/g, '');
+    if (dig) cuerpo.telefono = '+51' + dig;
+    if (d.email) cuerpo.email = d.email;
+
+    try {
+      const r = await api(`/propiedades/${p.id}/contacto`, { method: 'POST', body: cuerpo });
+      alerta.innerHTML = `<div class="aviso aviso-bien">${r.mensaje}</div>`;
+      f.reset();
+    } catch (err) {
+      alerta.innerHTML = `<div class="aviso aviso-mal">${err.message}</div>`;
+    }
+    boton.disabled = false; boton.textContent = 'Enviar mensaje';
+  });
+}
+
+/* --- SEO --- */
+function meta(name, content) {
+  let m = document.querySelector(`meta[name="${name}"]`);
+  if (!m) { m = document.createElement('meta'); m.name = name; document.head.appendChild(m); }
+  m.content = content;
+}
+function metaProp(prop, content) {
+  let m = document.querySelector(`meta[property="${prop}"]`);
+  if (!m) { m = document.createElement('meta'); m.setAttribute('property', prop); document.head.appendChild(m); }
+  m.content = content;
+}
+function canonical(href) {
+  let l = document.querySelector('link[rel=canonical]');
+  if (!l) { l = document.createElement('link'); l.rel = 'canonical'; document.head.appendChild(l); }
+  l.href = href;
+}
+function jsonLd(p, lugar) {
+  const s = document.createElement('script');
+  s.type = 'application/ld+json';
+  s.textContent = JSON.stringify({
+    '@context': 'https://schema.org',
+    '@type': 'RealEstateListing',
+    name: p.titulo,
+    description: p.descripcion ?? undefined,
+    url: `${location.origin}/propiedad/${p.slug}`,
+    image: p.medios.filter((m) => m.tipo === 'foto').map((m) => m.variantes.ficha),
+    datePosted: p.publicado_en ?? undefined,
+    ...(p.precio ? { offers: { '@type': 'Offer', price: p.precio, priceCurrency: p.moneda } } : {}),
+    address: {
+      '@type': 'PostalAddress',
+      addressLocality: p.ubicacion?.distrito,
+      addressRegion: p.ubicacion?.departamento,
+      addressCountry: 'PE',
+    },
+    ...(p.area_m2 ? { floorSize: { '@type': 'QuantitativeValue', value: p.area_m2, unitCode: 'MTK' } } : {}),
+    ...(p.dormitorios != null ? { numberOfRooms: p.dormitorios } : {}),
+  });
+  document.head.appendChild(s);
+}
+
+/* sesión en la barra */
+api('/cuentas/yo').then(() => {
+  document.getElementById('nav-cta').innerHTML =
+    '<a href="/panel" class="btn btn-primario">Mi panel</a>';
+}).catch(() => {});
+</script>
+</body>
+</html>

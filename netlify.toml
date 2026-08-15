@@ -1,0 +1,83 @@
+[build]
+  # Las migraciones corren en el build: si fallan, el deploy falla y nunca
+  # se publica código que espera un esquema que no existe.
+  command   = "npm run migrar"
+  publish   = "public"
+  functions = "netlify/functions"
+
+[build.environment]
+  NODE_VERSION = "20"
+
+[functions]
+  node_bundler = "esbuild"
+
+# Los crones se declaran cuando exista la función (hito M10). Declarar
+# aquí una función que no existe hace fallar el deploy.
+#
+# [functions."cron-vencimientos"]
+#   schedule = "0 8 * * *"    # 03:00 en Lima
+
+# ------------------------------------------------------------------- API
+[[redirects]]
+  from   = "/api/v1/*"
+  to     = "/.netlify/functions/api/api/v1/:splat"
+  status = 200
+  force  = true
+
+# Compatibilidad con el frontend viejo mientras se termina de migrar.
+[[redirects]]
+  from   = "/api/*"
+  to     = "/.netlify/functions/api/api/v1/:splat"
+  status = 200
+  force  = true
+
+# --------------------------------------------------------- rutas limpias
+[[redirects]]
+  from = "/buscar"
+  to   = "/buscar.html"
+  status = 200
+
+[[redirects]]
+  from = "/propiedad/*"
+  to   = "/propiedad.html"
+  status = 200
+
+[[redirects]]
+  from = "/publicar"
+  to   = "/publicar.html"
+  status = 200
+
+[[redirects]]
+  from = "/publicar/*"
+  to   = "/publicar.html"
+  status = 200
+
+[[redirects]]
+  from = "/ingresar"
+  to   = "/ingresar.html"
+  status = 200
+
+[[redirects]]
+  from = "/registro"
+  to   = "/registro.html"
+  status = 200
+
+[[redirects]]
+  from = "/panel"
+  to   = "/panel.html"
+  status = 200
+
+# --------------------------------------------------------------- headers
+[[headers]]
+  for = "/*"
+  [headers.values]
+    X-Content-Type-Options    = "nosniff"
+    X-Frame-Options           = "DENY"
+    Referrer-Policy           = "strict-origin-when-cross-origin"
+    Strict-Transport-Security = "max-age=31536000; includeSubDomains"
+    Content-Security-Policy   = "default-src 'self'; img-src 'self' https://res.cloudinary.com data: blob:; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; connect-src 'self' https://api.cloudinary.com https://pago.culqi.com; frame-ancestors 'none'"
+
+[[headers]]
+  for = "/og.png"
+  [headers.values]
+    Cache-Control = "public, max-age=604800"
