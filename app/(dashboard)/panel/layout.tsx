@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 import { requiereCuentaLista } from '@/lib/auth/sesion';
 import { navegacionPanel } from '@/lib/auth/roles';
+import { puestosDeLaSesion } from '@/lib/auth/personal';
 import { MenuPanel } from '@/components/navegacion/menu-panel';
 
 /**
@@ -30,7 +31,17 @@ export const metadata: Metadata = {
  */
 export default async function LayoutDelPanel({ children }: { children: React.ReactNode }) {
   const perfil = await requiereCuentaLista();
-  const entradas = navegacionPanel(perfil.role);
+  const puestos = await puestosDeLaSesion();
+
+  // «Administración» solo aparece para quien tiene un puesto en Wasipe, y
+  // ese puesto vive en su propia tabla, no en el rol de la cuenta: quien
+  // modera sigue pudiendo publicar su propio departamento.
+  const entradas = [
+    ...navegacionPanel(perfil.role),
+    ...(puestos.length > 0
+      ? [{ href: '/panel/admin', texto: 'Administración' } as const]
+      : []),
+  ];
 
   return (
     <div className="flex flex-col lg:flex-row">

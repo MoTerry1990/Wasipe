@@ -90,6 +90,11 @@ export type TipoEdicionMedio =
   | 'wall_color'
   | 'declutter';
 
+export type PuestoDeWasipe = 'moderator' | 'support' | 'finance' | 'super_admin';
+export type DecisionDeRevision = 'approve' | 'reject' | 'request_changes' | 'pause';
+export type TipoDeBandera = 'duplicate' | 'suspicious_price' | 'repeated_image' | 'manual';
+export type EstadoDeBandera = 'open' | 'dismissed' | 'confirmed';
+
 export type PeriodoDeMercado = 'm3' | 'm6' | 'm12' | 'todo';
 
 /**
@@ -493,6 +498,39 @@ export type VideoDeAviso = {
   finished_at: string | null;
 };
 
+/** Un puesto dentro de Wasipe. Va aparte del rol de mercado de la cuenta. */
+export type MiembroDelEquipo = {
+  user_id: string;
+  role: PuestoDeWasipe;
+  granted_by: string | null;
+  granted_at: string;
+  note: string | null;
+};
+
+/** Una decisión de moderación. No se edita ni se borra. */
+export type RevisionDeAviso = {
+  id: number;
+  property_id: string;
+  reviewer_id: string;
+  decision: DecisionDeRevision;
+  reason: string | null;
+  created_at: string;
+};
+
+/** Una señal para que alguien mire. Nunca despublica nada por su cuenta. */
+export type BanderaDeModeracion = {
+  id: number;
+  property_id: string;
+  kind: TipoDeBandera;
+  detail: Json;
+  score: number;
+  status: EstadoDeBandera;
+  resolved_by: string | null;
+  resolution_note: string | null;
+  created_at: string;
+  resolved_at: string | null;
+};
+
 export type RegistroAuditoria = {
   id: number;
   actor_id: string | null;
@@ -719,6 +757,24 @@ export type Database = {
         Update: Partial<VideoDeAviso>;
         Relationships: [];
       };
+      staff_members: {
+        Row: MiembroDelEquipo;
+        Insert: Alta<MiembroDelEquipo, 'user_id' | 'role'>;
+        Update: Partial<MiembroDelEquipo>;
+        Relationships: [];
+      };
+      listing_reviews: {
+        Row: RevisionDeAviso;
+        Insert: Alta<RevisionDeAviso, 'property_id' | 'reviewer_id' | 'decision'>;
+        Update: Partial<RevisionDeAviso>;
+        Relationships: [];
+      };
+      moderation_flags: {
+        Row: BanderaDeModeracion;
+        Insert: Alta<BanderaDeModeracion, 'property_id' | 'kind'>;
+        Update: Partial<BanderaDeModeracion>;
+        Relationships: [];
+      };
       audit_logs: {
         Row: RegistroAuditoria;
         Insert: Alta<RegistroAuditoria, 'action' | 'entity'>;
@@ -877,6 +933,45 @@ export type Database = {
       puede_descargar_video: { Args: { p_video_id: string }; Returns: boolean };
       /** La ruta del archivo, solo si corresponde entregarla. */
       registrar_descarga_de_video: { Args: { p_video_id: string }; Returns: string | null };
+      /** Aprueba, rechaza, pide cambios o pausa. Deja rastro siempre. */
+      revisar_aviso: {
+        Args: {
+          p_property_id: string;
+          p_decision: DecisionDeRevision;
+          p_motivo?: string | null;
+        };
+        Returns: Propiedad;
+      };
+      /** Verificación de una inmobiliaria. La otorga Wasipe. */
+      verificar_anunciante: {
+        Args: {
+          p_agency_id: string;
+          p_estado: EstadoVerificacion;
+          p_motivo?: string | null;
+        };
+        Returns: Agencia;
+      };
+      /** Cierra una bandera. Exige una nota. */
+      resolver_bandera: {
+        Args: { p_flag_id: number; p_estado: EstadoDeBandera; p_nota: string };
+        Returns: BanderaDeModeracion;
+      };
+      /** Revisa un aviso y deja las banderas que correspondan. */
+      marcar_aviso: { Args: { p_property_id: string }; Returns: number };
+      /** Candidatos a duplicado. No decide nada: los ordena por parecido. */
+      posibles_duplicados: {
+        Args: { p_property_id: string; p_limite?: number };
+        Returns: {
+          id: string;
+          code: string;
+          title: string;
+          similitud: number;
+          misma_area: boolean;
+        }[];
+      };
+      precio_sospechoso: { Args: { p_property_id: string }; Returns: boolean };
+      es_personal: { Args: { p_role: PuestoDeWasipe }; Returns: boolean };
+      es_personal_de_wasipe: { Args: Record<string, never>; Returns: boolean };
       /** Recalcula el índice de mercado entero. Devuelve cuántas filas quedaron. */
       recalcular_mercado: { Args: Record<string, never>; Returns: number };
       /**
@@ -959,6 +1054,10 @@ export type Database = {
       media_edit_kind: TipoEdicionMedio;
       media_review_status: EstadoRevisionMedio;
       market_period: PeriodoDeMercado;
+      staff_role: PuestoDeWasipe;
+      review_decision: DecisionDeRevision;
+      flag_kind: TipoDeBandera;
+      flag_status: EstadoDeBandera;
       video_format: FormatoDeVideo;
       video_template: PlantillaDeVideo;
       video_status: EstadoDeVideo;

@@ -35,6 +35,8 @@
   --color-cielo-2: #e4f1fc;
 
   --color-maiz: #f0b32e;
+  /* El fondo de los avisos de «atiende esto», que no son errores. */
+  --color-maiz-suave: #fdf3e0;
 
   /* Tipografías — las variables las inyecta next/font desde app/layout.tsx */
   --font-display: var(--fuente-display), system-ui, sans-serif;

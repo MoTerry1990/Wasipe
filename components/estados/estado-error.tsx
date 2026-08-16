@@ -48,17 +48,24 @@ export function Aviso({
   tono = 'mal',
   children,
 }: {
-  tono?: 'mal' | 'bien';
+  /**
+   * `ojo` es para lo que hay que atender pero no salió mal: un aviso al
+   * que moderación le pidió cambios no es un error de la persona, y
+   * pintarlo del mismo rojo que un fallo la hace pensar que lo perdió.
+   */
+  tono?: 'mal' | 'bien' | 'ojo';
   children: React.ReactNode;
 }) {
+  const fondo = {
+    mal: 'bg-fucsia-suave text-fucsia-osc',
+    bien: 'bg-turquesa-suave text-turquesa-osc',
+    ojo: 'bg-maiz-suave text-tinta',
+  }[tono];
+
   return (
     <div
       role={tono === 'mal' ? 'alert' : 'status'}
-      className={
-        tono === 'mal'
-          ? 'bg-fucsia-suave text-fucsia-osc rounded-xl px-3.5 py-3 text-sm'
-          : 'bg-turquesa-suave text-turquesa-osc rounded-xl px-3.5 py-3 text-sm'
-      }
+      className={`${fondo} rounded-xl px-3.5 py-3 text-sm`}
     >
       {children}
     </div>

@@ -24,6 +24,19 @@ import type { Estado } from '@/features/cuentas/acciones';
 const BOTON =
   'rounded-xl border-[1.5px] border-linea bg-white px-3.5 py-2 text-[13.5px] font-bold text-tinta-60 transition-colors hover:border-tinta-40 hover:text-tinta disabled:opacity-50';
 
+/**
+ * Cómo se le cuenta a quien publicó lo que decidió moderación.
+ *
+ * La base guarda el motivo en `rejection_reason` para las tres decisiones
+ * que no son publicar. El encabezado es lo que separa «no va» de «falta
+ * algo», que para quien está del otro lado no es lo mismo.
+ */
+const ENCABEZADO_DE_MODERACION: Partial<Record<EstadoPublicacion, string>> = {
+  rejected: 'Por qué se rechazó',
+  draft: 'Qué hay que corregir',
+  paused: 'Por qué lo pausamos',
+};
+
 export function AccionesDelAviso({
   avisoId,
   estado,
@@ -42,10 +55,19 @@ export function AccionesDelAviso({
 
   return (
     <div className="mt-3 flex flex-col gap-2">
-      {estado === 'rejected' && motivoRechazo && (
-        <Aviso tono="mal">
-          <strong className="block">Por qué se rechazó</strong>
+      {/* Lo que decidió moderación, dicho como para leerlo sin diccionario.
+          Un aviso devuelto a borrador con motivo no fue rechazado: hay que
+          corregir algo. Decirle «rechazado» a las dos cosas hace que la
+          persona baje el aviso en vez de arreglarlo. */}
+      {motivoRechazo && (estado === 'rejected' || estado === 'draft' || estado === 'paused') && (
+        <Aviso tono={estado === 'rejected' ? 'mal' : 'ojo'}>
+          <strong className="block">{ENCABEZADO_DE_MODERACION[estado]}</strong>
           {motivoRechazo}
+          {estado !== 'rejected' && (
+            <span className="mt-1 block text-[13px]">
+              Corrige lo que dice acá y vuelve a mandarlo a revisión.
+            </span>
+          )}
         </Aviso>
       )}
 
