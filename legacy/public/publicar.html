@@ -125,7 +125,7 @@ h1{font-size:clamp(22px,4vw,28px)}
 </main>
 
 <script type="module">
-import { api, dinero, numero } from '/cuenta.js';
+import { api, dinero, numero, esc } from '/cuenta.js';
 import { crearSubidor } from '/componentes/subidor-fotos.js';
 
 const app = document.getElementById('app');
@@ -163,7 +163,7 @@ async function arrancar() {
   if (!idEnUrl) return pintar();
 
   try {
-    const r = await api(`/propiedades/${idEnUrl}`);
+    const r = await api(`/propiedades/${esc(idEnUrl)}`);
     aviso = r.propiedad;
     ubicacion = aviso.ubicacion ?? null;
     paso = 2;
@@ -182,7 +182,7 @@ function guardar(campos, inmediato = false) {
   const hacer = async () => {
     elGuardado.textContent = 'Guardando…';
     try {
-      const r = await api(`/propiedades/${aviso.id}`, { method: 'PATCH', body: campos });
+      const r = await api(`/propiedades/${esc(aviso.id)}`, { method: 'PATCH', body: campos });
       aviso = r.propiedad;
       elGuardado.textContent = 'Guardado';
       setTimeout(() => { if (elGuardado.textContent === 'Guardado') elGuardado.textContent = ''; }, 2500);
@@ -200,7 +200,7 @@ function mostrarError(e) {
   caja.innerHTML = `<div class="aviso aviso-mal">${esc(e.message)}
     ${e.datos?.plan_sugerido ? ` <a href="/planes" style="text-decoration:underline">Ver planes</a>` : ''}</div>`;
   if (e.datos?.campo) {
-    const el = document.querySelector(`[name="${e.datos.campo}"]`);
+    const el = document.querySelector(`[name="${esc(e.datos.campo)}"]`);
     if (el) { el.setAttribute('aria-invalid', 'true'); el.focus(); }
   }
 }
@@ -253,7 +253,7 @@ function paso1(c) {
       <div style="margin-top:20px"><b style="font-size:14px">Tipo de inmueble</b>
         <div class="opciones" id="op-tipo">
           ${['departamento', 'casa', 'terreno', 'oficina', 'local', 'cochera']
-            .map((t, i) => `<button class="op" data-v="${t}" aria-pressed="${i === 0}" type="button">
+            .map((t, i) => `<button class="op" data-v="${esc(t)}" aria-pressed="${i === 0}" type="button">
               ${t[0].toUpperCase() + t.slice(1)}</button>`).join('')}
         </div>
       </div>
@@ -286,12 +286,12 @@ function paso1(c) {
         ubicacion_id: ubicacion.id,
       };
       if (aviso) {
-        const r = await api(`/propiedades/${aviso.id}`, { method: 'PATCH', body: cuerpo });
+        const r = await api(`/propiedades/${esc(aviso.id)}`, { method: 'PATCH', body: cuerpo });
         aviso = r.propiedad;
       } else {
         const r = await api('/propiedades', { method: 'POST', body: cuerpo });
         aviso = r.propiedad;
-        history.replaceState(null, '', `/publicar/${aviso.id}`);
+        history.replaceState(null, '', `/publicar/${esc(aviso.id)}`);
       }
       paso = 2; pintar();
     } catch (e) {
@@ -302,13 +302,13 @@ function paso1(c) {
 }
 
 const sel = (id) =>
-  document.querySelector(`#${id} .op[aria-pressed="true"]`)?.dataset.v;
+  document.querySelector(`#${esc(id)} .op[aria-pressed="true"]`)?.dataset.v;
 
 function grupo(id) {
   document.getElementById(id).addEventListener('click', (e) => {
     const b = e.target.closest('.op');
     if (!b) return;
-    document.querySelectorAll(`#${id} .op`).forEach((x) =>
+    document.querySelectorAll(`#${esc(id)} .op`).forEach((x) =>
       x.setAttribute('aria-pressed', String(x === b)));
   });
 }
@@ -331,7 +331,7 @@ function autocompletar() {
         lista = document.createElement('ul');
         lista.className = 'auto-lista';
         lista.innerHTML = sugerencias.map((s) =>
-          `<li data-id="${s.id}" data-d="${esc(s.distrito)}">${esc(s.distrito)}
+          `<li data-id="${esc(s.id)}" data-d="${esc(s.distrito)}">${esc(s.distrito)}
             <small>${esc(s.provincia)}</small></li>`).join('');
         input.parentElement.appendChild(lista);
         lista.addEventListener('click', (e) => {
@@ -364,7 +364,7 @@ function paso2(c) {
     contenedor: document.getElementById('subidor'),
     propiedadId: aviso.id,
   });
-  api(`/propiedades/${aviso.id}`).then(({ propiedad }) => {
+  api(`/propiedades/${esc(aviso.id)}`).then(({ propiedad }) => {
     if (propiedad.medios?.length) subidor.cargar(propiedad.medios);
   }).catch(() => {});
 
@@ -385,26 +385,26 @@ function paso3(c) {
 
       <div class="fila">
         <label class="campo"><span>Área total (m²)</span>
-          <input name="area_m2" type="number" inputmode="decimal" min="1" value="${v('area_m2')}"></label>
+          <input name="area_m2" type="number" inputmode="decimal" min="1" value="${esc(v('area_m2'))}"></label>
         <label class="campo"><span>Área techada (m²)</span>
-          <input name="area_techada_m2" type="number" inputmode="decimal" min="1" value="${v('area_techada_m2')}">
+          <input name="area_techada_m2" type="number" inputmode="decimal" min="1" value="${esc(v('area_techada_m2'))}">
         </label>
       </div>
 
       ${esTerreno ? '' : `
       <div class="fila-3">
         <label class="campo"><span>Dormitorios</span>
-          <input name="dormitorios" type="number" inputmode="numeric" min="0" max="30" value="${v('dormitorios')}"></label>
+          <input name="dormitorios" type="number" inputmode="numeric" min="0" max="30" value="${esc(v('dormitorios'))}"></label>
         <label class="campo"><span>Baños</span>
-          <input name="banos" type="number" inputmode="numeric" min="0" max="30" value="${v('banos')}"></label>
+          <input name="banos" type="number" inputmode="numeric" min="0" max="30" value="${esc(v('banos'))}"></label>
         <label class="campo"><span>Cocheras</span>
-          <input name="cocheras" type="number" inputmode="numeric" min="0" max="30" value="${v('cocheras')}"></label>
+          <input name="cocheras" type="number" inputmode="numeric" min="0" max="30" value="${esc(v('cocheras'))}"></label>
       </div>
       <div class="fila">
         <label class="campo"><span>Piso</span>
-          <input name="piso" type="number" inputmode="numeric" value="${v('piso')}"></label>
+          <input name="piso" type="number" inputmode="numeric" value="${esc(v('piso'))}"></label>
         <label class="campo"><span>Antigüedad (años)</span>
-          <input name="antiguedad" type="number" inputmode="numeric" min="0" max="200" value="${v('antiguedad')}"></label>
+          <input name="antiguedad" type="number" inputmode="numeric" min="0" max="200" value="${esc(v('antiguedad'))}"></label>
       </div>
       <label class="campo"><span>Estado</span>
         <select name="estado_inmueble">
@@ -412,7 +412,7 @@ function paso3(c) {
           ${[['estreno', 'De estreno'], ['buen-estado', 'En buen estado'],
              ['a-refaccionar', 'Para refaccionar'], ['en-construccion', 'En construcción'],
              ['en-planos', 'En planos']]
-            .map(([k, t]) => `<option value="${k}" ${aviso.estado_inmueble === k ? 'selected' : ''}>${t}</option>`).join('')}
+            .map(([k, t]) => `<option value="${esc(k)}" ${aviso.estado_inmueble === k ? 'selected' : ''}>${esc(t)}</option>`).join('')}
         </select>
       </label>`}
 
@@ -485,7 +485,7 @@ async function cargarReferencia() {
   if (referencia !== null || !ubicacion?.slug && !aviso?.ubicacion?.slug) return;
   const slug = aviso?.ubicacion?.slug ?? ubicacion?.slug;
   if (!slug) return;
-  try { referencia = await api(`/indice/referencia/${slug}`); }
+  try { referencia = await api(`/indice/referencia/${esc(slug)}`); }
   catch { referencia = false; }
 }
 
@@ -556,8 +556,8 @@ function paso5(c) {
       <div style="margin-top:18px"><b style="font-size:14px">Características</b>
         <div class="chips" id="caract">
           ${CARACTERISTICAS.map(([k, t]) =>
-            `<button class="chip" type="button" data-v="${k}"
-               aria-pressed="${puestas.has(k)}">${t}</button>`).join('')}
+            `<button class="chip" type="button" data-v="${esc(k)}"
+               aria-pressed="${puestas.has(k)}">${esc(t)}</button>`).join('')}
         </div>
       </div>
       <div id="alerta"></div>
@@ -588,7 +588,7 @@ async function publicar() {
   clearTimeout(temporizador);
 
   try {
-    const r = await api(`/propiedades/${aviso.id}/publicar`, { method: 'POST', body: {} });
+    const r = await api(`/propiedades/${esc(aviso.id)}/publicar`, { method: 'POST', body: {} });
     app.innerHTML = `
       <div class="tarjeta" style="text-align:center;padding:44px 24px;margin-top:30px">
         <div style="width:56px;height:56px;border-radius:50%;background:var(--turquesa-suave);
@@ -614,7 +614,7 @@ async function publicar() {
       document.getElementById('alerta').innerHTML = `
         <div class="aviso aviso-mal"><b>${esc(e.message)}</b>
           <ul class="faltan">${f.map((x) =>
-            `<li>· ${esc(x.mensaje)} <a href="#" data-paso="${x.paso}">Ir al paso ${x.paso}</a></li>`
+            `<li>· ${esc(x.mensaje)} <a href="#" data-paso="${esc(x.paso)}">Ir al paso ${esc(x.paso)}</a></li>`
           ).join('')}</ul></div>`;
       document.getElementById('alerta').addEventListener('click', (ev) => {
         const a = ev.target.closest('a[data-paso]');

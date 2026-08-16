@@ -99,7 +99,12 @@ describe('secretos en el repositorio', () => {
       // IA_PROVEEDOR elige un adaptador por su nombre. No es una clave:
       // es la opción por defecto, y verla escrita es justamente lo que
       // muestra que se puede cambiar.
-      .filter((linea) => !/^IA_PROVEEDOR(_IMAGEN|_VIDEO)?=/.test(linea));
+      .filter((linea) => !/^IA_PROVEEDOR(_IMAGEN|_VIDEO)?=/.test(linea))
+      // `PAGOS_EN_VIVO=no` tampoco es una credencial: es el valor seguro
+      // por defecto, y tiene que estar escrito. Dejarlo vacío haría que
+      // «apagado» dependa de que nadie lo complete, en vez de ser una
+      // decisión declarada.
+      .filter((linea) => !/^PAGOS_EN_VIVO=no\s*$/.test(linea));
 
     expect(conValor).toEqual([]);
   });

@@ -12,6 +12,10 @@ export const metadata: Metadata = {
   description:
     'Compara hasta cuatro propiedades lado a lado: precio, área, precio por m², mantenimiento, ambientes y promedio del distrito.',
   alternates: { canonical: '/comparar' },
+  // No se indexa: cada combinación de cuatro avisos es una dirección
+  // distinta y ninguna es contenido. `robots.txt` además la bloquea, pero
+  // esto es lo que vale si alguien la enlaza desde afuera.
+  robots: { index: false, follow: true },
 };
 
 /**

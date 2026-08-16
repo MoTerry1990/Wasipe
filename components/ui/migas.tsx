@@ -1,5 +1,6 @@
 import Link from 'next/link';
 import { migas as migasJsonLd, type Miga } from '@/lib/seo/estructurados';
+import { aJsonSeguro } from '@/lib/seo/json-seguro';
 
 /**
  * El rastro de migas.
@@ -19,8 +20,7 @@ export function Migas({ pasos }: { pasos: readonly Miga[] }) {
     <>
       <script
         type="application/ld+json"
-        // JSON que armamos nosotros a partir de datos ya validados.
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(migasJsonLd(pasos)) }}
+        dangerouslySetInnerHTML={{ __html: aJsonSeguro(migasJsonLd(pasos)) }}
       />
 
       <nav aria-label="Dónde estás" className="text-tinta-45 text-[13.5px]">
@@ -57,9 +57,6 @@ export function Migas({ pasos }: { pasos: readonly Miga[] }) {
  */
 export function DatosEstructurados({ datos }: { datos: object | readonly object[] }) {
   return (
-    <script
-      type="application/ld+json"
-      dangerouslySetInnerHTML={{ __html: JSON.stringify(datos) }}
-    />
+    <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: aJsonSeguro(datos) }} />
   );
 }

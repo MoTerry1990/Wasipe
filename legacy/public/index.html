@@ -577,7 +577,7 @@ footer{background:var(--blanco);border-top:1px solid var(--linea);padding-block:
 </div></footer>
 
 <script type="module">
-import { dinero } from '/cuenta.js';
+import { dinero, esc, escUrl } from '/cuenta.js';
 
 
 // --- propiedades reales de la API pública ---
@@ -595,23 +595,23 @@ try {
     caja.innerHTML = d.resultados.slice(0,8).map(p => `
       <a class="prop" href="/buscar">
         <div class="prop-foto">
-          ${p.portada ? `<img src="${p.portada}" alt="" loading="lazy">` :
+          ${p.portada ? `<img src="${escUrl(p.portada)}" alt="" loading="lazy">` :
             `<svg width="40" height="40" viewBox="0 0 24 24" fill="none"><path d="M3 11 12 4l9 7" stroke="currentColor" stroke-width="2"/><path d="M5 11v9h14v-9" stroke="currentColor" stroke-width="2"/></svg>`}
           <span class="prop-tag">${p.operacion === 'alquiler' ? 'Alquiler' : p.operacion === 'proyecto' ? 'Proyecto' : 'Venta'}</span>
         </div>
         <div class="prop-info">
           <div class="prop-precio">${p.precio ? dinero(p.precio, p.moneda) : 'Consultar precio'}</div>
-          <div class="prop-titulo">${p.titulo}</div>
-          <div class="prop-lugar" translate="no">${p.distrito}, ${p.provincia}</div>
+          <div class="prop-titulo">${esc(p.titulo)}</div>
+          <div class="prop-lugar" translate="no">${esc(p.distrito)}, ${esc(p.provincia)}</div>
           <div class="prop-quien">${
             p.publica_rol === 'inmobiliaria' ? 'Inmobiliaria'
           : p.publica_rol === 'agente'       ? 'Agente'
           :                                    'Dueño directo'
           }${p.publica_verificado ? '<span class="ver">✓ verificado</span>' : ''}</div>
           <div class="prop-datos">
-            ${p.area_m2 ? `<span>${p.area_m2} m²</span>` : ''}
-            ${p.dormitorios != null ? `<span>${p.dormitorios} dorm.</span>` : ''}
-            ${p.banos != null ? `<span>${p.banos} baños</span>` : ''}
+            ${p.area_m2 ? `<span>${esc(p.area_m2)} m²</span>` : ''}
+            ${p.dormitorios != null ? `<span>${esc(p.dormitorios)} dorm.</span>` : ''}
+            ${p.banos != null ? `<span>${esc(p.banos)} baños</span>` : ''}
           </div>
         </div>
       </a>`).join('');
@@ -631,7 +631,7 @@ const ZONAS = [
   ['Pueblo Libre','Tradicional'],['La Molina','Amplio y tranquilo'],
 ];
 document.getElementById('zonas').innerHTML = ZONAS.map(([n, d]) =>
-  `<a class="zona" href="/buscar?distrito=${encodeURIComponent(n)}"><b>${n}</b><span>${d}</span></a>`).join('');
+  `<a class="zona" href="/buscar?distrito=${encodeURIComponent(n)}"><b>${n}</b><span>${esc(d)}</span></a>`).join('');
 
 // --- sesión: si ya entró, la barra cambia ---
 fetch('/api/cuentas/yo',{credentials:'same-origin'}).then(r=>r.ok?r.json():null).then(d=>{

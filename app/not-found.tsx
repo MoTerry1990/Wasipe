@@ -3,7 +3,7 @@ import Link from 'next/link';
 import { Encabezado } from '@/components/navegacion/encabezado';
 import { Pie } from '@/components/navegacion/pie';
 import { Contenedor } from '@/components/ui/contenedor';
-import { EstadoVacio } from '@/components/estados/estado-vacio';
+import { Boton } from '@/components/ui/boton';
 import { BUSQUEDAS_POPULARES } from '@/config/sitio';
 
 export const metadata: Metadata = {
@@ -30,11 +30,20 @@ export default function NoEncontrado() {
       <Encabezado />
       <main id="contenido" className="flex-1">
         <Contenedor className="py-16">
-          <EstadoVacio
-            titulo="Esta página no existe"
-            descripcion="Puede que el enlace esté mal escrito, o que la propiedad ya se haya vendido o alquilado."
-            accion={{ texto: 'Ir al inicio', href: '/' }}
-          />
+          {/* El encabezado va acá y no dentro de `EstadoVacio`, que usa
+              `h3` porque casi siempre vive debajo del título de una
+              página. Acá el título de la página ES este, y una pantalla
+              sin `h1` deja a quien navega por encabezados sin saber
+              dónde cayó. */}
+          <h1 className="text-center text-[clamp(1.6rem,4vw,2.25rem)]">Esta página no existe</h1>
+          <p className="text-tinta-60 mx-auto mt-3 max-w-[46ch] text-center">
+            Puede que el enlace esté mal escrito, o que la propiedad ya se haya vendido o
+            alquilado.
+          </p>
+
+          <div className="mt-7 flex justify-center">
+            <Boton href="/">Ir al inicio</Boton>
+          </div>
 
           <section aria-labelledby="mientras-tanto" className="mx-auto mt-10 max-w-2xl">
             <h2 id="mientras-tanto" className="text-center text-lg">

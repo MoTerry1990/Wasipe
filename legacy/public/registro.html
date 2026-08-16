@@ -120,7 +120,7 @@
 </div>
 
 <script type="module">
-import { api } from '/cuenta.js';
+import { api, esc } from '/cuenta.js';
 
 const f = document.getElementById('f');
 const alerta = document.getElementById('alerta');
@@ -142,7 +142,7 @@ if (rolPedido) {
 
 document.getElementById('distritos').innerHTML =
   ['Miraflores','San Isidro','Barranco','San Borja','Surco','Jesús María','Magdalena','Surquillo','Lince','Pueblo Libre','La Molina','San Miguel','Chorrillos','Breña','Los Olivos','Callao']
-  .map(d => `<option value="${d}">`).join('');
+  .map(d => `<option value="${esc(d)}">`).join('');
 
 
 // Celular: solo digitos, agrupado 999 999 999
@@ -179,7 +179,7 @@ f.addEventListener('submit', async e => {
     await api('/cuentas/registro', { method: 'POST', body: d });
     location.href = '/panel';
   } catch (err) {
-    alerta.innerHTML = `<div class="aviso aviso-mal">${err.message}</div>`;
+    alerta.innerHTML = `<div class="aviso aviso-mal">${esc(err.message)}</div>`;
     const campo = err.datos?.campo && f.elements[err.datos.campo];
     if (campo) { campo.setAttribute('aria-invalid', 'true'); campo.focus(); }
     boton.disabled = false;

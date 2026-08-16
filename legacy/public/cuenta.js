@@ -92,3 +92,43 @@ export const NAV_MARCA = `
     <path d="M2 11.5 12 3l10 8.5" stroke="#E11D74" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/>
     <path d="M5 12v8h14v-8" stroke="#1B2733" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/>
   </svg>Wasipe</a>`;
+
+/**
+ * Escapa texto para meterlo dentro de HTML.
+ *
+ * Resuelve P-01, el XSS almacenado que estaba en el home, en la búsqueda
+ * y en el panel desde la primera versión del sitio. Los datos de la API
+ * se insertaban en `innerHTML` sin tocar, y la validación del título solo
+ * comprobaba el largo: un aviso llamado `<img src=x onerror=...>` corría
+ * código en el navegador de cualquier visitante.
+ *
+ * Los cinco caracteres son los cinco que hacen falta. `&` va primero,
+ * siempre: si se escapa después, convierte los `&` que acaban de
+ * introducir los otros reemplazos y sale `&amp;lt;` en pantalla.
+ *
+ * Esto NO alcanza para meter texto en un `href` ni en un atributo de
+ * evento —ahí hace falta escapar la URL, no el HTML—. Para eso está
+ * `escUrl`.
+ */
+export const esc = (valor) =>
+  String(valor ?? '')
+    .replaceAll('&', '&amp;')
+    .replaceAll('<', '&lt;')
+    .replaceAll('>', '&gt;')
+    .replaceAll('"', '&quot;')
+    .replaceAll("'", '&#39;');
+
+/**
+ * Una URL que se puede poner en `src` o en `href`.
+ *
+ * Escapar el HTML no basta acá: `javascript:alert(1)` no tiene ni un
+ * carácter especial y corre igual. Por eso solo se dejan pasar las
+ * direcciones que empiezan por http, https o barra; cualquier otra cosa
+ * se devuelve vacía y la imagen no se dibuja, que es lo correcto cuando
+ * no se sabe qué es.
+ */
+export const escUrl = (valor) => {
+  const url = String(valor ?? '').trim();
+  if (!/^(https?:\/\/|\/)/i.test(url)) return '';
+  return esc(url);
+};

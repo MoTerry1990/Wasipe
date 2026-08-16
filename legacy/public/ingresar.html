@@ -55,7 +55,7 @@ document.getElementById('ver-pass').addEventListener('click', function () {
   this.textContent = ver ? 'Ocultar' : 'Ver';
 });
 
-import { api } from '/cuenta.js';
+import { api, esc } from '/cuenta.js';
 const f = document.getElementById('f'), alerta = document.getElementById('alerta'), boton = document.getElementById('enviar');
 
 f.addEventListener('submit', async e => {
@@ -67,7 +67,7 @@ f.addEventListener('submit', async e => {
     const destino = new URLSearchParams(location.search).get('volver');
     location.href = destino && destino.startsWith('/') ? destino : '/panel';
   } catch (err) {
-    alerta.innerHTML = `<div class="aviso aviso-mal">${err.message}</div>`;
+    alerta.innerHTML = `<div class="aviso aviso-mal">${esc(err.message)}</div>`;
     boton.disabled = false; boton.textContent = 'Ingresar';
   }
 });

@@ -152,10 +152,10 @@
 </div></footer>
 
 <script type="module">
-import { api, dinero, fechaCorta } from '/cuenta.js';
+import { api, dinero, fechaCorta, esc } from '/cuenta.js';
 
 const DISTRITOS = ['Miraflores','San Isidro','Barranco','San Borja','Surco','Jesús María','Magdalena','Surquillo','Lince','Pueblo Libre','La Molina','San Miguel','Chorrillos','Breña','Los Olivos','Callao'];
-document.getElementById('d2').innerHTML = DISTRITOS.map(d => `<option value="${d}">`).join('');
+document.getElementById('d2').innerHTML = DISTRITOS.map(d => `<option value="${esc(d)}">`).join('');
 
 const ROL = { propietario: 'Propietario', agente: 'Agente', inmobiliaria: 'Inmobiliaria', admin: 'Admin' };
 let yo;
@@ -164,7 +164,7 @@ let yo;
 try {
   const r = await api('/cuentas/yo');
   yo = r.usuario;
-  document.getElementById('titulo').textContent = `Hola, ${yo.nombre.split(' ')[0]}`;
+  document.getElementById('titulo').textContent = `Hola, ${esc(yo.nombre.split(' ')[0])}`;
   document.getElementById('quien').textContent = ROL[yo.rol] ?? yo.rol;
   const fp = document.getElementById('fp');
   for (const [k, v] of Object.entries({ ...r.perfil, nombre: yo.nombre, telefono: yo.telefono })) {
@@ -191,17 +191,17 @@ const num = n => new Intl.NumberFormat('es-PE').format(n);
 try {
   const d = await api('/indice');
   document.getElementById('tabla').innerHTML = d.distritos.map(x => `
-    <tr><td translate="no">${x.distrito}</td>
+    <tr><td translate="no">${esc(x.distrito)}</td>
       <td>${num(x.precio_m2_usd)}</td>
       <td>${x.alquiler_2d_pen ? num(x.alquiler_2d_pen) : '—'}</td>
       <td class="${x.var_12m >= 0 ? 'sube' : 'baja'}">${x.var_12m >= 0 ? '+' : ''}${x.var_12m.toFixed(1)}%</td>
-      <td>${x.muestras}</td></tr>`).join('');
+      <td>${esc(x.muestras)}</td></tr>`).join('');
   document.getElementById('cuota').textContent = d.cuota.tope
-    ? `${d.cuota.restantes} de ${d.cuota.tope} consultas este mes`
-    : `Consultas sin tope · ${d.periodo}`;
+    ? `${esc(d.cuota.restantes)} de ${esc(d.cuota.tope)} consultas este mes`
+    : `Consultas sin tope · ${esc(d.periodo)}`;
 } catch (e) {
   document.getElementById('tabla').innerHTML =
-    `<tr><td colspan="5" class="cargando">${e.message}</td></tr>`;
+    `<tr><td colspan="5" class="cargando">${esc(e.message)}</td></tr>`;
   document.getElementById('cuota').textContent = '';
 }
 
@@ -219,7 +219,7 @@ fe.addEventListener('submit', async e => {
     const r = await api('/indice/estimar', { method: 'POST', body: cuerpo });
     out.innerHTML = `
       <div class="rango">
-        <div class="eyebrow" style="color:rgba(239,241,236,.5)">Precio sugerido · <span translate="no">${r.distrito}</span></div>
+        <div class="eyebrow" style="color:rgba(239,241,236,.5)">Precio sugerido · <span translate="no">${esc(r.distrito)}</span></div>
         <div class="rango-cifra" style="margin-top:8px">${dinero(r.rango.sugerido, r.moneda)}</div>
         <div class="rango-banda">
           <span>mín ${dinero(r.rango.min, r.moneda)}</span>
@@ -227,13 +227,13 @@ fe.addEventListener('submit', async e => {
         </div>
         <ul class="factores">
           <li><span>Base del distrito</span><b>US$ ${num(r.base_m2_usd)}/m²</b></li>
-          ${r.factores.map(f => `<li><span>${f.nota}</span><b class="${f.valor >= 0 ? 'pos' : 'neg'}">${f.valor >= 0 ? '+' : ''}${(f.valor * 100).toFixed(1)}%</b></li>`).join('')}
-          <li><span>Confianza</span><b>${r.confianza} · ${r.muestras} muestras</b></li>
+          ${r.factores.map(f => `<li><span>${esc(f.nota)}</span><b class="${f.valor >= 0 ? 'pos' : 'neg'}">${f.valor >= 0 ? '+' : ''}${(f.valor * 100).toFixed(1)}%</b></li>`).join('')}
+          <li><span>Confianza</span><b>${esc(r.confianza)} · ${esc(r.muestras)} muestras</b></li>
         </ul>
       </div>
-      <p style="font-size:12px;color:var(--tinta-45);margin-top:10px">${r.aviso}</p>`;
+      <p style="font-size:12px;color:var(--tinta-45);margin-top:10px">${esc(r.aviso)}</p>`;
   } catch (err) {
-    out.innerHTML = `<div class="aviso aviso-mal" style="margin-top:16px">${err.message}</div>`;
+    out.innerHTML = `<div class="aviso aviso-mal" style="margin-top:16px">${esc(err.message)}</div>`;
   }
   be.disabled = false; be.textContent = 'Calcular rango';
 });
@@ -257,9 +257,9 @@ async function cargarProps() {
       <article class="tarjeta prop">
         <div>
           <span class="etiqueta">${p.estado}</span>
-          <h3 style="margin:9px 0 5px">${p.titulo}</h3>
+          <h3 style="margin:9px 0 5px">${esc(p.titulo)}</h3>
           <p style="font-size:14.5px;color:var(--tinta-70)">
-            ${p.distrito} · ${p.area_m2 ?? '—'} m² · ${p.dormitorios ?? '—'} dorm · vence ${fechaCorta(p.vence_en)}
+            ${esc(p.distrito)} · ${p.area_m2 ?? '—'} m² · ${p.dormitorios ?? '—'} dorm · vence ${fechaCorta(p.vence_en)}
           </p>
         </div>
         <div style="text-align:right">
@@ -268,7 +268,7 @@ async function cargarProps() {
         </div>
       </article>`).join('');
   } catch (e) {
-    caja.innerHTML = `<div class="aviso aviso-mal">${e.message}</div>`;
+    caja.innerHTML = `<div class="aviso aviso-mal">${esc(e.message)}</div>`;
   }
 }
 
@@ -281,9 +281,9 @@ fp.addEventListener('submit', async e => {
   for (const k of Object.keys(d)) if (d[k] === '') d[k] = null;
   try {
     const r = await api('/perfil', { method: 'PATCH', body: d });
-    ap.innerHTML = `<div class="aviso aviso-bien">${r.mensaje}</div>`;
+    ap.innerHTML = `<div class="aviso aviso-bien">${esc(r.mensaje)}</div>`;
   } catch (err) {
-    ap.innerHTML = `<div class="aviso aviso-mal">${err.message}</div>`;
+    ap.innerHTML = `<div class="aviso aviso-mal">${esc(err.message)}</div>`;
     const c = err.datos?.campo && fp.elements[err.datos.campo];
     if (c) { c.setAttribute('aria-invalid', 'true'); c.focus(); }
   }

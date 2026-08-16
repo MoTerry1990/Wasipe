@@ -165,10 +165,10 @@ body{background:var(--papel)}
 </div>
 
 <script type="module">
-import { dinero, numero } from '/cuenta.js';
+import { dinero, numero, esc, escUrl } from '/cuenta.js';
 
 const DIST = ['Miraflores','San Isidro','Barranco','San Borja','Surco','Jesús María','Magdalena','Surquillo','Lince','Pueblo Libre','La Molina','San Miguel','Chorrillos','Breña','Los Olivos','Callao','Ate'];
-document.getElementById('ds').innerHTML = DIST.map(d=>`<option value="${d}">`).join('');
+document.getElementById('ds').innerHTML = DIST.map(d=>`<option value="${esc(d)}">`).join('');
 
 const f = document.getElementById('filtros');
 const lista = document.getElementById('lista');
@@ -198,7 +198,7 @@ async function buscar(empujarURL=false) {
     const dist = f.elements.distrito.value.trim();
     const tipo = TPN[f.elements.tipo.value] || 'Propiedades';
     const op = OPN[f.elements.operacion.value] || '';
-    titulo.textContent = `${d.total} ${tipo.toLowerCase()} ${op} ${dist ? 'en ' + dist : 'en el Perú'}`.replace(/\s+/g,' ');
+    titulo.textContent = `${esc(d.total)} ${tipo.toLowerCase()} ${esc(op)} ${dist ? 'en ' + dist : 'en el Perú'}`.replace(/\s+/g,' ');
 
     if (!d.resultados.length) {
       lista.innerHTML = `<div class="vacio-b">
@@ -210,9 +210,9 @@ async function buscar(empujarURL=false) {
     }
 
     lista.innerHTML = d.resultados.map(p => `
-      <a class="aviso-card" href="/propiedad/${p.slug}">
+      <a class="aviso-card" href="/propiedad/${esc(p.slug)}">
         <div class="a-foto">
-          ${p.portada ? `<img src="${p.portada}" alt="" loading="lazy">` :
+          ${p.portada ? `<img src="${escUrl(p.portada)}" alt="" loading="lazy">` :
             `<svg width="46" height="46" viewBox="0 0 24 24" fill="none"><path d="M3 11 12 4l9 7" stroke="currentColor" stroke-width="2"/><path d="M5 11v9h14v-9" stroke="currentColor" stroke-width="2"/></svg>`}
           <span class="a-tag">${p.operacion === 'alquiler' ? 'Alquiler' : p.operacion === 'proyecto' ? 'Proyecto' : 'Venta'}</span>
         </div>
@@ -221,22 +221,22 @@ async function buscar(empujarURL=false) {
             ${p.mantenimiento ? `<small>· ${dinero(p.mantenimiento, 'PEN')} mant.</small>` : ''}</div>
           ${p.vs_mercado != null && Math.abs(p.vs_mercado) > 3 ? `<div class="a-vs ${p.vs_mercado < 0 ? 'baja' : 'alta'}">${
             p.vs_mercado < 0
-              ? `${Math.abs(p.vs_mercado)}% debajo del promedio de ${p.distrito}`
-              : `${p.vs_mercado}% encima del promedio de ${p.distrito}`}</div>` : ''}
+              ? `${Math.abs(p.vs_mercado)}% debajo del promedio de ${esc(p.distrito)}`
+              : `${esc(p.vs_mercado)}% encima del promedio de ${esc(p.distrito)}`}</div>` : ''}
           <div class="a-datos">
-            ${p.area_m2 ? `<span>${p.area_m2} m² tot.</span>` : ''}
-            ${p.dormitorios != null ? `<span>${p.dormitorios} dorm.</span>` : ''}
-            ${p.banos != null ? `<span>${p.banos} ${p.banos === 1 ? 'baño' : 'baños'}</span>` : ''}
-            ${p.cocheras ? `<span>${p.cocheras} coch.</span>` : ''}
+            ${p.area_m2 ? `<span>${esc(p.area_m2)} m² tot.</span>` : ''}
+            ${p.dormitorios != null ? `<span>${esc(p.dormitorios)} dorm.</span>` : ''}
+            ${p.banos != null ? `<span>${esc(p.banos)} ${p.banos === 1 ? 'baño' : 'baños'}</span>` : ''}
+            ${p.cocheras ? `<span>${esc(p.cocheras)} coch.</span>` : ''}
           </div>
-          <div class="a-titulo">${p.titulo}</div>
-          <div class="a-lugar" translate="no">${p.distrito}, ${p.provincia}</div>
-          ${p.descripcion ? `<div class="a-desc">${p.descripcion}</div>` : ''}
+          <div class="a-titulo">${esc(p.titulo)}</div>
+          <div class="a-lugar" translate="no">${esc(p.distrito)}, ${esc(p.provincia)}</div>
+          ${p.descripcion ? `<div class="a-desc">${esc(p.descripcion)}</div>` : ''}
           <div class="a-pie">
-            <span class="a-publica">Publica <b>${p.publica}</b>
+            <span class="a-publica">Publica <b>${esc(p.publica)}</b>
               ${p.publica_verificado ? '<span class="verificado">✓ verificado</span>' : ''}
               · ${p.publica_rol === 'inmobiliaria' ? 'Inmobiliaria' : p.publica_rol === 'agente' ? 'Agente' : 'Dueño directo'}</span>
-            <button type="button" class="btn-contactar" data-pid="${p.id}" data-titulo="${p.titulo.replace(/"/g,'&quot;')}">Contactar</button>
+            <button type="button" class="btn-contactar" data-pid="${esc(p.id)}" data-titulo="${p.titulo.replace(/"/g,'&quot;')}">Contactar</button>
           </div>
         </div>
       </a>`).join('');
@@ -249,7 +249,7 @@ async function buscar(empujarURL=false) {
     document.getElementById('ant').disabled = pagina <= 1;
     document.getElementById('sig').disabled = pagina >= paginas;
   } catch (e) {
-    lista.innerHTML = `<div class="vacio-b"><h2>No pudimos cargar los avisos</h2><p>${e.message}</p></div>`;
+    lista.innerHTML = `<div class="vacio-b"><h2>No pudimos cargar los avisos</h2><p>${esc(e.message)}</p></div>`;
   }
 }
 document.getElementById('ant').onclick = () => { pagina--; buscar(true); };
@@ -288,17 +288,17 @@ mf.addEventListener('submit', async e => {
   const dig = (d.telefono_digitos || '').replace(/\D/g,'');
   if (dig) cuerpo.telefono = '+51' + dig;
   try {
-    const r = await fetch(`/api/propiedades/${d.pid}/contacto`, {
+    const r = await fetch(`/api/propiedades/${esc(d.pid)}/contacto`, {
       method: 'POST', headers: {'content-type':'application/json'},
       credentials: 'same-origin', body: JSON.stringify(cuerpo)
     });
     const res = await r.json();
     if (!r.ok) throw new Error(res.error);
-    malerta.innerHTML = `<div class="aviso aviso-bien">${res.mensaje}</div>`;
+    malerta.innerHTML = `<div class="aviso aviso-bien">${esc(res.mensaje)}</div>`;
     mf.reset();
     setTimeout(() => velo.classList.remove('abierto'), 1800);
   } catch (err) {
-    malerta.innerHTML = `<div class="aviso aviso-mal">${err.message}</div>`;
+    malerta.innerHTML = `<div class="aviso aviso-mal">${esc(err.message)}</div>`;
   } finally {
     boton.disabled = false; boton.textContent = 'Enviar mensaje';
   }

@@ -27,8 +27,18 @@ export function redirigirBusquedaInvalida(request: NextRequest): NextResponse | 
   const segmentos = partes.slice(1);
   const leidos = leerSegmentos(segmentos);
 
+  // Un segmento que no es ni tipo ni distrito NO se redirige: se deja
+  // pasar para que la página llame a `notFound()` y responda 404 de
+  // verdad.
+  //
+  // Antes se mandaba a `/comprar`, y eso es un 404 blando: la dirección
+  // inventada devolvía 200 con un listado genérico. Para un buscador eso
+  // significa que el sitio tiene infinitas páginas válidas con el mismo
+  // contenido, que es de los errores más caros que puede tener un portal.
+  if (leidos.desconocido) return null;
+
   const destino = request.nextUrl.clone();
-  destino.pathname = leidos.desconocido ? base : rutaCanonica(operacion, leidos);
+  destino.pathname = rutaCanonica(operacion, leidos);
 
   if (destino.pathname === ruta) return null;
 

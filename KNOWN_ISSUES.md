@@ -8,7 +8,15 @@ Ninguno se corrigió en este sprint: la instrucción fue auditar, no cambiar.
 
 ## 🔴 Críticos
 
-### P-01 · XSS almacenado en tres páginas públicas
+### P-01 · XSS almacenado en tres páginas públicas — **RESUELTO (sprint 17)**
+
+> **Cerrado el 16 de agosto de 2026.** `esc()` y `escUrl()` en
+> `legacy/public/cuenta.js`, aplicados en 129 interpolaciones de las siete
+> páginas. Una prueba estática en `tests/unidad/seguridad.test.ts` falla el
+> build si alguien vuelve a interpolar un campo de la API sin escapar.
+>
+> Lo de abajo queda como estaba, porque describe el problema y sirve para
+> entender por qué se arregló así.
 
 **Dónde:** `public/index.html:604` · `public/buscar.html:232` · `public/panel.html` (11 puntos)
 

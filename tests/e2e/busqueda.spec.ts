@@ -36,11 +36,23 @@ test.describe('rutas de búsqueda', () => {
     await expect(page).toHaveURL('/comprar/casa/miraflores');
   });
 
-  test('un segmento inventado no deja a nadie en un callejón', async ({ page }) => {
-    await page.goto('/comprar/narnia');
-    // Quien llegó con una errata igual quería ver propiedades en venta.
-    await expect(page).toHaveURL('/comprar');
-    await expect(page.getByRole('heading', { level: 1 })).toHaveText('Propiedades en venta');
+  test('un segmento inventado da 404, pero no deja a nadie en un callejón', async ({ page }) => {
+    // Cambió en el sprint 17. Antes se redirigía a `/comprar` con 200,
+    // pensando en quien llega con una errata. El problema es que eso es
+    // un 404 blando: para un buscador significa que el sitio tiene
+    // infinitas direcciones válidas con el mismo contenido, y es de los
+    // errores más caros que puede tener un portal.
+    //
+    // La salida no era elegir entre la persona y el buscador: es
+    // responder 404 de verdad Y que el 404 sirva. Desde el sprint 16
+    // lleva las búsquedas más usadas y el índice completo, así que quien
+    // llegó con una errata tiene más caminos que antes, no menos.
+    const respuesta = await page.goto('/comprar/narnia');
+    expect(respuesta?.status()).toBe(404);
+
+    await expect(page.getByRole('heading', { level: 1 })).toHaveText('Esta página no existe');
+    await expect(page.getByRole('link', { name: /Departamentos en Miraflores/ })).toBeVisible();
+    await expect(page.getByRole('link', { name: /todas las búsquedas/i })).toBeVisible();
   });
 
   test('los parámetros y las rutas amigables llevan al mismo título', async ({ page }) => {
