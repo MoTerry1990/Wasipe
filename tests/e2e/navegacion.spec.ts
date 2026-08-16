@@ -8,9 +8,9 @@ import { test, expect } from '@playwright/test';
 
 const RUTAS = [
   { ruta: '/', titulo: /Wasipe/ },
-  { ruta: '/comprar', titulo: /Comprar/ },
-  { ruta: '/alquilar', titulo: /Alquilar/ },
-  { ruta: '/proyectos', titulo: /Proyectos/ },
+  { ruta: '/comprar', titulo: /Propiedades en venta/ },
+  { ruta: '/alquilar', titulo: /Propiedades en alquiler/ },
+  { ruta: '/proyectos', titulo: /Propiedades en proyectos/ },
   { ruta: '/precio-m2', titulo: /m²|Precio/ },
   { ruta: '/wasi-ai', titulo: /Wasi/ },
   { ruta: '/ingresar', titulo: /Ingresar|Iniciar/ },

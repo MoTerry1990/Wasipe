@@ -1,7 +1,13 @@
 import type { NextRequest } from 'next/server';
 import { actualizarSesion } from '@/lib/supabase/middleware';
+import { redirigirBusquedaInvalida } from '@/lib/busqueda/middleware';
 
 export async function middleware(request: NextRequest) {
+  // Primero las rutas de búsqueda: una dirección con segmentos que no
+  // existen se resuelve acá, antes de gastar una llamada a Supabase.
+  const redireccion = redirigirBusquedaInvalida(request);
+  if (redireccion) return redireccion;
+
   return actualizarSesion(request);
 }
 

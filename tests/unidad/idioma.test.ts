@@ -82,7 +82,6 @@ const PALABRAS_INGLESAS = [
   'available',
   'month',
   'monthly',
-  'total',
   'from',
   'per',
   'usd',
@@ -120,7 +119,11 @@ function textoVisible(fuente: string): string {
 
   // Texto entre etiquetas: <p>Hola</p>
   for (const [, contenido] of sinComentarios.matchAll(/>([^<>{}]+)</g)) {
-    piezas.push(contenido ?? '');
+    const trozo = contenido ?? '';
+    // Un fragmento con guion bajo, punto y coma o una flecha no es prosa:
+    // es código que quedó entre un `=>` y el `<` de un componente.
+    if (/[_;=]|const|return/.test(trozo)) continue;
+    piezas.push(trozo);
   }
 
   // Atributos visibles o audibles.

@@ -43,6 +43,25 @@ export const TIPO_INMUEBLE: Record<TipoInmueble, string> = {
   building: 'Edificio',
 };
 
+/**
+ * En plural, para los títulos de búsqueda.
+ *
+ * "Departamentos en alquiler en Miraflores" es literalmente lo que se
+ * escribe en Google en el Perú; el singular suena a ficha de aviso.
+ */
+export const TIPO_INMUEBLE_PLURAL: Record<TipoInmueble, string> = {
+  apartment: 'Departamentos',
+  house: 'Casas',
+  land: 'Terrenos',
+  office: 'Oficinas',
+  commercial: 'Locales comerciales',
+  warehouse: 'Almacenes',
+  room: 'Habitaciones',
+  country_house: 'Casas de campo',
+  garage: 'Cocheras',
+  building: 'Edificios',
+};
+
 export const ESTADO_INMUEBLE: Record<EstadoInmueble, string> = {
   available: 'Disponible',
   reserved: 'Reservado',

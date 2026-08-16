@@ -85,6 +85,29 @@ La autorización se comprueba en tres capas, y cada una funciona sola:
 Sin proyecto de Supabase conectado el sitio público sigue funcionando, pero todo
 lo privado se cierra: ante la duda, no se abre.
 
+## Búsqueda
+
+Tres rutas —`/comprar`, `/alquilar`, `/proyectos`— con dos formas de dirección:
+
+- **Amigable**: `/alquilar/departamento/miraflores`. Es la canónica y la que se
+  comparte; los segmentos se aceptan en cualquier orden y el middleware redirige
+  a la forma correcta.
+- **Con parámetros**: `/alquilar?tipo=departamento&distrito=Miraflores&dorm=2`.
+  Es lo que produce el panel de filtros.
+
+**La URL es la única fuente de verdad.** No hay estado de búsqueda guardado en
+el navegador: lo que se ve es exactamente lo que dice la dirección, y por eso
+una búsqueda se puede pasar por WhatsApp y quien la abre ve lo mismo.
+
+Nada de lo que llega por la URL se confía. Un `?dorm=muchos` desaparece, un
+`?dorm=99999` se recorta a 30, un rango escrito al revés se endereza, y el
+resto de los filtros sigue funcionando. Ver `lib/busqueda/filtros.ts`.
+
+El precio **siempre** se filtra contra `price_usd`, nunca contra `price`: la
+lista mezcla soles y dólares y comparar el número crudo devuelve disparates.
+
+Los tiempos de la búsqueda con 5.000 avisos están en [RENDIMIENTO.md](RENDIMIENTO.md).
+
 ## Variables de entorno
 
 Copiar `.env.example` a `.env` y completar. Ninguna clave real se sube al
