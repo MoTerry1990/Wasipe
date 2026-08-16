@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useRef } from 'react';
+import { useEffect, useId, useRef } from 'react';
 import { cn } from '@/lib/cn';
 
 /**
@@ -25,6 +25,11 @@ export function Modal({
 }) {
   const ref = useRef<HTMLDialogElement>(null);
 
+  // Identificador único por instancia. Con uno fijo, dos modales montados
+  // a la vez dejan dos elementos con el mismo id y el lector de pantalla
+  // anuncia el título del otro.
+  const idTitulo = useId();
+
   useEffect(() => {
     const dialogo = ref.current;
     if (!dialogo) return;
@@ -48,7 +53,7 @@ export function Modal({
   return (
     <dialog
       ref={ref}
-      aria-labelledby="titulo-modal"
+      aria-labelledby={idTitulo}
       className={cn(
         'rounded-marca border-linea w-[min(32rem,calc(100vw-2rem))] border bg-white p-0',
         'text-tinta backdrop:bg-tinta/50 backdrop:backdrop-blur-[2px]',
@@ -59,7 +64,7 @@ export function Modal({
       }}
     >
       <div className="border-linea flex items-start justify-between gap-4 border-b p-5">
-        <h2 id="titulo-modal" className="text-xl">
+        <h2 id={idTitulo} className="text-xl">
           {titulo}
         </h2>
         <button

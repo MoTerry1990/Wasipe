@@ -1,6 +1,5 @@
 import type { Metadata } from 'next';
 import { notFound, redirect } from 'next/navigation';
-import Link from 'next/link';
 import { Contenedor } from '@/components/ui/contenedor';
 import { Tarjeta, Insignia } from '@/components/ui/tarjeta';
 import { TarjetaPropiedad } from '@/components/propiedades/tarjeta-propiedad';
@@ -21,6 +20,8 @@ import { tipoDeCambio } from '@/lib/consultas/portada';
 import { monedaPreferida } from '@/lib/preferencias';
 import { esFavorito } from '@/lib/avisos/favoritos';
 import { codigoDesdeRuta, enlaceDeAviso } from '@/lib/avisos/enlace';
+import { Migas, DatosEstructurados } from '@/components/ui/migas';
+import { rutaCanonica } from '@/lib/busqueda/rutas';
 import { precioMostrado, porMetroMostrado } from '@/lib/moneda';
 import { dinero, dineroExacto, metros, fecha, numero } from '@/lib/formato';
 import {
@@ -197,27 +198,30 @@ export default async function Ficha({ params }: Props) {
 
   return (
     <Contenedor className="py-6">
-      <script
-        type="application/ld+json"
-        // Es JSON generado por nosotros a partir de datos ya validados por
-        // la base; no hay entrada del usuario sin escapar acá.
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(estructurados) }}
-      />
+      <DatosEstructurados datos={estructurados} />
 
-      <nav aria-label="Dónde estás" className="text-tinta-45 mb-4 text-[13.5px]">
-        <Link href="/" className="hover:text-fucsia">
-          Inicio
-        </Link>
-        <span className="mx-1.5">›</span>
-        <Link
-          href={aviso.operation === 'rent' ? '/alquilar' : '/comprar'}
-          className="hover:text-fucsia"
-        >
-          {OPERACION[aviso.operation]}
-        </Link>
-        <span className="mx-1.5">›</span>
-        <span className="text-tinta-60">{aviso.district}</span>
-      </nav>
+      {/* Las migas ahora llevan el distrito enlazado a su landing, y de
+          paso emiten el `BreadcrumbList`: es lo que hace que bajo el
+          título del resultado de Google salga «wasipe.pe › Comprar ›
+          Miraflores» en vez de la dirección cruda. */}
+      <div className="mb-4">
+        <Migas
+          pasos={[
+            { texto: 'Inicio', href: '/' },
+            {
+              texto: OPERACION[aviso.operation],
+              href: aviso.operation === 'rent' ? '/alquilar' : '/comprar',
+            },
+            {
+              texto: aviso.district,
+              href: rutaCanonica(aviso.operation === 'rent' ? 'rent' : 'sale', {
+                distrito: aviso.district,
+              }),
+            },
+            { texto: aviso.title },
+          ]}
+        />
+      </div>
 
       <div className="grid gap-6 lg:grid-cols-[minmax(0,1.6fr)_minmax(0,1fr)]">
         <div className="min-w-0">

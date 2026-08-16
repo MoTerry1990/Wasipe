@@ -1,10 +1,34 @@
 'use client';
 
+import dynamic from 'next/dynamic';
+
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { TarjetaPropiedad } from '@/components/propiedades/tarjeta-propiedad';
 import { Insignia } from '@/components/ui/tarjeta';
-import { MapaResultados } from '@/features/busqueda/mapa-resultados';
+/**
+ * El mapa se carga solo cuando se pide.
+ *
+ * La vista por defecto es la lista, y la mayoría de la gente nunca abre
+ * el mapa. Importarlo de la forma normal metía su código —con la
+ * agrupación y la proyección— en el paquete de toda búsqueda, se mirara
+ * o no. `ssr: false` además evita dibujarlo en el servidor, que no tiene
+ * sentido para algo que solo existe en pantalla.
+ */
+const MapaResultados = dynamic(
+  () => import('@/features/busqueda/mapa-resultados').then((m) => m.MapaResultados),
+  {
+    ssr: false,
+    loading: () => (
+      <div
+        className="border-linea bg-niebla grid h-full place-items-center rounded-2xl border"
+        role="status"
+      >
+        <span className="text-tinta-45 text-[14px]">Cargando el mapa…</span>
+      </div>
+    ),
+  },
+);
 import { urlDeFiltros, ETIQUETA_ORDEN, ORDENES, type Filtros } from '@/lib/busqueda/filtros';
 import { numero } from '@/lib/formato';
 import { cn } from '@/lib/cn';

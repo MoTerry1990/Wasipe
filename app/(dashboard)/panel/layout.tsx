@@ -38,9 +38,7 @@ export default async function LayoutDelPanel({ children }: { children: React.Rea
   // modera sigue pudiendo publicar su propio departamento.
   const entradas = [
     ...navegacionPanel(perfil.role),
-    ...(puestos.length > 0
-      ? [{ href: '/panel/admin', texto: 'Administración' } as const]
-      : []),
+    ...(puestos.length > 0 ? [{ href: '/panel/admin', texto: 'Administración' } as const] : []),
   ];
 
   return (

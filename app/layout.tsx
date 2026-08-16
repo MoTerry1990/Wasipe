@@ -7,6 +7,17 @@ import './globals.css';
  * Tipografías con `next/font`: se autoalojan en el build, así que no hay
  * petición a Google en tiempo de ejecución ni salto de diseño al cargar.
  * Son las mismas tres del sitio anterior — la identidad no cambia.
+ *
+ * En el sprint 16 se probó pedirlas como fuentes variables —omitiendo
+ * `weight`— con la idea de bajar la cantidad de archivos. Medido con dos
+ * compilaciones limpias, salió al revés: 212 KB en variable contra 196 KB
+ * con pesos fijos, porque un archivo variable trae todos los pesos
+ * intermedios que acá nadie usa. Se quedaron los pesos fijos, y queda
+ * escrito para que nadie lo intente de nuevo creyendo que mejora.
+ *
+ * Lo que sí se cambió: la mono no se precarga. Solo aparece en cifras y
+ * códigos, que están debajo del primer pantallazo, y precargarla le quita
+ * ancho de banda a la ilustración del hero, que es la que mide el LCP.
  */
 const display = Bricolage_Grotesque({
   subsets: ['latin'],
@@ -27,6 +38,7 @@ const dato = JetBrains_Mono({
   weight: ['500', '700'],
   variable: '--fuente-dato',
   display: 'swap',
+  preload: false,
 });
 
 export const metadata: Metadata = {

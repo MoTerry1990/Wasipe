@@ -933,6 +933,18 @@ export type Database = {
       puede_descargar_video: { Args: { p_video_id: string }; Returns: boolean };
       /** La ruta del archivo, solo si corresponde entregarla. */
       registrar_descarga_de_video: { Args: { p_video_id: string }; Returns: string | null };
+      /** Cuántos avisos visibles hay por operación, tipo y distrito. */
+      conteo_de_landings: {
+        Args: Record<string, never>;
+        Returns: {
+          operation: Operacion;
+          /** null = todos los tipos. */
+          property_type: TipoInmueble | null;
+          /** null = todo el país. */
+          district: string | null;
+          total: number;
+        }[];
+      };
       /** Aprueba, rechaza, pide cambios o pausa. Deja rastro siempre. */
       revisar_aviso: {
         Args: {

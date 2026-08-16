@@ -134,7 +134,9 @@ function Contador({
 }) {
   const contenido = (
     <Tarjeta interactiva={Boolean(href)} className="h-full p-4">
-      <p className={`cifra text-2xl font-extrabold ${alerta ? 'text-fucsia-osc' : 'text-tinta'}`}>
+      <p
+        className={`cifra text-2xl font-extrabold ${alerta ? 'text-fucsia-osc' : 'text-tinta'}`}
+      >
         {numero(valor)}
       </p>
       <p className="text-tinta-60 mt-0.5 text-[13px]">{etiqueta}</p>
@@ -158,24 +160,29 @@ async function estadoDelSistema() {
     const supabase = await clienteServidor();
     const solo = { count: 'exact' as const, head: true };
 
-    const [enRevision, publicados, banderas, denuncias, imagenes, cuentas, iaFallida, distritos] =
-      await Promise.all([
-        supabase
-          .from('properties')
-          .select('*', solo)
-          .eq('publication_status', 'in_review'),
-        supabase.from('properties').select('*', solo).eq('publication_status', 'published'),
-        supabase.from('moderation_flags').select('*', solo).eq('status', 'open'),
-        supabase.from('reports').select('*', solo).eq('status', 'open'),
-        supabase.from('property_media').select('*', solo).eq('review_status', 'pending'),
-        supabase.from('profiles').select('*', solo),
-        supabase.from('ai_jobs').select('*', solo).eq('status', 'failed'),
-        supabase
-          .from('market_stats')
-          .select('*', solo)
-          .eq('sufficient', true)
-          .is('property_type', null),
-      ]);
+    const [
+      enRevision,
+      publicados,
+      banderas,
+      denuncias,
+      imagenes,
+      cuentas,
+      iaFallida,
+      distritos,
+    ] = await Promise.all([
+      supabase.from('properties').select('*', solo).eq('publication_status', 'in_review'),
+      supabase.from('properties').select('*', solo).eq('publication_status', 'published'),
+      supabase.from('moderation_flags').select('*', solo).eq('status', 'open'),
+      supabase.from('reports').select('*', solo).eq('status', 'open'),
+      supabase.from('property_media').select('*', solo).eq('review_status', 'pending'),
+      supabase.from('profiles').select('*', solo),
+      supabase.from('ai_jobs').select('*', solo).eq('status', 'failed'),
+      supabase
+        .from('market_stats')
+        .select('*', solo)
+        .eq('sufficient', true)
+        .is('property_type', null),
+    ]);
 
     return {
       enRevision: enRevision.count ?? 0,

@@ -15,6 +15,8 @@ import { UBICACIONES } from '@/config/ubicaciones';
 import { aSlug } from '@/lib/avisos/enlace';
 import { TIPO_INMUEBLE } from '@/lib/etiquetas';
 import { dinero, fecha, metros, numero, porMetro } from '@/lib/formato';
+import { Migas, DatosEstructurados } from '@/components/ui/migas';
+import { indiceDeDistrito } from '@/lib/seo/estructurados';
 import type { TipoInmueble } from '@/types/base-datos';
 
 export const dynamic = 'force-dynamic';
@@ -29,15 +31,30 @@ function distritoDesdeSlug(slug: string): string | null {
   return UBICACIONES.find((u) => u.slug === slug || aSlug(u.nombre) === slug)?.nombre ?? null;
 }
 
-export async function generateMetadata({ params }: Props): Promise<Metadata> {
+export async function generateMetadata({ params, searchParams }: Props): Promise<Metadata> {
   const { distrito: slug } = await params;
+  const { operacion, periodo } = await searchParams;
   const distrito = distritoDesdeSlug(slug);
-  if (!distrito) return { title: 'Precio por m²' };
+
+  if (!distrito) return { title: 'Precio por m²', robots: { index: false } };
+
+  const titulo = `Precio por m² en ${distrito}`;
+  const descripcion = `Cuánto cuesta el metro cuadrado en ${distrito}, por tipo de propiedad, calculado con los avisos publicados en Wasipe. Con la muestra y la fecha a la vista para poder juzgar la cifra.`;
 
   return {
-    title: `Precio por m² en ${distrito}`,
-    description: `Cuánto cuesta el metro cuadrado en ${distrito}, por tipo de propiedad, calculado con avisos publicados en Wasipe.`,
+    title: titulo,
+    description: descripcion,
+    // La canónica es siempre la versión limpia: venta y últimos 12 meses.
+    // Las pestañas cambian dos parámetros y generan seis direcciones con
+    // el mismo tema; sin esto competirían entre ellas.
     alternates: { canonical: `/precio-m2/${slug}` },
+    robots: operacion || periodo ? { index: false, follow: true } : undefined,
+    openGraph: {
+      type: 'article',
+      title: titulo,
+      description: descripcion,
+      url: `/precio-m2/${slug}`,
+    },
   };
 }
 
@@ -65,16 +82,36 @@ export default async function PrecioDeDistrito({ params, searchParams }: Props) 
     .filter((f) => f.property_type !== null)
     .sort((a, b) => b.listings - a.listings);
 
+  // El índice se declara como `Dataset` y no como producto: es una
+  // estadística, no algo que se venda. Solo si hay cifra publicable: un
+  // `Dataset` que declara cero observaciones no ayuda a nadie.
+  const conDatos = general ?? porTipo.find((f) => f.sufficient) ?? null;
+
   return (
     <Contenedor className="py-10 sm:py-14">
-      <Link href="/precio-m2" className="text-tinta-60 text-[14px] underline">
-        ← Todos los distritos
-      </Link>
+      {conDatos && (
+        <DatosEstructurados
+          datos={indiceDeDistrito({
+            distrito,
+            slug,
+            muestra: conDatos.listings,
+            actualizado: conDatos.computed_at,
+          })}
+        />
+      )}
 
-      <h1 className="mt-3 text-[clamp(1.5rem,3.6vw,2.1rem)]">Precio por m² en {distrito}</h1>
+      <Migas
+        pasos={[
+          { texto: 'Inicio', href: '/' },
+          { texto: 'Precio por m²', href: '/precio-m2' },
+          { texto: distrito },
+        ]}
+      />
+
+      <h1 className="mt-4 text-[clamp(1.5rem,3.6vw,2.1rem)]">Precio por m² en {distrito}</h1>
       <p className="text-tinta-60 mt-2 max-w-[58ch]">
-        {operacion === 'rent' ? 'Alquiler' : 'Venta'} ·{' '}
-        {PERIODOS[periodo].toLowerCase()}. Calculado con los avisos publicados en Wasipe.
+        {operacion === 'rent' ? 'Alquiler' : 'Venta'} · {PERIODOS[periodo].toLowerCase()}.
+        Calculado con los avisos publicados en Wasipe.
       </p>
 
       <div className="mt-5 flex flex-wrap gap-2">
@@ -126,8 +163,7 @@ export default async function PrecioDeDistrito({ params, searchParams }: Props) 
                           {TIPO_INMUEBLE[fila.property_type as TipoInmueble]}
                         </p>
                         <p className="text-tinta-45 text-[13px]">
-                          {numero(fila.listings)}{' '}
-                          {fila.listings === 1 ? 'aviso' : 'avisos'}
+                          {numero(fila.listings)} {fila.listings === 1 ? 'aviso' : 'avisos'}
                           {fila.outliers > 0 &&
                             ` · ${numero(fila.outliers)} fuera por atípicos`}
                         </p>

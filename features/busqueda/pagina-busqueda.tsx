@@ -22,6 +22,15 @@ import {
 import { BuscadorConversacional } from '@/features/busqueda/buscador-conversacional';
 import { TIPO_INMUEBLE_PLURAL } from '@/lib/etiquetas';
 import { numero } from '@/lib/formato';
+import { rutaCanonica } from '@/lib/busqueda/rutas';
+import { SLUG_DESDE_TIPO } from '@/lib/catalogo';
+import { motivoParaNoIndexar, robotsDeBusqueda, seIndexa } from '@/lib/seo/indexable';
+import { contarAvisos } from '@/lib/consultas/conteo';
+import { Migas, DatosEstructurados } from '@/components/ui/migas';
+import { listaDeAvisos, type Miga } from '@/lib/seo/estructurados';
+import { landingsDeBusqueda } from '@/lib/seo/landings';
+import { enlaceDeAviso } from '@/lib/avisos/enlace';
+import type { Metadata } from 'next';
 import type { Moneda, Operacion } from '@/types/base-datos';
 
 /**
@@ -110,13 +119,37 @@ function Paginacion({
 }
 
 /** Los resultados. Aparte, para que el encabezado no espere a la base. */
-async function Resultados({ filtros, moneda }: { filtros: Filtros; moneda: Moneda }) {
+async function Resultados({
+  filtros,
+  moneda,
+  titulo,
+}: {
+  filtros: Filtros;
+  moneda: Moneda;
+  titulo: string;
+}) {
+  // El tipo de cambio no depende de los filtros, pero `buscar()` sí lo
+  // necesita para comparar precios en dos monedas. Se pide primero y se
+  // deja cacheado: dentro de la misma petición, quien lo vuelva a pedir
+  // —el panel de filtros, las tarjetas— recibe este mismo valor.
   const cambio = await tipoDeCambio();
   const resultado = await buscar(filtros, cambio);
 
   if (resultado.avisos.length > 0) {
     return (
       <>
+        {/* La lista de fichas, para que Google entienda que esto es un
+            listado y no una página suelta. Solo las direcciones: el precio
+            y el área los declara cada ficha, y repetirlos acá abre la
+            puerta a que los dos números se contradigan. */}
+        <DatosEstructurados
+          datos={listaDeAvisos(
+            titulo,
+            resultado.avisos.map((aviso) => enlaceDeAviso(aviso)),
+            resultado.total,
+          )}
+        />
+
         <VistaResultados
           avisos={resultado.avisos}
           filtros={filtros}
@@ -182,6 +215,104 @@ async function Resultados({ filtros, moneda }: { filtros: Filtros; moneda: Moned
   );
 }
 
+/**
+ * Las migas de una búsqueda.
+ *
+ * Inicio › Comprar › Miraflores › Departamentos. El orden va de lo
+ * general a lo específico y cada paso es una página que existe, así que
+ * son una salida de verdad y no un adorno: quien cae en «departamentos en
+ * venta en Miraflores» y quiere ver todo Miraflores tiene el enlace ahí.
+ */
+function migasDeBusqueda(filtros: Filtros, titulo: string): Miga[] {
+  const raiz = filtros.operacion === 'rent' ? '/alquilar' : '/comprar';
+  const pasos: Miga[] = [
+    { texto: 'Inicio', href: '/' },
+    { texto: filtros.operacion === 'rent' ? 'Alquilar' : 'Comprar', href: raiz },
+  ];
+
+  if (filtros.distrito) {
+    pasos.push({
+      texto: filtros.distrito,
+      // Solo se enlaza si además hay tipo: sin tipo, ese paso ES la página
+      // en la que estás, y enlazarla a sí misma no lleva a ninguna parte.
+      href: filtros.tipo
+        ? rutaCanonica(filtros.operacion, { distrito: filtros.distrito })
+        : undefined,
+    });
+  }
+
+  if (filtros.tipo || !filtros.distrito) pasos.push({ texto: titulo });
+
+  return pasos;
+}
+
+/**
+ * Enlaces a las landings hermanas.
+ *
+ * Quien está en «departamentos en venta en Miraflores» normalmente
+ * también mira casas en Miraflores, o departamentos en San Isidro. Estos
+ * enlaces existen para esa persona; que además le den a Google un camino
+ * entre landings es la consecuencia, no el motivo. Un bloque de enlaces
+ * que no le sirve a nadie se nota, y se penaliza.
+ */
+function LandingsHermanas({ filtros }: { filtros: Filtros }) {
+  if (!filtros.distrito) return null;
+
+  const hermanas = landingsDeBusqueda().filter(
+    (l) =>
+      l.operacion === filtros.operacion &&
+      l.distrito === filtros.distrito &&
+      l.tipo !== filtros.tipo,
+  );
+
+  const enOtrosDistritos = filtros.tipo
+    ? landingsDeBusqueda()
+        .filter(
+          (l) =>
+            l.operacion === filtros.operacion &&
+            l.tipo === filtros.tipo &&
+            l.distrito &&
+            l.distrito !== filtros.distrito,
+        )
+        .slice(0, 8)
+    : [];
+
+  if (hermanas.length === 0 && enOtrosDistritos.length === 0) return null;
+
+  const lista = (titulo: string, enlaces: typeof hermanas) =>
+    enlaces.length > 0 && (
+      <div>
+        <h3 className="text-tinta-60 text-[13px] font-bold tracking-wide uppercase">
+          {titulo}
+        </h3>
+        <ul className="mt-2 flex flex-wrap gap-2">
+          {enlaces.map((enlace) => (
+            <li key={enlace.href}>
+              <Link
+                href={enlace.href}
+                className="border-linea text-tinta-70 hover:border-fucsia hover:text-fucsia inline-block rounded-xl border bg-white px-3 py-1.5 text-[13.5px] transition-colors"
+              >
+                {enlace.texto}
+              </Link>
+            </li>
+          ))}
+        </ul>
+      </div>
+    );
+
+  return (
+    <section aria-labelledby="tambien-buscan" className="border-linea mt-10 border-t pt-6">
+      <h2 id="tambien-buscan" className="text-lg">
+        Otras búsquedas en {filtros.distrito}
+      </h2>
+      <div className="mt-4 flex flex-col gap-4">
+        {lista(`Otros tipos en ${filtros.distrito}`, hermanas)}
+        {lista('El mismo tipo en otros distritos', enOtrosDistritos)}
+      </div>
+    </section>
+  );
+}
+
 export async function PaginaDeBusqueda({
   operacion,
   params,
@@ -205,6 +336,10 @@ export async function PaginaDeBusqueda({
 
   return (
     <Contenedor className="py-7">
+      <div className="mb-4">
+        <Migas pasos={migasDeBusqueda(filtros, titulo)} />
+      </div>
+
       <div className="mb-5 flex flex-wrap items-end justify-between gap-4">
         <div>
           <h1 className="text-[clamp(1.5rem,3.4vw,2.125rem)]">{titulo}</h1>
@@ -237,30 +372,137 @@ export async function PaginaDeBusqueda({
           )}
 
           <Suspense key={clave} fallback={<ResultadosCargando />}>
-            <Resultados filtros={filtros} moneda={moneda} />
+            <Resultados filtros={filtros} moneda={moneda} titulo={titulo} />
           </Suspense>
+
+          <LandingsHermanas filtros={filtros} />
         </div>
       </div>
     </Contenedor>
   );
 }
 
-/** Metadatos de la búsqueda, para el buscador y para compartir. */
-export function metadatosDeBusqueda(operacion: Operacion, params: ParametrosDeBusqueda) {
+/**
+ * Metadatos de la búsqueda, para el buscador y para compartir.
+ *
+ * Dos cosas que antes estaban mal y ahora no:
+ *
+ *  · La canónica de una landing es su ruta bonita —`/comprar/departamento/
+ *    miraflores`— y no la versión con parámetros. Antes se declaraba la
+ *    de parámetros, que es la misma página con otra dirección: exactamente
+ *    lo que una canónica existe para evitar.
+ *  · Una landing con tipo y distrito **sí** se indexa. Antes cualquier
+ *    filtro la sacaba del índice, lo que dejaba fuera justo las páginas
+ *    por las que la gente llega desde Google.
+ *
+ * El conteo decide lo último: una landing con dos avisos es una plantilla
+ * casi vacía y no entra, por más que la combinación sea buena.
+ */
+export async function metadatosDeBusqueda(
+  operacion: Operacion,
+  params: ParametrosDeBusqueda,
+): Promise<Metadata> {
   const filtros = leerFiltros(operacion, params);
   const titulo = tituloDeBusqueda(filtros, TIPO_INMUEBLE_PLURAL);
 
+  // Solo se cuenta cuando la página podría indexarse. Preguntarle a la
+  // base por una búsqueda con siete filtros que igual va a quedar fuera
+  // del índice es una consulta regalada en cada visita de un robot.
+  const total = seIndexa(filtros) ? await contarAvisos(filtros) : undefined;
+
+  const descripcion = descripcionDeBusqueda(filtros, titulo);
+
   return {
     title: titulo,
-    description: `${titulo} en Wasipe, con el precio por m² siempre visible. Publicar es gratis.`,
-    alternates: {
-      canonical: urlDeFiltros({ ...filtros, pagina: undefined, vista: undefined }),
+    description: descripcion,
+    alternates: { canonical: canonicaDeBusqueda(filtros) },
+    robots: robotsDeBusqueda(filtros, total),
+    openGraph: {
+      type: 'website',
+      title: titulo,
+      description: descripcion,
+      url: canonicaDeBusqueda(filtros),
+      images: [{ url: ogDeBusqueda(filtros), width: 1200, height: 630, alt: titulo }],
     },
-    // Las páginas con filtros no se indexan: son miles de combinaciones
-    // que compiten entre sí y diluyen las que sí importan.
-    robots:
-      hayFiltros(filtros) || (filtros.pagina ?? 1) > 1
-        ? { index: false, follow: true }
-        : undefined,
   };
+}
+
+/**
+ * La imagen que se ve al compartir una landing por WhatsApp.
+ *
+ * Va por parámetros a `/og/busqueda` porque las landings viven bajo un
+ * segmento comodín, y Next no admite un `opengraph-image.tsx` ahí adentro.
+ */
+function ogDeBusqueda(filtros: Filtros): string {
+  const params = new URLSearchParams();
+  if (filtros.operacion === 'rent') params.set('op', 'rent');
+  if (filtros.tipo) params.set('tipo', SLUG_DESDE_TIPO[filtros.tipo]);
+  if (filtros.distrito) params.set('lugar', filtros.distrito);
+
+  const cola = params.toString();
+  return cola ? `/og/busqueda?${cola}` : '/og/busqueda';
+}
+
+/**
+ * La dirección canónica de una búsqueda.
+ *
+ * Para una landing es la ruta bonita, sin ningún parámetro. Para una
+ * búsqueda con filtros de detalle es su propia URL sin paginación ni
+ * presentación: no se indexa, pero la canónica igual tiene que apuntar a
+ * algo coherente por si alguien la comparte.
+ */
+export function canonicaDeBusqueda(filtros: Filtros): string {
+  if (esLanding(filtros)) {
+    // `rutaCanonica` ya devuelve la ruta con su barra inicial.
+    return rutaCanonica(filtros.operacion, {
+      tipo: filtros.tipo,
+      distrito: filtros.distrito,
+    });
+  }
+
+  return urlDeFiltros({
+    ...filtros,
+    pagina: undefined,
+    vista: undefined,
+    orden: undefined,
+    moneda: undefined,
+  });
+}
+
+/**
+ * ¿Esta búsqueda es una de las landings, o lleva filtros de detalle?
+ *
+ * La provincia y el departamento se ignoran **cuando hay distrito**,
+ * porque en ese caso no los pidió nadie: `leerSegmentos()` los deduce del
+ * distrito para poder consultar. Tratarlos como filtros propios hacía que
+ * `/comprar/departamento/miraflores` se declarara canónica en su forma de
+ * parámetros, que es justo lo que una canónica existe para evitar.
+ *
+ * Sin distrito sí cuentan: una búsqueda por provincia entera no es una de
+ * las landings que se generan, y no tiene ruta bonita a la que apuntar.
+ */
+function esLanding(filtros: Filtros): boolean {
+  const soloDerivadas =
+    filtros.distrito !== undefined ||
+    (filtros.provincia === undefined && filtros.departamento === undefined);
+
+  return soloDerivadas && motivoParaNoIndexar(filtros) === null;
+}
+
+/**
+ * La descripción para el resultado de Google.
+ *
+ * Distinta por landing, no una plantilla con el título metido dentro:
+ * doscientas páginas con la misma frase son doscientas páginas que Google
+ * lee como la misma.
+ */
+function descripcionDeBusqueda(filtros: Filtros, titulo: string): string {
+  const donde = filtros.distrito ?? filtros.provincia ?? filtros.departamento;
+  const verbo = filtros.operacion === 'rent' ? 'alquilar' : 'comprar';
+
+  if (donde) {
+    return `${titulo}: precios, área y precio por m² de cada aviso, más el promedio del distrito para saber si el precio de ${donde} es razonable antes de escribirle a nadie.`;
+  }
+
+  return `${titulo} en todo el Perú. Filtra por distrito, precio y área, y compara el precio por m² antes de decidir qué ${verbo}.`;
 }

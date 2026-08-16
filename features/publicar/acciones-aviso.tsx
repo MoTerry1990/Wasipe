@@ -59,17 +59,18 @@ export function AccionesDelAviso({
           Un aviso devuelto a borrador con motivo no fue rechazado: hay que
           corregir algo. Decirle «rechazado» a las dos cosas hace que la
           persona baje el aviso en vez de arreglarlo. */}
-      {motivoRechazo && (estado === 'rejected' || estado === 'draft' || estado === 'paused') && (
-        <Aviso tono={estado === 'rejected' ? 'mal' : 'ojo'}>
-          <strong className="block">{ENCABEZADO_DE_MODERACION[estado]}</strong>
-          {motivoRechazo}
-          {estado !== 'rejected' && (
-            <span className="mt-1 block text-[13px]">
-              Corrige lo que dice acá y vuelve a mandarlo a revisión.
-            </span>
-          )}
-        </Aviso>
-      )}
+      {motivoRechazo &&
+        (estado === 'rejected' || estado === 'draft' || estado === 'paused') && (
+          <Aviso tono={estado === 'rejected' ? 'mal' : 'ojo'}>
+            <strong className="block">{ENCABEZADO_DE_MODERACION[estado]}</strong>
+            {motivoRechazo}
+            {estado !== 'rejected' && (
+              <span className="mt-1 block text-[13px]">
+                Corrige lo que dice acá y vuelve a mandarlo a revisión.
+              </span>
+            )}
+          </Aviso>
+        )}
 
       {estado === 'in_review' && (
         <p className="text-tinta-60 text-[13.5px]">

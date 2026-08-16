@@ -1,5 +1,7 @@
 import 'server-only';
 
+import { cache } from 'react';
+
 import { clienteServidor } from '@/lib/supabase/servidor';
 import { supabaseConfigurado } from '@/lib/supabase/entorno';
 import { TIPO_DE_CAMBIO_POR_DEFECTO } from '@/lib/moneda';
@@ -234,7 +236,14 @@ export async function precioPorMetroPorDistrito(limite = 8): Promise<PrecioPorMe
 }
 
 /** Tipo de cambio vigente, para convertir lo que se muestra. */
-export async function tipoDeCambio(): Promise<number> {
+/**
+ * El tipo de cambio del día.
+ *
+ * `cache()` porque en una sola página se pide varias veces: la lista lo
+ * necesita para convertir, el panel de filtros para los topes, y la ficha
+ * para el precio. Sin él son tres consultas idénticas por visita.
+ */
+export const tipoDeCambio = cache(async (): Promise<number> => {
   if (!supabaseConfigurado()) return TIPO_DE_CAMBIO_POR_DEFECTO;
   try {
     const supabase = await clienteServidor();
@@ -248,4 +257,4 @@ export async function tipoDeCambio(): Promise<number> {
   } catch {
     return TIPO_DE_CAMBIO_POR_DEFECTO;
   }
-}
+});

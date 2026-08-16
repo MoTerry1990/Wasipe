@@ -21,6 +21,8 @@ import {
 } from '@/features/portada/secciones-fijas';
 import { monedaPreferida } from '@/lib/preferencias';
 import { tipoDeCambio } from '@/lib/consultas/portada';
+import { DatosEstructurados } from '@/components/ui/migas';
+import { organizacion, sitioWeb } from '@/lib/seo/estructurados';
 
 export const metadata: Metadata = {
   title: 'Wasipe · Departamentos, casas y proyectos en venta y alquiler en el Perú',
@@ -51,6 +53,12 @@ export default async function Inicio() {
 
   return (
     <>
+      {/* La organización y el sitio, una sola vez y solo acá: repetirlos
+          en cada página no agrega nada y Google los toma del inicio. El
+          `SearchAction` es lo que le permite mostrar una caja de búsqueda
+          de Wasipe dentro de su propio resultado. */}
+      <DatosEstructurados datos={[organizacion(), sitioWeb()]} />
+
       {/*
         HERO
         La ilustración es la misma del sitio anterior, sin tocar. En móvil

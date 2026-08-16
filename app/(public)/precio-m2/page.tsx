@@ -13,7 +13,14 @@ import {
 import { aSlug } from '@/lib/avisos/enlace';
 import { fecha, numero, porMetro } from '@/lib/formato';
 
-export const dynamic = 'force-dynamic';
+/**
+ * Se rehace cada hora, no en cada visita.
+ *
+ * El índice de mercado se recalcula como mucho una vez al día, así que
+ * servir esta página de nuevo en cada petición era pagar una consulta
+ * agregada para devolver exactamente lo mismo.
+ */
+export const revalidate = 3600;
 
 export const metadata: Metadata = {
   title: 'Precio por m²',

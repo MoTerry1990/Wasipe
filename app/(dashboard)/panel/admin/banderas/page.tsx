@@ -53,7 +53,9 @@ export default async function Banderas() {
   const { data: avisos } = abiertas.length
     ? await supabase
         .from('properties')
-        .select('id, code, title, district, publication_status, operation, property_type, total_area')
+        .select(
+          'id, code, title, district, publication_status, operation, property_type, total_area',
+        )
         .in(
           'id',
           abiertas.map((b) => b.property_id),

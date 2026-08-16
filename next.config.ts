@@ -39,6 +39,23 @@ const nextConfig: NextConfig = {
     formats: ['image/avif', 'image/webp'],
     // Un SVG remoto puede traer scripts. Se sirven solo los locales.
     dangerouslyAllowSVG: false,
+
+    // Dos calidades y no más. Cada combinación de tamaño y calidad es una
+    // imagen distinta que hay que generar y guardar; con la lista abierta,
+    // una dirección con `?q=73` obliga a rehacer el trabajo entero.
+    //  · 72 para las tarjetas del listado, que se ven a 400 px de ancho.
+    //  · 85 para la galería de la ficha, que se mira de cerca.
+    qualities: [72, 85],
+
+    // Los anchos que el diseño de verdad usa. La lista de Next trae ocho
+    // por defecto, y cada uno que sobra es una variante más que generar.
+    deviceSizes: [390, 640, 828, 1080, 1280, 1920],
+    imageSizes: [64, 96, 128, 256, 384],
+
+    // Treinta días en caché. Las fotos de un aviso no cambian: cuando se
+    // reemplaza una, cambia la dirección, así que no hay nada que
+    // invalidar y sí mucho que ahorrar.
+    minimumCacheTTL: 2592000,
   },
 
   async headers() {

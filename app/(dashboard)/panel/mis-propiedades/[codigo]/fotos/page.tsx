@@ -112,10 +112,7 @@ export default async function FotosDelAviso({
                     {foto.edit_kind && esEdicion(foto.edit_kind) && (
                       <Insignia tono="neutro">{EDICIONES[foto.edit_kind].etiqueta}</Insignia>
                     )}
-                    <RevisionDeImagen
-                      estado={foto.review_status}
-                      motivo={foto.review_reason}
-                    />
+                    <RevisionDeImagen estado={foto.review_status} motivo={foto.review_reason} />
                   </div>
                 </Tarjeta>
               </li>
@@ -134,13 +131,7 @@ export default async function FotosDelAviso({
  * derecho a saber que pasó y por qué. Por eso se muestra acá, con el
  * motivo, en vez de que la foto desaparezca sin explicación.
  */
-function RevisionDeImagen({
-  estado,
-  motivo,
-}: {
-  estado: string;
-  motivo: string | null;
-}) {
+function RevisionDeImagen({ estado, motivo }: { estado: string; motivo: string | null }) {
   if (estado === 'pending') return <Insignia tono="maiz">En revisión</Insignia>;
   if (estado === 'cleared') return <Insignia tono="verde">Revisada</Insignia>;
   if (estado === 'flagged') {

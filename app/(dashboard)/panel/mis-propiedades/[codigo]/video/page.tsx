@@ -80,9 +80,7 @@ export default async function VideoDelAviso({
                     </p>
                     <p className="text-tinta-45 text-[13px]">
                       {fecha(video.created_at)}
-                      {video.duration_ms
-                        ? ` · ${Math.round(video.duration_ms / 1000)} s`
-                        : ''}
+                      {video.duration_ms ? ` · ${Math.round(video.duration_ms / 1000)} s` : ''}
                       {video.downloads > 0 ? ` · ${video.downloads} descargas` : ''}
                     </p>
                   </div>
