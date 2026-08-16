@@ -1,69 +1,110 @@
 import type { Metadata } from 'next';
+import { redirect } from 'next/navigation';
 import { Contenedor } from '@/components/ui/contenedor';
-import { Tarjeta, Insignia } from '@/components/ui/tarjeta';
-import { Boton } from '@/components/ui/boton';
+import { EstadoVacio } from '@/components/estados/estado-vacio';
+import { Asistente } from '@/features/publicar/asistente';
+import { requiereCuentaLista } from '@/lib/auth/sesion';
+import { puedePublicar } from '@/lib/auth/roles';
+import { clienteServidor } from '@/lib/supabase/servidor';
+import { supabaseConfigurado } from '@/lib/supabase/entorno';
+import type { BorradorDeAviso } from '@/lib/validacion/aviso';
+
+export const dynamic = 'force-dynamic';
 
 export const metadata: Metadata = {
-  title: 'Publicar gratis',
-  description:
-    'Publica tu propiedad en Wasipe. Hasta 2 avisos gratis, para siempre. Propietarios, corredores e inmobiliarias.',
-  alternates: { canonical: '/publicar' },
+  title: 'Publicar una propiedad',
+  description: 'Publica tu propiedad en Wasipe. Es gratis y no pedimos tarjeta.',
+  robots: { index: false, follow: false },
 };
 
-const PERFILES = [
-  {
-    titulo: 'Soy propietario',
-    texto: 'Publica desde tu celular, sin intermediarios.',
-    destaque: '2 avisos gratis y 5 consultas al índice por mes.',
-  },
-  {
-    titulo: 'Soy corredor inmobiliario',
-    texto: 'Tu cartera en un panel, con bandeja de contactos.',
-    destaque: 'Índice sin tope y perfil público propio.',
-  },
-  {
-    titulo: 'Somos inmobiliaria',
-    texto: 'Proyectos con tipologías, avance de obra y stock.',
-    destaque: 'Tu equipo, en un solo panel.',
-  },
-];
+type Props = { searchParams: Promise<{ borrador?: string }> };
 
-export default function Publicar() {
+/**
+ * Asistente de publicación.
+ *
+ * El borrador se carga en el servidor y se le pasa al asistente ya
+ * hidratado. Por eso recargar no pierde nada: lo que se ve al volver es
+ * exactamente lo último que se guardó, sin depender de nada que viva en
+ * el navegador.
+ */
+export default async function Publicar({ searchParams }: Props) {
+  const perfil = await requiereCuentaLista('/publicar');
+
+  // Quien abrió su cuenta como comprador no publica. No es un error:
+  // simplemente eligió otro tipo de cuenta al registrarse.
+  if (!puedePublicar(perfil.role)) {
+    return (
+      <Contenedor className="py-10">
+        <EstadoVacio
+          titulo="Tu cuenta está configurada para buscar, no para publicar"
+          descripcion="Cuando te registraste elegiste la cuenta de comprador. Escríbenos y la cambiamos: publicar sigue siendo gratis."
+          accion={{ texto: 'Volver al panel', href: '/panel' }}
+        />
+      </Contenedor>
+    );
+  }
+
+  if (!supabaseConfigurado()) {
+    return (
+      <Contenedor className="py-10">
+        <EstadoVacio
+          titulo="La publicación todavía no está conectada"
+          descripcion="Falta enlazar el proyecto de Supabase. En cuanto esté, este asistente queda operativo."
+          accion={{ texto: 'Volver al panel', href: '/panel' }}
+        />
+      </Contenedor>
+    );
+  }
+
+  const { borrador: pedido } = await searchParams;
+  const supabase = await clienteServidor();
+
+  // Con un borrador pedido por la URL se abre ese; si no, el último que
+  // quedó a medias. Empezar uno nuevo cada vez llenaría el panel de
+  // borradores vacíos.
+  const consulta = supabase
+    .from('listing_drafts')
+    .select('id, datos, paso, property_id')
+    .order('updated_at', { ascending: false })
+    .limit(1);
+
+  const { data } = pedido
+    ? await supabase
+        .from('listing_drafts')
+        .select('id, datos, paso, property_id')
+        .eq('id', pedido)
+        .maybeSingle()
+        .then((r) => ({ data: r.data ? [r.data] : [] }))
+    : await consulta;
+
+  const borrador = data?.[0] ?? null;
+
+  // Un borrador pedido que no existe —o que es de otra persona, y la RLS
+  // no lo devuelve— manda al asistente limpio en vez de a un error.
+  if (pedido && !borrador) redirect('/publicar');
+
+  let avisoEnEdicion: { code: string; motivoRechazo: string | null } | null = null;
+
+  if (borrador?.property_id) {
+    const { data: aviso } = await supabase
+      .from('properties')
+      .select('code, rejection_reason')
+      .eq('id', borrador.property_id)
+      .maybeSingle();
+
+    if (aviso) {
+      avisoEnEdicion = { code: aviso.code, motivoRechazo: aviso.rejection_reason };
+    }
+  }
+
   return (
-    <Contenedor className="py-10 sm:py-14">
-      <header className="mx-auto max-w-2xl text-center">
-        <h1 className="text-[clamp(1.6rem,4vw,2.25rem)]">Publica gratis, seas quien seas</h1>
-        <p className="text-tinta-60 mx-auto mt-3 max-w-[50ch]">
-          Propietarios, corredores inmobiliarios e inmobiliarias trabajan en el mismo portal,
-          cada uno con su panel.
-        </p>
-      </header>
-
-      <ul className="mt-9 grid gap-4 lg:grid-cols-3">
-        {PERFILES.map((p) => (
-          <Tarjeta as="li" key={p.titulo} className="flex flex-col gap-2.5 p-6">
-            <h2 className="font-display text-[17.5px] font-extrabold">{p.titulo}</h2>
-            <p className="text-tinta-60 text-[14.5px]">
-              {p.texto} <strong className="text-tinta font-bold">{p.destaque}</strong>
-            </p>
-          </Tarjeta>
-        ))}
-      </ul>
-
-      {/* El asistente de publicación llega en el Sprint 7, con Storage y cuentas. */}
-      <Tarjeta className="mt-8 flex flex-col items-center px-6 py-12 text-center">
-        <Insignia tono="fucsia">Muy pronto</Insignia>
-        <h2 className="font-display mt-4 text-2xl font-extrabold">
-          El asistente de publicación está en camino
-        </h2>
-        <p className="text-tinta-60 mt-3 max-w-[46ch]">
-          Cinco pasos, con las fotos primero y el precio por m² de tu distrito a la vista
-          mientras decides cuánto pedir.
-        </p>
-        <Boton href="/precio-m2" variante="secundario" className="mt-6">
-          Ver el precio por m²
-        </Boton>
-      </Tarjeta>
+    <Contenedor className="py-7">
+      <Asistente
+        borradorInicial={borrador?.id ?? null}
+        datosIniciales={(borrador?.datos ?? {}) as BorradorDeAviso}
+        pasoInicial={borrador?.paso ?? 0}
+        avisoEnEdicion={avisoEnEdicion}
+      />
     </Contenedor>
   );
 }

@@ -3,6 +3,9 @@ import { requiereSeccion } from '@/lib/auth/sesion';
 import { clienteServidor } from '@/lib/supabase/servidor';
 import { Tarjeta, Insignia } from '@/components/ui/tarjeta';
 import { EstadoVacio } from '@/components/estados/estado-vacio';
+import { Aviso } from '@/components/estados/estado-error';
+import { AccionesDelAviso } from '@/features/publicar/acciones-aviso';
+import { enlaceDeAviso } from '@/lib/avisos/enlace';
 import { Boton } from '@/components/ui/boton';
 import { dinero, porMetro, fechaCorta } from '@/lib/formato';
 import { ESTADO_PUBLICACION, OPERACION, TIPO_INMUEBLE } from '@/lib/etiquetas';
@@ -18,10 +21,16 @@ const TONO: Record<EstadoPublicacion, 'neutro' | 'verde' | 'fucsia' | 'maiz'> = 
   rejected: 'fucsia',
   paused: 'neutro',
   expired: 'neutro',
+  archived: 'neutro',
 };
 
-export default async function MisPropiedades() {
+export default async function MisPropiedades({
+  searchParams,
+}: {
+  searchParams: Promise<{ enviado?: string }>;
+}) {
   await requiereSeccion('/panel/mis-propiedades');
+  const parametros = await searchParams;
   const supabase = await clienteServidor();
 
   // Sin filtro por dueño a propósito: la RLS ya limita a los avisos
@@ -29,7 +38,7 @@ export default async function MisPropiedades() {
   const { data: avisos } = await supabase
     .from('properties')
     .select(
-      'id, code, title, district, operation, property_type, currency, price, price_per_m2, publication_status, views_count, inquiries_count, created_at',
+      'id, code, title, district, operation, property_type, currency, price, price_per_m2, publication_status, rejection_reason, views_count, inquiries_count, created_at, built_area, total_area',
     )
     .order('created_at', { ascending: false });
 
@@ -39,6 +48,15 @@ export default async function MisPropiedades() {
         <h1 className="text-3xl">Mis propiedades</h1>
         <Boton href="/publicar">Publicar un aviso</Boton>
       </div>
+
+      {parametros.enviado === '1' && (
+        <div className="mt-5">
+          <Aviso tono="bien">
+            Enviamos tu aviso a revisión. Lo mira una persona del equipo y te avisamos cuando
+            esté publicado; si hay algo que corregir, te decimos qué.
+          </Aviso>
+        </div>
+      )}
 
       {!avisos || avisos.length === 0 ? (
         <div className="mt-7">
@@ -62,16 +80,21 @@ export default async function MisPropiedades() {
                       <span className="cifra text-tinta-45 text-[13px]">{aviso.code}</span>
                     </div>
 
-                    <Link
-                      href={`/panel/mis-propiedades/${aviso.id}`}
-                      className="text-tinta hover:text-fucsia text-[17px] font-bold"
-                    >
-                      {aviso.title}
-                    </Link>
+                    {/* Solo lo publicado tiene ficha pública que enlazar. */}
+                    {aviso.publication_status === 'published' ? (
+                      <Link
+                        href={enlaceDeAviso(aviso)}
+                        className="text-tinta hover:text-fucsia text-[17px] font-bold"
+                      >
+                        {aviso.title}
+                      </Link>
+                    ) : (
+                      <span className="text-tinta text-[17px] font-bold">{aviso.title}</span>
+                    )}
 
                     <p className="text-tinta-60 mt-1 text-[14px]">
                       {TIPO_INMUEBLE[aviso.property_type]} en {aviso.district} ·{' '}
-                      {OPERACION[aviso.operation]} · publicado el {fechaCorta(aviso.created_at)}
+                      {OPERACION[aviso.operation]} · creado el {fechaCorta(aviso.created_at)}
                     </p>
                   </div>
 
@@ -93,6 +116,12 @@ export default async function MisPropiedades() {
                   <span className="cifra text-tinta font-bold">{aviso.inquiries_count}</span>{' '}
                   consultas
                 </p>
+
+                <AccionesDelAviso
+                  avisoId={aviso.id}
+                  estado={aviso.publication_status}
+                  motivoRechazo={aviso.rejection_reason}
+                />
               </Tarjeta>
             </li>
           ))}

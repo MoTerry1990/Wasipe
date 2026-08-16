@@ -77,6 +77,7 @@ export const ESTADO_PUBLICACION: Record<EstadoPublicacion, string> = {
   rejected: 'Rechazado',
   paused: 'Pausado',
   expired: 'Vencido',
+  archived: 'Archivado',
 };
 
 export const ESTADO_VERIFICACION: Record<EstadoVerificacion, string> = {

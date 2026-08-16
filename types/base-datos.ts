@@ -32,7 +32,26 @@ export type TipoInmueble =
   | 'building';
 export type Moneda = 'PEN' | 'USD';
 export type EstadoPublicacion =
-  'draft' | 'in_review' | 'published' | 'rejected' | 'paused' | 'expired';
+  'draft' | 'in_review' | 'published' | 'rejected' | 'paused' | 'expired' | 'archived';
+
+/**
+ * Aviso a medio llenar en el asistente de publicación.
+ *
+ * Vive fuera de `properties` porque un aviso sin título, sin precio y
+ * sin distrito no puede entrar ahí: aflojar esas restricciones para
+ * guardar borradores sería pagar la integridad de todos los avisos
+ * publicados por poder guardar uno incompleto.
+ */
+export type BorradorGuardado = {
+  id: string;
+  user_id: string;
+  agency_id: string | null;
+  property_id: string | null;
+  datos: Json;
+  paso: number;
+  created_at: string;
+  updated_at: string;
+};
 export type EstadoVerificacion = 'unverified' | 'in_progress' | 'verified' | 'rejected';
 export type PrivacidadDireccion = 'exact' | 'approximate' | 'district_only';
 export type Amoblado = 'none' | 'partial' | 'full';
@@ -162,6 +181,11 @@ export type Propiedad = {
   updated_at: string;
   published_at: string | null;
   expires_at: string | null;
+  submitted_at: string | null;
+  reviewed_at: string | null;
+  reviewed_by: string | null;
+  archived_at: string | null;
+  price_dropped_at: string | null;
   /** Columna generada por la base. Solo lectura. */
   price_per_m2: number | null;
 };
@@ -200,6 +224,10 @@ export type MedioPropiedad = {
   ai_edited: boolean;
   original_media_id: string | null;
   ai_job_id: string | null;
+  /** El archivo tal como lo subieron. Nunca se borra mientras exista el aviso. */
+  original_storage_path: string | null;
+  original_bytes: number | null;
+  bytes: number | null;
   created_at: string;
   /** 'Imagen modificada con Wasi AI' cuando ai_edited. La genera la base. */
   ai_label: string | null;
@@ -446,6 +474,12 @@ export type Database = {
         Row: MiembroAgencia;
         Insert: Alta<MiembroAgencia, 'agency_id' | 'user_id'>;
         Update: Partial<MiembroAgencia>;
+        Relationships: [];
+      };
+      listing_drafts: {
+        Row: BorradorGuardado;
+        Insert: Alta<BorradorGuardado, 'user_id'>;
+        Update: Partial<BorradorGuardado>;
         Relationships: [];
       };
       properties: {

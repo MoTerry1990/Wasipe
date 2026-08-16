@@ -135,6 +135,34 @@ comparte entre procesos.
 Las estadísticas del aviso (`lead_events`) no guardan IP, correo, teléfono ni
 identificador de persona: solo un hash de sesión que caduca a los 30 días.
 
+## Publicar un aviso
+
+El asistente de `/publicar` tiene diez pasos y guarda solo cada pocos segundos.
+El borrador vive en la base (`listing_drafts`), no en el navegador: recargar,
+cerrar la pestaña o seguir desde el celular no pierde nada.
+
+No está en `properties` a propósito. Un aviso a medio llenar no tiene título ni
+precio ni distrito, y esa tabla exige las tres cosas; aflojarlas para poder
+guardar borradores sería pagar la integridad de todos los avisos publicados por
+poder guardar uno incompleto. Al enviarse, el borrador se valida y recién ahí se
+convierte en una fila de `properties`.
+
+Se puede navegar libremente entre pasos aunque falten datos — obligar a
+completar en orden es lo que hace que alguien abandone en el paso 3. Lo que sí
+está bloqueado es el envío: hasta que no esté todo, el botón no habilita y se
+dice exactamente qué falta y en qué paso.
+
+**Las fotos se comprimen en el navegador** (1920 px de lado mayor, WebP, calidad
+0,82) y suben directo a Storage, sin pasar por el servidor. **El archivo original
+sube igual**, a una subcarpeta `original/` que la política de storage no deja
+borrar: se conserva mientras exista el aviso.
+
+**Publicar no se puede saltar la moderación.** Un aviso nace en `in_review` y
+solo moderación puede pasarlo a `published`; el trigger de la base lo rechaza
+aunque la petición llegue directo a la API. Los seis estados son `draft`,
+`in_review`, `published`, `rejected`, `paused` y `archived`. Un rechazo sin un
+motivo de al menos diez caracteres no se guarda.
+
 ## Variables de entorno
 
 Copiar `.env.example` a `.env` y completar. Ninguna clave real se sube al

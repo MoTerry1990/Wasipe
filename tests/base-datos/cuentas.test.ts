@@ -161,12 +161,15 @@ describe('almacenamiento de imágenes', () => {
       file_size_limit: string;
       allowed_mime_types: string[];
     }>(
-      `select id, public, file_size_limit, allowed_mime_types from storage.buckets order by id`,
+      `select id, public, file_size_limit, allowed_mime_types
+         from storage.buckets where id in ('avatares', 'logos') order by id`,
     );
 
     expect(rows.map((r) => r.id)).toEqual(['avatares', 'logos']);
     for (const cubeta of rows) {
       expect(cubeta.public).toBe(true);
+      // Dos megas: una foto de perfil bien comprimida no llega ni a 200 KB.
+      // La cubeta de las fotos de avisos tiene su propio límite, más alto.
       expect(Number(cubeta.file_size_limit)).toBe(2 * 1024 * 1024);
     }
     // El SVG puede traer scripts: sirve para un logo, no para un avatar.
