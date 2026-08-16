@@ -2,8 +2,10 @@ import {
   FallaDeProveedor,
   IA_NO_DISPONIBLE,
   IMAGEN_NO_DISPONIBLE,
+  VIDEO_NO_DISPONIBLE,
   type ProveedorDeIA,
   type ProveedorDeImagen,
+  type ProveedorDeVideo,
 } from '@/lib/ia/proveedor';
 
 /**
@@ -32,6 +34,21 @@ export function proveedorImagenNinguno(motivo = 'sin proveedor de imagen'): Prov
     soporta: () => false,
     async editarImagen() {
       throw new FallaDeProveedor(IMAGEN_NO_DISPONIBLE, motivo, false);
+    },
+  };
+}
+
+/** Y para el video: sin proveedor, se comparte el enlace del aviso. */
+export function proveedorVideoNinguno(motivo = 'sin proveedor de video'): ProveedorDeVideo {
+  return {
+    nombre: 'ninguno',
+    disponible: () => false,
+    soporta: () => false,
+    async encolar() {
+      throw new FallaDeProveedor(VIDEO_NO_DISPONIBLE, motivo, false);
+    },
+    async consultar() {
+      throw new FallaDeProveedor(VIDEO_NO_DISPONIBLE, motivo, false);
     },
   };
 }

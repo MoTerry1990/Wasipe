@@ -90,6 +90,11 @@ export type TipoEdicionMedio =
   | 'wall_color'
   | 'declutter';
 
+export type FormatoDeVideo = 'vertical' | 'square' | 'horizontal';
+export type PlantillaDeVideo = 'modern' | 'premium' | 'minimal' | 'reel';
+export type EstadoDeVideo =
+  'queued' | 'rendering' | 'ready' | 'failed' | 'canceled' | 'expired';
+
 /** Revisión de seguridad de moderación. 'blocked' oculta sin borrar. */
 export type EstadoRevisionMedio =
   'not_required' | 'pending' | 'cleared' | 'flagged' | 'blocked';
@@ -406,8 +411,49 @@ export type TrabajoIA = {
   max_attempts: number;
   next_attempt_at: string | null;
   provider_cost_micros: number | null;
+  /** 0 a 100. Solo sube: un progreso que retrocede confunde. */
+  progress: number;
+  /** Créditos apartados al empezar. Un render que falla los devuelve. */
+  reserved_credits: number;
+  canceled_at: string | null;
+  /** Identificador del render en el proveedor, para preguntarle cómo va. */
+  provider_ref: string | null;
   created_at: string;
   started_at: string | null;
+  finished_at: string | null;
+};
+
+/**
+ * Un render de video del aviso.
+ *
+ * `facts` guarda lo que el video dice, congelado al renderizar: el aviso
+ * puede cambiar de precio después y el archivo ya salió por WhatsApp.
+ */
+export type VideoDeAviso = {
+  id: string;
+  property_id: string;
+  ai_job_id: string | null;
+  created_by: string;
+  format: FormatoDeVideo;
+  template: PlantillaDeVideo;
+  status: EstadoDeVideo;
+  facts: Json;
+  narration: string | null;
+  music_track: string | null;
+  captions: boolean;
+  storage_path: string | null;
+  poster_path: string | null;
+  duration_ms: number | null;
+  bytes: number | null;
+  provider: string | null;
+  provider_ref: string | null;
+  provider_cost_micros: number | null;
+  /** Un video con un precio viejo engaña: vencido no se descarga. */
+  expires_at: string | null;
+  downloads: number;
+  last_downloaded_at: string | null;
+  error: string | null;
+  created_at: string;
   finished_at: string | null;
 };
 
@@ -616,6 +662,12 @@ export type Database = {
         Update: Partial<TrabajoIA>;
         Relationships: [];
       };
+      property_videos: {
+        Row: VideoDeAviso;
+        Insert: Alta<VideoDeAviso, 'property_id' | 'created_by' | 'format' | 'template'>;
+        Update: Partial<VideoDeAviso>;
+        Relationships: [];
+      };
       audit_logs: {
         Row: RegistroAuditoria;
         Insert: Alta<RegistroAuditoria, 'action' | 'entity'>;
@@ -741,6 +793,41 @@ export type Database = {
         };
         Returns: MedioPropiedad;
       };
+      /** Aparta créditos antes de un render largo. */
+      reservar_creditos_ia: {
+        Args: { p_job_id: string; p_creditos: number };
+        Returns: TrabajoIA;
+      };
+      /** Devuelve lo apartado. Idempotente: no regala créditos. */
+      devolver_creditos_ia: {
+        Args: { p_job_id: string; p_motivo?: string };
+        Returns: number;
+      };
+      /** Cierra bien un trabajo con reserva: la convierte en costo. */
+      terminar_trabajo_reservado: {
+        Args: {
+          p_job_id: string;
+          p_output: Json;
+          p_provider: string;
+          p_model: string;
+          p_duration_ms?: number | null;
+          p_provider_cost_micros?: number | null;
+        };
+        Returns: TrabajoIA;
+      };
+      /** Cuánto va del render. Solo sube. */
+      avanzar_trabajo_ia: {
+        Args: { p_job_id: string; p_progreso: number; p_provider_ref?: string | null };
+        Returns: TrabajoIA;
+      };
+      /** Cancela y devuelve lo reservado entero. */
+      cancelar_trabajo_ia: { Args: { p_job_id: string }; Returns: TrabajoIA };
+      /** Listo + no vencido + administra el aviso. */
+      puede_descargar_video: { Args: { p_video_id: string }; Returns: boolean };
+      /** La ruta del archivo, solo si corresponde entregarla. */
+      registrar_descarga_de_video: { Args: { p_video_id: string }; Returns: string | null };
+      /** Marca vencidos los videos que pasaron su fecha. */
+      vencer_videos: { Args: Record<string, never>; Returns: VideoDeAviso[] };
       /** Marca o bloquea una imagen editada. Solo moderación; nunca borra. */
       revisar_foto: {
         Args: {
@@ -762,6 +849,9 @@ export type Database = {
       verification_status: EstadoVerificacion;
       media_edit_kind: TipoEdicionMedio;
       media_review_status: EstadoRevisionMedio;
+      video_format: FormatoDeVideo;
+      video_template: PlantillaDeVideo;
+      video_status: EstadoDeVideo;
     };
   };
 };

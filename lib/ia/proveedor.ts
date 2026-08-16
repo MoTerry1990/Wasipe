@@ -130,3 +130,60 @@ export type ProveedorDeImagen = {
   soporta(operacion: string): boolean;
   editarImagen(peticion: PeticionDeImagen): Promise<RespuestaDeImagen>;
 };
+
+// ---------------------------------------------------------------------
+// Video
+//
+// Tercer contrato, y el más distinto de los tres: renderizar tarda
+// minutos, así que no es «pide y espera» sino encolar, preguntar cómo va
+// y poder cancelar. Esa forma —encolar/consultar/cancelar— es la que
+// tienen por igual una API externa, un servidor propio con Remotion y un
+// binario de ffmpeg corriendo en una máquina nuestra. Por eso el contrato
+// es ese y no una llamada bloqueante: para que los tres entren sin que
+// Wasipe se entere de cuál está detrás.
+// ---------------------------------------------------------------------
+
+export type PeticionDeVideo = {
+  /** El guion completo, ya armado por Wasipe. El proveedor solo lo pinta. */
+  guion: unknown;
+  formato: string;
+  plantilla: string;
+  ancho: number;
+  alto: number;
+  /** Para que el proveedor no rehaga un render que ya hizo. */
+  idempotencia: string;
+};
+
+export type ArchivoRenderizado = {
+  /** Descarga directa. El servidor la baja y la guarda en su cubeta. */
+  url: string;
+  tipo: string;
+  bytes?: number;
+};
+
+export type EstadoDeRender =
+  | { estado: 'trabajando'; progreso: number }
+  | {
+      estado: 'listo';
+      video: ArchivoRenderizado;
+      portada?: ArchivoRenderizado;
+      duracionMs?: number;
+      costoMicros?: number;
+    }
+  | { estado: 'falla'; detalle: string; reintentable: boolean };
+
+export type ProveedorDeVideo = {
+  nombre: string;
+  disponible(): boolean;
+  soporta(formato: string, plantilla: string): boolean;
+  /** Encola el render y devuelve la referencia con la que se le pregunta. */
+  encolar(peticion: PeticionDeVideo): Promise<{ referencia: string }>;
+  /** Cómo va. Se llama cada pocos segundos mientras la persona espera. */
+  consultar(referencia: string): Promise<EstadoDeRender>;
+  /** Cancelar en el proveedor. Opcional: no todos lo permiten. */
+  cancelar?(referencia: string): Promise<void>;
+};
+
+/** Sin proveedor de video, publicar y compartir el aviso sigue igual. */
+export const VIDEO_NO_DISPONIBLE =
+  'El video automático de Wasi AI no está disponible en este momento. Puedes compartir el enlace de tu aviso, que muestra todas las fotos.';

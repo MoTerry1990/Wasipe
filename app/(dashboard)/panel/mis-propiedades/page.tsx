@@ -123,12 +123,20 @@ export default async function MisPropiedades({
                   motivoRechazo={aviso.rejection_reason}
                 />
 
-                <Link
-                  href={`/panel/mis-propiedades/${aviso.code}/fotos`}
-                  className="text-turquesa-osc mt-3 inline-block text-[13.5px] font-bold underline"
-                >
-                  Fotos y Wasi AI
-                </Link>
+                <div className="mt-3 flex flex-wrap gap-4">
+                  <Link
+                    href={`/panel/mis-propiedades/${aviso.code}/fotos`}
+                    className="text-turquesa-osc text-[13.5px] font-bold underline"
+                  >
+                    Fotos y Wasi AI
+                  </Link>
+                  <Link
+                    href={`/panel/mis-propiedades/${aviso.code}/video`}
+                    className="text-turquesa-osc text-[13.5px] font-bold underline"
+                  >
+                    Hacer un video
+                  </Link>
+                </div>
               </Tarjeta>
             </li>
           ))}

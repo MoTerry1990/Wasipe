@@ -40,9 +40,9 @@ const FUNCIONES = [
   },
   {
     titulo: 'Video automático',
-    estado: 'Muy pronto',
+    estado: 'En pruebas',
     texto:
-      'Arma un recorrido en video con tus fotos, listo para compartir por WhatsApp o redes.',
+      'Arma un video con tus fotos y los datos de tu aviso —precio, distrito, metros, ambientes— en vertical, cuadrado u horizontal, listo para WhatsApp y redes. La cámara no recorre el inmueble: cada foto se muestra por separado, porque un recorrido continuo daría a entender una distribución que nadie verificó.',
   },
   {
     titulo: 'Búsqueda en lenguaje natural',
@@ -99,6 +99,10 @@ export default function WasiAI() {
           <li>
             · Wasi AI no agrega ni quita ambientes, ventanas o puertas, no cambia las medidas
             del inmueble y no toca lo que se ve por la ventana.
+          </li>
+          <li>
+            · En el video, la cámara no recorre el inmueble y la narración se arma con los
+            campos de tu aviso: no puede decir nada que tú no hayas cargado.
           </li>
           <li>· Ninguna sugerencia se publica sin tu confirmación.</li>
           <li>

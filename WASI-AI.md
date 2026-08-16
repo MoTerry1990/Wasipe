@@ -23,9 +23,20 @@ adaptadores viven en `lib/ia/proveedores/` y se eligen con una variable
 de entorno:
 
 ```
-IA_PROVEEDOR=anthropic     # el que hay hoy
-IA_PROVEEDOR=ninguno       # apaga Wasi AI a propósito
+IA_PROVEEDOR=anthropic          # texto: el que hay hoy
+IA_PROVEEDOR=ninguno            # apaga la redacción a propósito
+
+IA_PROVEEDOR_IMAGEN=http        # fotos: cualquier endpoint HTTP
+IA_PROVEEDOR_IMAGEN=ninguno     # apagado (por defecto)
+
+IA_PROVEEDOR_VIDEO=http         # video: API externa, Remotion o ffmpeg propio
+IA_PROVEEDOR_VIDEO=ninguno      # apagado (por defecto)
 ```
+
+**Los tres se eligen por separado**, porque casi nunca es la misma empresa
+la que mejor escribe en castellano, la que mejor amuebla una sala y la que
+mejor renderiza video. Que uno esté configurado y los otros no es normal y
+no rompe nada.
 
 **Agregar un proveedor** es escribir un archivo en `lib/ia/proveedores/`
 que devuelva un `ProveedorDeIA` y sumar una línea al mapa de
@@ -137,15 +148,259 @@ de aceptado o descartado.
 
 ## 5. Qué está construido y qué no
 
-| Función                     | Estado                                                |
-| --------------------------- | ----------------------------------------------------- |
+| Función | Estado |
+| --- | --- |
 | Redacción del aviso (título, descripción, mejorar) | Construida. Nunca corrió contra un proveedor real: falta la clave y falta el proyecto de Supabase. |
-| Mejora de fotos             | No empezada                                           |
-| Ambientación virtual        | No empezada                                           |
-| Video automático            | No empezada                                           |
-| Estimación de precio        | No empezada                                           |
-| Búsqueda en lenguaje natural| No empezada                                           |
+| Mejora de fotos (luz, color, perspectiva, resolución, orden) | Construida. Mismo caso: falta el endpoint del proveedor. |
+| Ambientación virtual (amoblar, estilo, color de pared) | Construida. Mismo caso. |
+| Video automático (3 formatos, 4 plantillas, narración) | Construida. Mismo caso. |
+| Estimación de precio | No empezada |
+| Búsqueda en lenguaje natural | No empezada |
 
-La página pública `/wasi-ai` dice exactamente esto. Mientras la
-redacción no se haya probado end to end contra un proveedor de verdad,
-aparece marcada «En pruebas», no «Disponible».
+La página pública `/wasi-ai` dice exactamente esto. Mientras algo no se
+haya probado end to end contra un proveedor de verdad, aparece marcado
+«En pruebas», no «Disponible».
+
+
+---
+
+# Fotos: mejora y amoblamiento virtual
+
+## 6. Ocho herramientas y ni una más
+
+`lib/ia/imagenes.ts` tiene el catálogo completo. Es cerrado a propósito: el
+enumerado `media_edit_kind` de la base tiene los mismos ocho valores, así
+que agregar una novena operación obliga a pasar por una migración que
+alguien tenga que leer.
+
+| Clave | Qué hace | Créditos |
+| --- | --- | --- |
+| `lighting` | Luz: sombras y zonas quemadas | 1 |
+| `white_balance` | Color: quita la dominante de la luz artificial | 1 |
+| `perspective` | Endereza verticales sin agrandar el ambiente | 1 |
+| `upscale` | Más resolución, sin inventar detalle | 2 |
+| `declutter` | Quita objetos personales **movibles** | 2 |
+| `wall_color` | Cómo quedaría pintado | 2 |
+| `style` | Otra decoración sobre el mismo ambiente | 3 |
+| `staging` | Amoblado virtual de un ambiente vacío | 4 |
+
+Las cuatro últimas muestran algo que no existe, así que llevan otra
+etiqueta. Ver la sección 9.
+
+## 7. Las seis prohibiciones de las fotos
+
+`REGLAS` viaja en **todas** las peticiones, sin importar qué se haya
+pedido. Cada una tiene su prueba en `tests/unidad/imagenes.test.ts`:
+
+| Prohibido | Por qué |
+| --- | --- |
+| Reparar, cubrir o disimular daños (humedad, moho, rajaduras, filtraciones) | Es el engaño que más caro le sale a quien compra. |
+| Agregar, quitar o agrandar ambientes, ventanas, puertas, escaleras | La cantidad y la posición son las que son. |
+| Cambiar dimensiones o proporciones | Nada de lente ancho ni de estirar para que se vea más grande. |
+| Tocar lo que se ve por la ventana o fuera del inmueble | El vecino, la calle, los postes y los cables quedan tal cual. |
+| Agregar instalaciones permanentes que no existen | Salvo que se haya pedido una visualización, y esa lleva su etiqueta. |
+| Meter personas, mascotas, marcas de agua, logos o texto | |
+
+Y el cierre: *«si lo que se te pide choca con alguna de estas reglas,
+devuelve la imagen sin cambios»*. Una foto sin mejorar es mejor que una
+foto que miente.
+
+## 8. La foto original no se toca. Nunca.
+
+Cuatro cerrojos, en cuatro capas distintas:
+
+1. **Storage.** La política de UPDATE de la cubeta `avisos` excluye la
+   subcarpeta `original/`, igual que la de DELETE desde el sprint 8. No se
+   sobrescribe ni se borra, ni desde la aplicación ni hablando directo con
+   la API de storage.
+2. **La fila.** El disparador `property_media_original_protegido` rechaza
+   cualquier cambio de `original_storage_path` una vez puesto, y rechaza
+   convertir un original en edición.
+3. **La llave foránea.** `original_media_id` pasó de `on delete set null` a
+   `on delete restrict`: borrar la original dejaría a la edición huérfana y
+   sin con qué comparar.
+4. **El destino.** Lo que sale de la IA se sube a `avisos/<aviso>/ia/…`,
+   una carpeta aparte. Nunca a la ruta de una foto que ya existe.
+
+Una edición **agrega** una fila; no reemplaza ninguna. Va al final del
+orden y nunca de portada.
+
+## 9. La etiqueta, otra vez generada por la base
+
+`property_media.ai_label` es una columna generada con dos textos:
+
+```sql
+case
+  when is_staged then 'Amoblamiento virtual — imagen referencial'
+  when ai_edited then 'Imagen modificada con Wasi AI'
+  else null
+end
+```
+
+Ninguna vista puede olvidarse de pintarla, y no se puede escribir a mano:
+Postgres rechaza el UPDATE. La restricción `edicion_declara_que_hizo`
+además impide que exista una imagen editada que no diga **qué** se le hizo.
+
+## 10. Antes y después, y las tres vistas
+
+- **Quien publica** ve el comparador (`features/wasi-ai/comparador.tsx`)
+  antes de decidir: dos imágenes superpuestas y una línea que se arrastra.
+  El control es un deslizador nativo invisible, no un gestor de arrastre:
+  así funciona con el dedo, con el teclado y con lector de pantalla, y no
+  pelea con el desplazamiento de la página en un teléfono.
+- **Quien mira el aviso** no ve la misma sala tres veces: las versiones se
+  agrupan con su original y aparece un selector **Original · Mejorada ·
+  Amoblada** (`agruparVariantes()`, probado aparte de la interfaz). La
+  etiqueta de la versión elegida se pinta siempre.
+
+## 11. Confirmación, cola y revisión de imágenes
+
+**Confirmar es obligatorio.** `adjuntar_foto_editada()` exige que el
+trabajo esté en `succeeded`, sea de quien lo pide y **ya tenga
+`accepted_at`**. Y por si alguien intentara insertar la fila a mano —la
+política de `property_media` es `FOR ALL`— el disparador
+`property_media_edicion_confirmada` exige lo mismo.
+
+**Reintentos.** `ai_jobs` lleva `attempts` / `max_attempts` (3 por
+defecto); el contador lo lleva la base con un disparador, no quien llama.
+`reintentar_trabajo_ia()` devuelve NULL cuando se acabaron, y el editor lo
+dice con todas sus letras en vez de reintentar para siempre. Una negativa
+de moderación del proveedor (HTTP 422) **no** se reintenta: diría lo
+mismo. Ningún intento fallido cobra.
+
+**Costo real.** `ai_jobs.provider_cost_micros` y
+`property_media.provider_cost_micros` guardan lo que costó en el proveedor,
+en millonésimas de dólar, aparte de `cost_credits`, que es lo que se le
+cobró a la persona.
+
+**Revisión de seguridad.** Toda imagen generada nace en `pending`.
+Moderación la revisa en `/panel/moderacion/imagenes`, viendo el original al
+lado, y puede dejarla pasar, observarla o retirarla —con motivo obligatorio
+en los dos últimos casos—. **Retirar no borra**: la fila y el archivo se
+quedan, la imagen deja de verse para el público, y quien publica ve en su
+panel que fue retirada y por qué. Si mañana hay un reclamo, la prueba está.
+
+---
+
+# Video automático del aviso
+
+## 12. Tres contratos, no uno
+
+`lib/ia/proveedor.ts` tiene tres interfaces independientes, y el video es
+la más distinta de las tres. Renderizar tarda minutos, así que no es
+«pide y espera»:
+
+```ts
+type ProveedorDeVideo = {
+  encolar(peticion): Promise<{ referencia: string }>;
+  consultar(referencia): Promise<EstadoDeRender>;
+  cancelar?(referencia): Promise<void>;
+};
+```
+
+Esa forma es la que tienen por igual **una API externa de render**, **un
+servidor propio con Remotion** y **una máquina nuestra con ffmpeg detrás
+de un proceso web**. Por eso el adaptador que se incluye —`video-http`—
+sirve para los tres: el contrato HTTP está documentado en
+`lib/ia/proveedores/video-http.ts` y quien quiera enchufar lo suyo pone
+un proceso delante que lo hable.
+
+## 13. Formatos y zonas seguras
+
+| Formato | Píxeles | Para | Margen inferior seguro |
+| --- | --- | --- | --- |
+| Vertical 9:16 | 1080×1920 | Historias, Reels, TikTok | 420 px |
+| Cuadrado 1:1 | 1080×1080 | Feed | 110 px |
+| Horizontal 16:9 | 1920×1080 | YouTube, web | 90 px |
+
+El margen inferior del vertical es enorme a propósito: TikTok e Instagram
+pintan el nombre de la cuenta, la descripción y los botones **encima** del
+video. Un precio que cae ahí queda tapado justo en el formato que más se
+comparte. `textoEntraEnZonaSegura()` lo comprueba, y hay una prueba por
+cada formato y cada plantilla.
+
+En el estudio, la previa dibuja esa zona en proporción exacta: si un texto
+se sale del recuadro punteado en pantalla, se sale también en el video.
+
+## 14. Cuatro plantillas
+
+| Plantilla | Duración por foto | Narración | Créditos |
+| --- | --- | --- | --- |
+| Mínima | 3 s | No | 5 |
+| Reel rápido | 1,6 s | No | 6 |
+| Moderna | 3 s | Sí | 8 |
+| Premium | 4 s | Sí | 12 |
+
+## 15. La cámara no recorre el inmueble
+
+Es la prohibición de este sprint, y es de la misma familia que las seis de
+las fotos. Un recorrido continuo entre fotos sueltas insinúa una
+distribución que nadie verificó: que la cocina da a la sala, que hay un
+pasillo ahí. Por eso:
+
+- Los únicos movimientos permitidos son `fijo`, `acercar` y `alejar`,
+  **dentro de una misma foto**.
+- El acercamiento tiene tope duro: `ACERCAMIENTO_MAXIMO = 1.06`. Un 6%
+  alcanza para que la imagen no se sienta congelada y no alcanza para
+  insinuar que alguien está caminando.
+- `MOVIMIENTOS_PROHIBIDOS` enumera lo que no se hace —recorridos,
+  paneos, parallax 3D, transiciones de «atravesar una puerta»— y la
+  pantalla se lo muestra a quien publica, con el motivo.
+
+## 16. La narración no puede mentir
+
+No hay un modelo escribiendo la narración: `armarNarracion()` rellena una
+plantilla con los campos del aviso. Cada frase se rastrea a una columna, y
+un dato que falta simplemente no aparece — nunca se rellena con una
+suposición. No hay adjetivos de venta: ni «excelente ubicación», ni «zona
+tranquila», ni «oportunidad única». Una prueba comprueba que **toda cifra
+de la narración está entre las del aviso**.
+
+Como `armarGuion()` es determinista, la **vista previa** que se ve antes
+de gastar un crédito no es una aproximación: es el mismo guion que va a
+recibir quien renderiza.
+
+## 17. Reserva, devolución, cancelación
+
+Renderizar tarda minutos, así que cobrar al final no sirve: dos pedidos en
+paralelo con saldo para uno solo se colarían los dos.
+
+```
+reservar_creditos_ia()   →  encolar  →  terminar_trabajo_reservado()
+   movimiento negativo        …             la reserva se convierte
+   real en el libro mayor                   en costo, sin cobrar otra vez
+
+                falla o cancelación
+                          ↓
+              devolver_creditos_ia()   ← movimiento positivo
+```
+
+- El libro mayor sigue siendo de **solo inserción**: la historia queda
+  legible como «reserva» y luego «devolución», sin editar ni borrar nada.
+- `devolver_creditos_ia()` es **idempotente**: toma la fila con
+  `for update` y pone la reserva en cero en la misma transacción.
+- La restricción `sin_reserva_al_cerrar` impide que exista en la base un
+  trabajo cerrado que se quedó con la reserva: eso sería un cobro
+  silencioso.
+- **Cancelar devuelve todo.** Un render a medias no se cobra: lo que se
+  lleva la persona es nada.
+- `avanzar_trabajo_ia()` sube el progreso y **nunca lo baja**.
+
+## 18. Descarga autorizada y vencimiento
+
+La cubeta `videos` es **privada**. No hay URL pública que reenviar: el
+archivo se entrega con un enlace firmado de 5 minutos, y solo después de
+que `registrar_descarga_de_video()` diga que sí. Esa función exige tres
+cosas a la vez: que el video esté listo, que no haya vencido, y que quien
+lo pide administre el aviso.
+
+Los videos **caducan a los 90 días**. Un video con el precio de hace medio
+año circulando por WhatsApp es un problema, y no se puede recuperar del
+teléfono de nadie — pero sí se puede dejar de repartir. `vencer_videos()`
+los marca; borrar el archivo es cosa de la tarea programada, separada a
+propósito para que marcar sea barato y borrar pueda reintentarse.
+
+Cada render guarda además `facts`: lo que el video decía, congelado. El
+aviso puede cambiar de precio después; el archivo ya salió. Guardar lo que
+decía es lo único que permite, meses más tarde, responder «el aviso cambió
+el 3 de setiembre, el video es de antes».

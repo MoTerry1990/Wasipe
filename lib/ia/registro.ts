@@ -1,8 +1,13 @@
 import 'server-only';
-import type { ProveedorDeIA, ProveedorDeImagen } from '@/lib/ia/proveedor';
+import type { ProveedorDeIA, ProveedorDeImagen, ProveedorDeVideo } from '@/lib/ia/proveedor';
 import { proveedorAnthropic } from '@/lib/ia/proveedores/anthropic';
 import { proveedorImagenHttp } from '@/lib/ia/proveedores/imagen-http';
-import { proveedorNinguno, proveedorImagenNinguno } from '@/lib/ia/proveedores/ninguno';
+import { proveedorVideoHttp } from '@/lib/ia/proveedores/video-http';
+import {
+  proveedorNinguno,
+  proveedorImagenNinguno,
+  proveedorVideoNinguno,
+} from '@/lib/ia/proveedores/ninguno';
 
 /**
  * Qué proveedor de IA usa Wasipe hoy.
@@ -101,8 +106,53 @@ export function imagenDisponible(): boolean {
   return proveedorDeImagen().disponible();
 }
 
+// ---------------------------------------------------------------------
+// Proveedor de video
+//
+// El tercero, y también independiente. El mismo adaptador `http` sirve
+// para una API externa, para un servidor propio con Remotion y para una
+// máquina nuestra con ffmpeg: lo único que Wasipe pide es que sepa
+// encolar, decir cómo va y —si puede— cancelar.
+// ---------------------------------------------------------------------
+
+const FABRICAS_DE_VIDEO: Record<string, () => ProveedorDeVideo> = {
+  http: proveedorVideoHttp,
+  ninguno: () => proveedorVideoNinguno(),
+};
+
+export const PROVEEDORES_DE_VIDEO = Object.keys(FABRICAS_DE_VIDEO);
+
+export const PROVEEDOR_DE_VIDEO_POR_DEFECTO = 'ninguno';
+
+let memoriaDeVideo: ProveedorDeVideo | null = null;
+
+export function proveedorDeVideo(): ProveedorDeVideo {
+  if (memoriaDeVideo) return memoriaDeVideo;
+
+  const elegido = process.env.IA_PROVEEDOR_VIDEO?.trim() || PROVEEDOR_DE_VIDEO_POR_DEFECTO;
+  const fabrica = FABRICAS_DE_VIDEO[elegido];
+
+  if (!fabrica) {
+    console.warn(
+      `[wasi-ai] IA_PROVEEDOR_VIDEO="${elegido}" no existe. El video queda apagado.`,
+    );
+    const apagado = proveedorVideoNinguno(`proveedor desconocido: ${elegido}`);
+    memoriaDeVideo = apagado;
+    return apagado;
+  }
+
+  memoriaDeVideo = fabrica();
+  return memoriaDeVideo;
+}
+
+/** ¿Se le puede ofrecer el video automático a la persona? */
+export function videoDisponible(): boolean {
+  return proveedorDeVideo().disponible();
+}
+
 /** Solo para las pruebas: olvida los proveedores memorizados. */
 export function olvidarProveedor(): void {
   memoria = null;
   memoriaDeImagen = null;
+  memoriaDeVideo = null;
 }
