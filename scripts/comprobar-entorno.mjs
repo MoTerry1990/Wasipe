@@ -11,6 +11,48 @@
  *   node scripts/comprobar-entorno.mjs
  */
 
+import { readFileSync, existsSync } from 'node:fs';
+import { join } from 'node:path';
+
+/**
+ * Lee `.env.local` además del entorno del proceso.
+ *
+ * Node no carga ese archivo solo, así que sin esto el script decía que
+ * faltaba todo aunque estuviera completo. Un verificador que no puede
+ * verificar es peor que ninguno: da confianza falsa en las dos
+ * direcciones.
+ *
+ * Los valores se leen para poder decir cuántos caracteres tienen. No se
+ * imprimen nunca.
+ */
+function cargarEnvLocal() {
+  const ruta = join(process.cwd(), '.env.local');
+  if (!existsSync(ruta)) return { encontrado: false };
+
+  for (const linea of readFileSync(ruta, 'utf8').split(/\r?\n/)) {
+    const limpia = linea.trim();
+    if (!limpia || limpia.startsWith('#')) continue;
+
+    const corte = limpia.indexOf('=');
+    if (corte < 1) continue;
+
+    const nombre = limpia.slice(0, corte).trim();
+    // Se quitan las comillas si alguien las pegó junto con el valor.
+    const valor = limpia
+      .slice(corte + 1)
+      .trim()
+      .replace(/^["']|["']$/g, '');
+
+    // El entorno del proceso manda: si alguien exportó la variable a
+    // mano, es la que va a usar la aplicación.
+    if (valor && !process.env[nombre]) process.env[nombre] = valor;
+  }
+
+  return { encontrado: true };
+}
+
+const envLocal = cargarEnvLocal();
+
 const VARIABLES = [
   // [nombre, obligatoria, publicaAProposito, para qué]
   ['NEXT_PUBLIC_SUPABASE_URL', true, true, 'Dirección del proyecto de Supabase'],
