@@ -25,3 +25,23 @@ wasipe-deploy.zip
 
 *.log
 .DS_Store
+
+# Copias de seguridad de la base. Un volcado trae datos de personas
+# reales y, en el peor caso, la cadena de conexión adentro.
+*.dump
+*.sql.gz
+copia-*.sql
+backup-*.sql
+respaldo-*.sql
+
+# Claves y certificados. Ninguno debería existir acá, pero si alguien
+# genera uno, que no se pueda subir por accidente.
+*.pem
+*.key
+*.p12
+*.pfx
+id_rsa*
+
+# Enlaces a proyectos de servicios externos
+.supabase/
+.sentryclirc
