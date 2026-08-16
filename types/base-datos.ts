@@ -212,9 +212,32 @@ export type Favorito = {
   created_at: string;
 };
 
+export type TipoConsulta = 'message' | 'visit';
+
+export type TipoEventoLead =
+  | 'phone_reveal'
+  | 'whatsapp'
+  | 'contact_form'
+  | 'visit_request'
+  | 'share'
+  | 'compare'
+  | 'favorite';
+
+/** Interacción con un aviso. Sin datos personales: solo un hash de sesión. */
+export type EventoLead = {
+  id: number;
+  property_id: string;
+  kind: TipoEventoLead;
+  session_hash: string | null;
+  source: string | null;
+  created_at: string;
+};
+
 export type Consulta = {
   id: string;
   property_id: string;
+  kind: TipoConsulta;
+  preferred_visit_at: string | null;
   /** Lo fija un trigger a partir del aviso: no se envía. */
   owner_id: string;
   sender_id: string | null;
@@ -471,6 +494,12 @@ export type Database = {
         Update: Partial<Favorito>;
         Relationships: [];
       };
+      lead_events: {
+        Row: EventoLead;
+        Insert: Alta<EventoLead, 'property_id' | 'kind'>;
+        Update: Partial<EventoLead>;
+        Relationships: [];
+      };
       inquiries: {
         Row: Consulta;
         Insert: Alta<Consulta, 'property_id' | 'sender_name' | 'message'>;
@@ -539,6 +568,34 @@ export type Database = {
       popular_districts: { Row: DistritoPopular; Relationships: [] };
     };
     Functions: {
+      /** Consume un cupo del limitador. false cuando ya se pasó del límite. */
+      consumir_cupo: {
+        Args: {
+          p_bucket: string;
+          p_clave: string;
+          p_limite: number;
+          p_ventana_segundos?: number;
+        };
+        Returns: boolean;
+      };
+      /** Anota una interacción con el aviso. No guarda datos personales. */
+      registrar_evento: {
+        Args: {
+          p_property_id: string;
+          p_kind: TipoEventoLead;
+          p_session_hash?: string | null;
+          p_source?: string | null;
+        };
+        Returns: undefined;
+      };
+      /**
+       * El teléfono de quien publica, de a uno y con el evento anotado.
+       * Es la única forma de obtenerlo: la RLS de profiles no lo expone.
+       */
+      telefono_de_contacto: {
+        Args: { p_property_id: string; p_session_hash?: string | null };
+        Returns: { telefono: string | null; whatsapp: string | null; nombre: string }[];
+      };
       propiedades_cercanas: {
         Args: { p_lat: number; p_lon: number; p_radio_m?: number; p_limite?: number };
         Returns: (Pick<

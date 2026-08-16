@@ -538,6 +538,12 @@ describe('cobertura', () => {
   it('ninguna tabla queda con RLS activada pero sin políticas', async () => {
     // Una tabla así niega todo en silencio: es un error tan común como
     // difícil de diagnosticar desde la aplicación.
+    //
+    // La excepción es rate_limits, donde negar todo ES el diseño: el
+    // único acceso es consumir_cupo(), que es SECURITY DEFINER. Si la
+    // tabla tuviera una política, cualquiera podría leer o falsear los
+    // contadores desde la API.
+    const CERRADAS_A_PROPOSITO = ['rate_limits'];
     const { rows } = await banco.db.query<{ tablename: string }>(
       `select t.tablename
          from pg_tables t
@@ -548,6 +554,18 @@ describe('cobertura', () => {
              where p.schemaname = 'public' and p.tablename = t.tablename
           )`,
     );
-    expect(rows.map((r) => r.tablename)).toEqual([]);
+    const sinPoliticas = rows
+      .map((r) => r.tablename)
+      .filter((tabla) => !CERRADAS_A_PROPOSITO.includes(tabla));
+
+    expect(sinPoliticas).toEqual([]);
+  });
+
+  it('rate_limits solo se toca por su función', async () => {
+    const { rows } = await banco.db.query<{ n: number }>(
+      `select count(*)::int as n from pg_policies
+        where schemaname = 'public' and tablename = 'rate_limits'`,
+    );
+    expect(rows[0]?.n).toBe(0);
   });
 });

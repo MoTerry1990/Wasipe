@@ -108,6 +108,33 @@ lista mezcla soles y dólares y comparar el número crudo devuelve disparates.
 
 Los tiempos de la búsqueda con 5.000 avisos están en [RENDIMIENTO.md](RENDIMIENTO.md).
 
+## Ficha del aviso
+
+Dirección: `/propiedad/departamento-en-venta-miraflores-92m2-wsp-001247`
+
+El identificador es el **código público** (`WSP-001247`), no el UUID: es el
+número que se dicta por teléfono, no filtra un identificador interno y entra en
+un mensaje de WhatsApp. El texto de adelante es solo para las personas y los
+buscadores; si cambia, el enlace viejo sigue funcionando.
+
+Dos datos que **no** están en el HTML de la ficha, a propósito:
+
+- **El teléfono de quien publica.** La RLS de `profiles` no lo expone a nadie.
+  Sale por `telefono_de_contacto()`, una función `SECURITY DEFINER` que lo
+  entrega de a uno, para un aviso publicado, con límite por sesión y dejando el
+  evento anotado. Sin eso, un script de diez líneas se bajaría todos los números
+  del portal.
+- **La dirección exacta.** Vive en `property_locations` con su propia política;
+  la consulta de la ficha ni la pide.
+
+Contra los envíos automáticos hay tres capas, y ninguna le pone un captcha a
+nadie: un campo trampa, un tiempo mínimo de llenado y un cupo por sesión contado
+en la base (`consumir_cupo()`), porque en Vercel un contador en memoria no se
+comparte entre procesos.
+
+Las estadísticas del aviso (`lead_events`) no guardan IP, correo, teléfono ni
+identificador de persona: solo un hash de sesión que caduca a los 30 días.
+
 ## Variables de entorno
 
 Copiar `.env.example` a `.env` y completar. Ninguna clave real se sube al

@@ -2,6 +2,7 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { Insignia } from '@/components/ui/tarjeta';
 import { precioMostrado, porMetroMostrado } from '@/lib/moneda';
+import { enlaceDeAviso } from '@/lib/avisos/enlace';
 import { metros } from '@/lib/formato';
 import { TIPO_INMUEBLE, OPERACION } from '@/lib/etiquetas';
 import type { AvisoDePortada } from '@/lib/consultas/portada';
@@ -45,7 +46,7 @@ export function TarjetaPropiedad({
 
   return (
     <article className="border-linea hover:border-fucsia hover:shadow-marca group h-full overflow-hidden rounded-2xl border bg-white transition-[transform,border-color,box-shadow] hover:-translate-y-0.5">
-      <Link href={`/aviso/${aviso.id}`} className="block">
+      <Link href={enlaceDeAviso(aviso)} className="block">
         {/* 4:3 fijo: el hueco existe antes de que la foto llegue. */}
         <div className="bg-niebla relative aspect-[4/3] w-full overflow-hidden">
           {aviso.portada ? (

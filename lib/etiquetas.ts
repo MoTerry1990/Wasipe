@@ -152,3 +152,49 @@ export const AVISO_ESTIMACION =
 
 /** Etiqueta obligatoria de las imágenes modificadas con IA. */
 export const ETIQUETA_IA = 'Imagen modificada con Wasi AI';
+
+/**
+ * Características del inmueble, en castellano.
+ *
+ * La clave la escribe quien publica desde un catálogo de la aplicación;
+ * si aparece una que no está acá, se muestra la clave con guiones
+ * cambiados por espacios en vez de esconderla.
+ */
+export const CARACTERISTICA: Record<string, string> = {
+  ascensor: 'Ascensor',
+  porteria_24h: 'Portería 24 horas',
+  deposito: 'Depósito',
+  area_parrillas: 'Área de parrillas',
+  gimnasio: 'Gimnasio',
+  piscina: 'Piscina',
+  terraza_comun: 'Terraza común',
+  sala_reuniones: 'Sala de reuniones',
+  sala_juegos: 'Sala de juegos',
+  amoblado: 'Amoblado',
+  lavanderia: 'Lavandería',
+  jardin: 'Jardín',
+  parrilla: 'Parrilla',
+  techos_altos: 'Techos altos',
+  vista_mar: 'Vista al mar',
+  vista_montana: 'Vista a la montaña',
+  vista_parque: 'Vista al parque',
+  agua_luz: 'Agua y luz instaladas',
+  cercado: 'Terreno cercado',
+  cisterna: 'Cisterna',
+  pozo_luz: 'Pozo de luz',
+  aire_acondicionado: 'Aire acondicionado',
+  calefaccion: 'Calefacción',
+  cocina_equipada: 'Cocina equipada',
+  closet_empotrado: 'Clósets empotrados',
+  piso: 'Piso',
+  estudio: 'Estudio',
+  cuarto_servicio: 'Cuarto de servicio',
+};
+
+/** El nombre de una característica, aunque no esté en el catálogo. */
+export function nombreDeCaracteristica(clave: string): string {
+  const conocida = CARACTERISTICA[clave];
+  if (conocida) return conocida;
+  const suelta = clave.replace(/_/g, ' ');
+  return suelta.charAt(0).toUpperCase() + suelta.slice(1);
+}

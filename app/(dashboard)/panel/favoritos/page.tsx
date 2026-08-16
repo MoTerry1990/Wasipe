@@ -5,12 +5,14 @@ import { Tarjeta } from '@/components/ui/tarjeta';
 import { EstadoVacio } from '@/components/estados/estado-vacio';
 import { dinero, porMetro } from '@/lib/formato';
 import { OPERACION, TIPO_INMUEBLE } from '@/lib/etiquetas';
+import { enlaceDeAviso } from '@/lib/avisos/enlace';
 import type { Moneda, Operacion, TipoInmueble } from '@/types/base-datos';
 
 export const metadata = { title: 'Favoritos' };
 
 type AvisoFavorito = {
   id: string;
+  code: string;
   title: string;
   district: string;
   operation: Operacion;
@@ -18,6 +20,8 @@ type AvisoFavorito = {
   currency: Moneda;
   price: number;
   price_per_m2: number | null;
+  built_area: number | null;
+  total_area: number;
 };
 
 export default async function Favoritos() {
@@ -29,7 +33,7 @@ export default async function Favoritos() {
   const { data: guardados } = await supabase
     .from('favorites')
     .select(
-      'property_id, note, created_at, properties (id, title, district, operation, property_type, currency, price, price_per_m2)',
+      'property_id, note, created_at, properties (id, code, title, district, operation, property_type, currency, price, price_per_m2, built_area, total_area)',
     )
     .order('created_at', { ascending: false });
 
@@ -57,7 +61,7 @@ export default async function Favoritos() {
             <li key={property_id}>
               <Tarjeta className="h-full p-5">
                 <Link
-                  href={`/aviso/${aviso.id}`}
+                  href={enlaceDeAviso(aviso)}
                   className="text-tinta hover:text-fucsia text-[17px] font-bold"
                 >
                   {aviso.title}
