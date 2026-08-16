@@ -13,38 +13,46 @@ export const metadata: Metadata = {
 /**
  * Cada función lleva su estado real.
  *
- * Ninguna está construida todavía, así que TODAS van marcadas "Muy pronto".
- * Prometer en presente lo que no existe es la forma más rápida de perder
- * la confianza del usuario en todo lo demás.
+ * La redacción del aviso ya está construida y vive dentro del asistente
+ * de publicación, pero todavía no corrió contra un proveedor en
+ * producción: por eso dice «En pruebas» y no «Disponible». El resto ni
+ * siquiera está construido. Prometer en presente lo que no existe es la
+ * forma más rápida de perder la confianza del usuario en todo lo demás.
  */
 const FUNCIONES = [
   {
     titulo: 'Publicación asistida',
+    estado: 'En pruebas',
     texto:
-      'Redacta el título y la descripción de tu aviso en español claro, a partir de tus fotos y unos pocos datos. Tú lo revisas y apruebas antes de publicar.',
+      'Redacta el título y la descripción de tu aviso en español claro, a partir de los datos que ya cargaste. Aparece en el paso de descripción del asistente, y tú lo revisas y apruebas antes de publicar.',
   },
   {
     titulo: 'Mejora de fotos',
+    estado: 'Muy pronto',
     texto:
       'Corrige luz y encuadre sin inventar nada. La foto original siempre se conserva y toda imagen modificada se muestra etiquetada.',
   },
   {
     titulo: 'Ambientación virtual',
+    estado: 'Muy pronto',
     texto:
       'Muestra cómo se vería un ambiente amoblado. Nunca oculta ni retoca defectos estructurales: eso sería engañar al comprador.',
   },
   {
     titulo: 'Video automático',
+    estado: 'Muy pronto',
     texto:
       'Arma un recorrido en video con tus fotos, listo para compartir por WhatsApp o redes.',
   },
   {
     titulo: 'Búsqueda en lenguaje natural',
+    estado: 'Muy pronto',
     texto:
       '“Departamento de 3 dormitorios en Miraflores cerca a un parque, hasta US$ 200,000”. Sin filtros, escribiendo como hablas.',
   },
   {
     titulo: 'Comparación y recomendaciones',
+    estado: 'Muy pronto',
     texto:
       'Compara varias propiedades lado a lado y explica en qué se diferencian de verdad, más allá del precio.',
   },
@@ -67,7 +75,7 @@ export default function WasiAI() {
       <ul className="mt-10 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
         {FUNCIONES.map((f) => (
           <Tarjeta as="li" key={f.titulo} className="flex flex-col gap-2.5 p-5">
-            <Insignia tono="neutro">Muy pronto</Insignia>
+            <Insignia tono={f.estado === 'En pruebas' ? 'maiz' : 'neutro'}>{f.estado}</Insignia>
             <h2 className="font-display mt-1 text-[17.5px] font-extrabold">{f.titulo}</h2>
             <p className="text-tinta-60 text-[14.5px]">{f.texto}</p>
           </Tarjeta>
@@ -85,6 +93,10 @@ export default function WasiAI() {
           </li>
           <li>· La ambientación virtual nunca elimina ni disimula defectos estructurales.</li>
           <li>· Ninguna sugerencia se publica sin tu confirmación.</li>
+          <li>
+            · Wasi AI redacta solo con los datos que tú cargaste: nunca afirma que la propiedad
+            está saneada, que la construcción está en buen estado ni que la zona es segura.
+          </li>
           <li>· Las estimaciones de precio son referenciales y no reemplazan una tasación.</li>
         </ul>
         <Boton href="/publicar" variante="secundario" className="mt-6">

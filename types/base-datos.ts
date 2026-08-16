@@ -362,6 +362,8 @@ export type TrabajoIA = {
   property_id: string | null;
   user_id: string;
   kind: TipoTrabajoIA;
+  /** La capacidad exacta dentro de la familia: 'titulo', 'descripcion'… */
+  operation: string | null;
   status: EstadoTrabajoIA;
   input: Json;
   output: Json | null;
@@ -372,6 +374,9 @@ export type TrabajoIA = {
   accepted_at: string | null;
   accepted_by: string | null;
   discarded_at: string | null;
+  /** Huella del pedido: dos iguales son el mismo trabajo. */
+  idempotency_key: string | null;
+  duration_ms: number | null;
   created_at: string;
   started_at: string | null;
   finished_at: string | null;
@@ -646,6 +651,49 @@ export type Database = {
           | 'price_per_m2'
         > & { distancia_m: number })[];
       };
+      /** Saldo de créditos. El libro mayor es de solo inserción. */
+      saldo_de_creditos: { Args: { p_user: string }; Returns: number };
+      /**
+       * Abre un trabajo de Wasi AI: cupo, saldo e idempotencia.
+       * Un pedido repetido devuelve el trabajo anterior, no uno nuevo.
+       */
+      iniciar_trabajo_ia: {
+        Args: {
+          p_kind: TipoTrabajoIA;
+          p_operation: string;
+          p_input: Json;
+          p_idempotency_key: string;
+          p_property_id?: string | null;
+          p_costo?: number;
+          p_limite_hora?: number;
+        };
+        Returns: TrabajoIA;
+      };
+      /** Cierra un trabajo con éxito y recién ahí descuenta los créditos. */
+      terminar_trabajo_ia: {
+        Args: {
+          p_job_id: string;
+          p_output: Json;
+          p_provider: string;
+          p_model: string;
+          p_costo?: number;
+          p_duration_ms?: number | null;
+        };
+        Returns: TrabajoIA;
+      };
+      /** Cierra un trabajo fallido. No cobra nada. */
+      fallar_trabajo_ia: {
+        Args: {
+          p_job_id: string;
+          p_error: string;
+          p_provider?: string | null;
+          p_duration_ms?: number | null;
+        };
+        Returns: TrabajoIA;
+      };
+      /** Confirmación de la persona: sin esto nada se aplica al aviso. */
+      aceptar_trabajo_ia: { Args: { p_job_id: string }; Returns: TrabajoIA };
+      descartar_trabajo_ia: { Args: { p_job_id: string }; Returns: TrabajoIA };
     };
     Enums: {
       user_role: RolUsuario;

@@ -7,6 +7,7 @@ import { requiereCuentaLista } from '@/lib/auth/sesion';
 import { puedePublicar } from '@/lib/auth/roles';
 import { clienteServidor } from '@/lib/supabase/servidor';
 import { supabaseConfigurado } from '@/lib/supabase/entorno';
+import { iaDisponible } from '@/lib/ia/registro';
 import type { BorradorDeAviso } from '@/lib/validacion/aviso';
 
 export const dynamic = 'force-dynamic';
@@ -104,6 +105,7 @@ export default async function Publicar({ searchParams }: Props) {
         datosIniciales={(borrador?.datos ?? {}) as BorradorDeAviso}
         pasoInicial={borrador?.paso ?? 0}
         avisoEnEdicion={avisoEnEdicion}
+        iaEncendida={iaDisponible()}
       />
     </Contenedor>
   );

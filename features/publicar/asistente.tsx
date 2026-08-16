@@ -8,6 +8,8 @@ import { Aviso } from '@/components/estados/estado-error';
 import { Opciones, Etiquetas } from '@/features/cuentas/campos';
 import { AutocompletadoUbicacion } from '@/features/busqueda/autocompletado-ubicacion';
 import { Fotos, type FotoDelAviso } from '@/features/publicar/fotos';
+import { AsistenteDeTexto } from '@/features/wasi-ai/asistente-de-texto';
+import type { OperacionDeAsistente } from '@/lib/ia/asistente';
 import { guardarBorrador, enviarARevision } from '@/features/publicar/acciones';
 import {
   PASOS,
@@ -47,6 +49,8 @@ type Props = {
   pasoInicial: number;
   /** Cuando se está editando un aviso ya creado. */
   avisoEnEdicion?: { code: string; motivoRechazo: string | null } | null;
+  /** false cuando no hay proveedor de IA: el asistente se muestra apagado. */
+  iaEncendida?: boolean;
 };
 
 export function Asistente({
@@ -54,6 +58,7 @@ export function Asistente({
   datosIniciales,
   pasoInicial,
   avisoEnEdicion = null,
+  iaEncendida = false,
 }: Props) {
   const [datos, setDatos] = useState<BorradorDeAviso>(datosIniciales);
   const [paso, setPaso] = useState(pasoInicial);
@@ -191,6 +196,7 @@ export function Asistente({
           errores={revision.errores}
           carpeta={borradorId}
           faltantes={faltantes}
+          iaEncendida={iaEncendida}
           cambiar={cambiar}
           ir={ir}
         />
@@ -239,17 +245,105 @@ export function Asistente({
 // Los pasos
 // ---------------------------------------------------------------------
 
+/**
+ * Paso de descripción, con Wasi AI al lado.
+ *
+ * Los campos son no controlados —se guardan al salir del campo, no en
+ * cada tecla— así que aplicar un texto de la IA no basta con cambiar el
+ * estado: hay que volver a montarlos. Eso hace `version`. Es más simple
+ * que controlar dos campos de texto largos y volver a renderizar el
+ * formulario entero con cada letra.
+ */
+function PasoDescripcion({
+  datos,
+  errores,
+  iaEncendida,
+  cambiar,
+}: {
+  datos: BorradorDeAviso;
+  errores: Record<string, string>;
+  iaEncendida: boolean;
+  cambiar: (parche: Partial<BorradorDeAviso>) => void;
+}) {
+  const [version, setVersion] = useState(0);
+
+  function aplicar(operacion: OperacionDeAsistente, texto: string) {
+    cambiar(operacion === 'titulo' ? { titulo: texto } : { descripcion: texto });
+    setVersion((n) => n + 1);
+  }
+
+  return (
+    <div className="flex flex-col gap-5">
+      <Campo
+        key={`titulo-${version}`}
+        etiqueta="Título del aviso"
+        defaultValue={datos.titulo ?? ''}
+        onBlur={(e) => cambiar({ titulo: e.target.value })}
+        maxLength={120}
+        placeholder="Departamento de 92 m² a dos cuadras del parque Kennedy"
+        pista="Lo primero que se lee. Di qué es, cuánto mide y dónde queda."
+        error={errores.titulo}
+      />
+
+      <div>
+        <label
+          htmlFor="descripcion"
+          className="text-tinta mb-1.5 block text-[14.5px] font-bold"
+        >
+          Descripción
+        </label>
+        <textarea
+          key={`descripcion-${version}`}
+          id="descripcion"
+          rows={8}
+          defaultValue={datos.descripcion ?? ''}
+          onBlur={(e) => cambiar({ descripcion: e.target.value })}
+          maxLength={6000}
+          placeholder="Cuenta cómo es: los ambientes, la luz, el edificio, el barrio. Lo que a ti te gustó."
+          className="border-linea bg-niebla text-tinta focus:border-fucsia w-full rounded-xl border-[1.5px] px-3.5 py-3 text-[15px] focus:bg-white focus:outline-none"
+        />
+        {errores.descripcion && (
+          <p className="text-fucsia-osc mt-1.5 text-[13.5px] font-semibold" role="alert">
+            {errores.descripcion}
+          </p>
+        )}
+      </div>
+
+      <AsistenteDeTexto
+        datos={datos}
+        operaciones={
+          (datos.descripcion ?? '').trim().length >= 40
+            ? (['titulo', 'descripcion', 'mejorar'] as const)
+            : (['titulo', 'descripcion'] as const)
+        }
+        aplicar={aplicar}
+        encendido={iaEncendida}
+      />
+    </div>
+  );
+}
+
 type PasoProps = {
   clave: ClaveDePaso;
   datos: BorradorDeAviso;
   errores: Record<string, string>;
   carpeta: string | null;
   faltantes: ClaveDePaso[];
+  iaEncendida: boolean;
   cambiar: (parche: Partial<BorradorDeAviso>) => void;
   ir: (destino: number) => void;
 };
 
-function PasoActual({ clave, datos, errores, carpeta, faltantes, cambiar, ir }: PasoProps) {
+function PasoActual({
+  clave,
+  datos,
+  errores,
+  carpeta,
+  faltantes,
+  iaEncendida,
+  cambiar,
+  ir,
+}: PasoProps) {
   switch (clave) {
     case 'operacion':
       return (
@@ -536,40 +630,12 @@ function PasoActual({ clave, datos, errores, carpeta, faltantes, cambiar, ir }: 
 
     case 'descripcion':
       return (
-        <div className="flex flex-col gap-5">
-          <Campo
-            etiqueta="Título del aviso"
-            defaultValue={datos.titulo ?? ''}
-            onBlur={(e) => cambiar({ titulo: e.target.value })}
-            maxLength={120}
-            placeholder="Departamento de 92 m² a dos cuadras del parque Kennedy"
-            pista="Lo primero que se lee. Di qué es, cuánto mide y dónde queda."
-            error={errores.titulo}
-          />
-
-          <div>
-            <label
-              htmlFor="descripcion"
-              className="text-tinta mb-1.5 block text-[14.5px] font-bold"
-            >
-              Descripción
-            </label>
-            <textarea
-              id="descripcion"
-              rows={8}
-              defaultValue={datos.descripcion ?? ''}
-              onBlur={(e) => cambiar({ descripcion: e.target.value })}
-              maxLength={6000}
-              placeholder="Cuenta cómo es: los ambientes, la luz, el edificio, el barrio. Lo que a ti te gustó."
-              className="border-linea bg-niebla text-tinta focus:border-fucsia w-full rounded-xl border-[1.5px] px-3.5 py-3 text-[15px] focus:bg-white focus:outline-none"
-            />
-            {errores.descripcion && (
-              <p className="text-fucsia-osc mt-1.5 text-[13.5px] font-semibold" role="alert">
-                {errores.descripcion}
-              </p>
-            )}
-          </div>
-        </div>
+        <PasoDescripcion
+          datos={datos}
+          errores={errores}
+          iaEncendida={iaEncendida}
+          cambiar={cambiar}
+        />
       );
 
     case 'fotos':

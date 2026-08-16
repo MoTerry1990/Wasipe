@@ -95,7 +95,11 @@ describe('secretos en el repositorio', () => {
       // La cadena de ejemplo de Postgres y la URL del sitio son
       // marcadores de posición, no credenciales.
       .filter((linea) => !/^DATABASE_URL=postgresql:\/\/usuario:/.test(linea))
-      .filter((linea) => !/^(URL_SITIO|NEXT_PUBLIC_URL_SITIO)=/.test(linea));
+      .filter((linea) => !/^(URL_SITIO|NEXT_PUBLIC_URL_SITIO)=/.test(linea))
+      // IA_PROVEEDOR elige un adaptador por su nombre. No es una clave:
+      // es la opción por defecto, y verla escrita es justamente lo que
+      // muestra que se puede cambiar.
+      .filter((linea) => !/^IA_PROVEEDOR=/.test(linea));
 
     expect(conValor).toEqual([]);
   });

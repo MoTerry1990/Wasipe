@@ -14,5 +14,12 @@ export default defineConfig({
     testTimeout: 30_000,
     hookTimeout: 180_000,
   },
-  resolve: { alias: { '@': resolve(__dirname, './') } },
+  resolve: {
+    alias: {
+      '@': resolve(__dirname, './'),
+      // Ver tests/vacio.ts: 'server-only' revienta a propósito fuera de
+      // Next, y sin esto no se podría probar nada del servidor.
+      'server-only': resolve(__dirname, './tests/vacio.ts'),
+    },
+  },
 });
