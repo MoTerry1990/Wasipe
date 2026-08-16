@@ -46,15 +46,15 @@ const FUNCIONES = [
   },
   {
     titulo: 'Búsqueda en lenguaje natural',
-    estado: 'Muy pronto',
+    estado: 'Disponible',
     texto:
-      '“Departamento de 3 dormitorios en Miraflores cerca a un parque, hasta US$ 200,000”. Sin filtros, escribiendo como hablas.',
+      '“Departamento en Jesús María, máximo US$150,000, con dos dormitorios y que acepte mascotas”. Escribiendo como hablas. Wasi AI traduce tu frase a filtros y te muestra qué entendió antes de buscar: los avisos salen de la base de Wasipe, no los escribe un modelo.',
   },
   {
     titulo: 'Comparación y recomendaciones',
-    estado: 'Muy pronto',
+    estado: 'Disponible',
     texto:
-      'Compara varias propiedades lado a lado y explica en qué se diferencian de verdad, más allá del precio.',
+      'Compara hasta cuatro propiedades lado a lado —precio, área, precio por m², mantenimiento, ambientes, antigüedad y promedio del distrito— y recomienda según las prioridades que tú elijas. La recomendación es una cuenta con los datos de los avisos, no una opinión: los hechos se muestran uno por uno.',
   },
 ];
 
@@ -75,7 +75,17 @@ export default function WasiAI() {
       <ul className="mt-10 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
         {FUNCIONES.map((f) => (
           <Tarjeta as="li" key={f.titulo} className="flex flex-col gap-2.5 p-5">
-            <Insignia tono={f.estado === 'En pruebas' ? 'maiz' : 'neutro'}>{f.estado}</Insignia>
+            <Insignia
+              tono={
+                f.estado === 'Disponible'
+                  ? 'verde'
+                  : f.estado === 'En pruebas'
+                    ? 'maiz'
+                    : 'neutro'
+              }
+            >
+              {f.estado}
+            </Insignia>
             <h2 className="font-display mt-1 text-[17.5px] font-extrabold">{f.titulo}</h2>
             <p className="text-tinta-60 text-[14.5px]">{f.texto}</p>
           </Tarjeta>
@@ -110,6 +120,14 @@ export default function WasiAI() {
             está saneada, que la construcción está en buen estado ni que la zona es segura.
           </li>
           <li>· Las estimaciones de precio son referenciales y no reemplazan una tasación.</li>
+          <li>
+            · Al buscar, Wasi AI solo traduce tu frase a filtros. Los avisos los trae la base de
+            Wasipe: nunca hay una propiedad que no exista.
+          </li>
+          <li>
+            · No filtramos ni recomendamos por nacionalidad, origen, religión, sexo, edad,
+            discapacidad ni por si hay niños en la familia.
+          </li>
         </ul>
         <Boton href="/publicar" variante="secundario" className="mt-6">
           Publicar una propiedad

@@ -314,6 +314,9 @@ export type BusquedaGuardada = {
   user_id: string;
   name: string;
   filters: Json;
+  /** Lo que la persona escribió. Los filtros son lo que se ejecuta. */
+  prompt: string | null;
+  operation: Operacion;
   alert_frequency: FrecuenciaAlerta;
   last_run_at: string | null;
   last_notified_at: string | null;
@@ -826,6 +829,43 @@ export type Database = {
       puede_descargar_video: { Args: { p_video_id: string }; Returns: boolean };
       /** La ruta del archivo, solo si corresponde entregarla. */
       registrar_descarga_de_video: { Args: { p_video_id: string }; Returns: string | null };
+      /**
+       * Comparación de hasta cuatro avisos publicados.
+       * Los valores salen de la base sin intermediarios: es lo que hace
+       * comprobable que la tabla comparativa no calcula nada por su cuenta.
+       */
+      comparar_avisos: {
+        Args: { p_codigos: string[] };
+        Returns: {
+          id: string;
+          code: string;
+          title: string;
+          district: string;
+          province: string;
+          operation: Operacion;
+          property_type: TipoInmueble;
+          currency: Moneda;
+          price: number;
+          price_usd: number | null;
+          maintenance: number | null;
+          total_area: number;
+          built_area: number | null;
+          price_per_m2: number | null;
+          price_usd_per_m2: number | null;
+          bedrooms: number | null;
+          bathrooms: number | null;
+          parking: number | null;
+          age_years: number | null;
+          furnished: Amoblado;
+          pet_policy: PoliticaMascotas | null;
+          verification_status: EstadoVerificacion;
+          published_at: string | null;
+          cover_url: string | null;
+          features: string[];
+          district_avg_usd_per_m2: number | null;
+          district_listings: number | null;
+        }[];
+      };
       /** Marca vencidos los videos que pasaron su fecha. */
       vencer_videos: { Args: Record<string, never>; Returns: VideoDeAviso[] };
       /** Marca o bloquea una imagen editada. Solo moderación; nunca borra. */

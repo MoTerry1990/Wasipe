@@ -19,6 +19,7 @@ import {
   POR_PAGINA,
   type Filtros,
 } from '@/lib/busqueda/filtros';
+import { BuscadorConversacional } from '@/features/busqueda/buscador-conversacional';
 import { TIPO_INMUEBLE_PLURAL } from '@/lib/etiquetas';
 import { numero } from '@/lib/formato';
 import type { Moneda, Operacion } from '@/types/base-datos';
@@ -212,6 +213,12 @@ export async function PaginaDeBusqueda({
           </p>
         </div>
         <SelectorMoneda actual={moneda} />
+      </div>
+
+      {/* Buscar escribiendo. Sale filtros, no avisos: los resultados de
+          abajo los trae Postgres igual que siempre. */}
+      <div className="mb-5">
+        <BuscadorConversacional operacion={filtros.operacion} />
       </div>
 
       <div className="flex items-start gap-6">

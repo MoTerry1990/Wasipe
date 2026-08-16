@@ -155,7 +155,8 @@ de aceptado o descartado.
 | Ambientación virtual (amoblar, estilo, color de pared) | Construida. Mismo caso. |
 | Video automático (3 formatos, 4 plantillas, narración) | Construida. Mismo caso. |
 | Estimación de precio | No empezada |
-| Búsqueda en lenguaje natural | No empezada |
+| Búsqueda conversacional (frase → filtros) | Construida y funcionando **sin proveedor de IA**: el parser local no lo necesita. |
+| Comparación y recomendación | Construida y funcionando sin proveedor: es aritmética sobre los datos de la base. |
 
 La página pública `/wasi-ai` dice exactamente esto. Mientras algo no se
 haya probado end to end contra un proveedor de verdad, aparece marcado
@@ -404,3 +405,107 @@ Cada render guarda además `facts`: lo que el video decía, congelado. El
 aviso puede cambiar de precio después; el archivo ya salió. Guardar lo que
 decía es lo único que permite, meses más tarde, responder «el aviso cambió
 el 3 de setiembre, el video es de antes».
+
+
+---
+
+# Comprar: buscar hablando y comparar
+
+## 19. La IA no devuelve avisos
+
+Es la regla que ordena el sprint entero, y no es una política: es una
+decisión de arquitectura que hace imposible el problema.
+
+```
+frase en castellano  →  filtros  →  Postgres  →  avisos
+                        ↑
+                   acá termina la IA
+```
+
+Un modelo que redacta resultados inventa direcciones, precios y
+distritos: no porque falle, sino porque eso es lo que hace un modelo de
+lenguaje. Uno que solo arma un `WHERE` no puede inventar nada, porque no
+es él quien devuelve las filas. Por eso en este sprint no hay índice
+vectorial ni caché de avisos para la IA.
+
+## 20. Dos intérpretes, una sola puerta
+
+`interpretarLocal()` corre **siempre**. Es un parser en castellano
+peruano —distrito, tope de precio, dormitorios, cochera, mascotas, sellos—
+que no necesita proveedor, no cuesta nada y responde al instante. Cubre lo
+que la gente realmente escribe.
+
+El modelo, cuando está configurado, solo completa lo que el parser dejó
+vacío. Y manda el parser: es determinista y no se equivoca en lo que ya
+sabe leer.
+
+Venga de donde venga, todo pasa por `validarFiltros()`, que **es el mismo
+esquema Zod que valida la URL**. Un `precioMax` negativo, un `dorm` de
+9999 o un `{"ownerEmail": "..."}` se caen solos y el resto de los filtros
+sobrevive. La IA no tiene una puerta propia más ancha que la de un enlace
+pegado a mano.
+
+## 21. Se muestra lo entendido, y se corrige
+
+Nunca se salta directo a los resultados. Antes se pintan los filtros en
+castellano —`Distrito: Jesús María · Hasta: US$ 150,000 · Dormitorios: 2 o
+más`— y cada uno se quita con un toque. Si entendimos mal, se ve de
+inmediato; y si estaba bien, la persona confirma lo que va a buscar.
+
+## 22. Vivienda y discriminación
+
+Un portal que deja filtrar por nacionalidad, religión o si hay niños en la
+casa no está dando una función: está organizando una exclusión. En el Perú
+eso choca con el artículo 2.2 de la Constitución, con la Ley 28983 de
+igualdad de oportunidades y con la Ley 29973 sobre discapacidad.
+
+`CATEGORIAS_PROTEGIDAS` cubre seis: origen y raza, religión, composición
+familiar, discapacidad, sexo y orientación, edad. Con tres refuerzos:
+
+1. **No existe el filtro.** El esquema no tiene una clave para eso, así
+   que ni el modelo ni un enlace armado a mano pueden crear una.
+2. **Se detecta y se explica.** La frase se revisa antes de traducirla, y
+   si trae una categoría protegida se dice cuál no se puede usar. **No se
+   corta la búsqueda**: se ignora esa parte y se busca con el resto.
+   Cortar del todo castigaría a quien escribió una palabra sin mala
+   intención.
+3. **Las instrucciones del modelo lo prohíben aparte**, y la recomendación
+   tiene su propia lista (`NUNCA_EN_UNA_RECOMENDACION`), porque una
+   recomendación es donde más fácil se cuela: basta una frase sobre «el
+   tipo de gente del barrio».
+
+## 23. Comparar cuatro
+
+`comparar_avisos()` devuelve una fila por aviso **publicado y
+disponible**. Un código inventado, uno pausado o uno ya vendido
+simplemente no vuelve — la aplicación no tiene forma de agregar una fila a
+esa lista.
+
+Se comparan precio, área, precio por m², mantenimiento, dormitorios,
+baños, cocheras, antigüedad, promedio del distrito, verificación y las
+características declaradas. Los precios se comparan **en dólares**
+(`price_usd`): uno en soles y otro en dólares no se comparan por el número
+crudo.
+
+Dos detalles que importan:
+
+- **El promedio del distrito no marca ganador.** Un distrito más caro no
+  es peor, es otro.
+- **Una fila de característica solo aparece si alguno la tiene.** Una fila
+  de «— · — · —» ocupa espacio y no ayuda a decidir nada.
+
+## 24. La recomendación es una cuenta, no una opinión
+
+Tampoco la escribe un modelo. `recomendar()` es una suma ponderada de los
+mismos números, con las prioridades que la persona eligió, en escala
+relativa a los avisos comparados: no existe un «buen precio» absoluto,
+existe el más barato de estos cuatro.
+
+- **Sin prioridades elegidas no hay recomendación.** Elegir por la persona
+  cuál es su prioridad sería exactamente la opinión que esto evita.
+- **Un empate no se desempata a dedo.** «Cualquiera de los dos» es más
+  útil que elegir uno por el orden de carga.
+- La pantalla separa tres bloques: los **hechos** (contrastables uno por
+  uno con la tabla), lo que la comparación **no dice** (calidad de la
+  construcción, estado real, gastos no declarados) y la **cuenta** con los
+  puntajes a la vista.
