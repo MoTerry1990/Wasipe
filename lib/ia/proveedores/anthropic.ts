@@ -23,6 +23,15 @@ import {
 /** Modelo por defecto. Se puede fijar otro con IA_MODELO. */
 const MODELO = 'claude-opus-5';
 
+/**
+ * A dónde habla Wasi AI.
+ *
+ * Escrita a mano a propósito: el SDK toma `ANTHROPIC_BASE_URL` del
+ * entorno si no se la pasan, y eso convierte una variable suelta de la
+ * terminal en un cambio de destino de las peticiones.
+ */
+const BASE_DE_ANTHROPIC = 'https://api.anthropic.com';
+
 export function proveedorAnthropic(): ProveedorDeIA {
   const clave = process.env.ANTHROPIC_API_KEY?.trim();
   const modelo = process.env.IA_MODELO?.trim() || MODELO;
@@ -43,6 +52,18 @@ export function proveedorAnthropic(): ProveedorDeIA {
 
       const cliente = new Anthropic({
         apiKey: clave,
+        // `baseURL` explícita, y no es una formalidad.
+        //
+        // El SDK de Anthropic lee `ANTHROPIC_BASE_URL` del entorno cuando
+        // no se le pasa una. Cualquier herramienta que deje esa variable
+        // puesta en la terminal —hay varias que lo hacen— redirige en
+        // silencio todas las llamadas de Wasi AI a otro servidor, con la
+        // clave de Wasipe adentro.
+        //
+        // Wasipe habla con la API de Anthropic. Si algún día hace falta
+        // otro destino, se cambia acá y se ve en el diff, que es como
+        // tiene que decidirse una cosa así.
+        baseURL: BASE_DE_ANTHROPIC,
         maxRetries: 1,
         timeout: peticion.milisegundos ?? 45_000,
       });

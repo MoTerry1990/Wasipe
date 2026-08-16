@@ -380,3 +380,33 @@ describe('la clave del proveedor de IA', () => {
     }
   });
 });
+
+// ---------------------------------------------------------------------
+// Aislamiento del entorno
+// ---------------------------------------------------------------------
+
+describe('a dónde habla Wasi AI', () => {
+  const fuente = readFileSync(
+    join(__dirname, '..', '..', 'lib', 'ia', 'proveedores', 'anthropic.ts'),
+    'utf8',
+  );
+
+  it('la dirección del proveedor está escrita, no heredada del entorno', () => {
+    // El SDK de Anthropic lee `ANTHROPIC_BASE_URL` del entorno cuando no
+    // se le pasa `baseURL`. Cualquier herramienta que deje esa variable
+    // puesta en la terminal redirige en silencio todas las llamadas de
+    // Wasi AI a otro servidor, con la clave de Wasipe adentro.
+    //
+    // Pasó de verdad: esta terminal la tenía puesta.
+    expect(fuente).toContain('https://api.anthropic.com');
+    expect(fuente).toMatch(/baseURL:\s*BASE_DE_ANTHROPIC/);
+  });
+
+  it('y no se lee ninguna variable de entorno que no sea la clave', () => {
+    const variables = [...fuente.matchAll(/process\.env\.([A-Z0-9_]+)/g)].map((m) => m[1]);
+    // Solo las de Wasipe. Nada que otra herramienta pueda dejar puesto.
+    for (const variable of variables) {
+      expect(['ANTHROPIC_API_KEY', 'IA_MODELO', 'IA_PROVEEDOR'], variable).toContain(variable);
+    }
+  });
+});
