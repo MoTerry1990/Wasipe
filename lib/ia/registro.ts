@@ -1,7 +1,8 @@
 import 'server-only';
-import type { ProveedorDeIA } from '@/lib/ia/proveedor';
+import type { ProveedorDeIA, ProveedorDeImagen } from '@/lib/ia/proveedor';
 import { proveedorAnthropic } from '@/lib/ia/proveedores/anthropic';
-import { proveedorNinguno } from '@/lib/ia/proveedores/ninguno';
+import { proveedorImagenHttp } from '@/lib/ia/proveedores/imagen-http';
+import { proveedorNinguno, proveedorImagenNinguno } from '@/lib/ia/proveedores/ninguno';
 
 /**
  * Qué proveedor de IA usa Wasipe hoy.
@@ -56,7 +57,52 @@ export function iaDisponible(): boolean {
   return proveedorDeIA().disponible();
 }
 
-/** Solo para las pruebas: olvida el proveedor memorizado. */
+// ---------------------------------------------------------------------
+// Proveedor de imagen
+//
+// Se elige por separado del de texto: casi nunca es la misma empresa la
+// que mejor escribe en castellano y la que mejor amuebla una sala. Que
+// uno esté configurado y el otro no es normal y no rompe nada.
+// ---------------------------------------------------------------------
+
+const FABRICAS_DE_IMAGEN: Record<string, () => ProveedorDeImagen> = {
+  http: proveedorImagenHttp,
+  ninguno: () => proveedorImagenNinguno(),
+};
+
+export const PROVEEDORES_DE_IMAGEN = Object.keys(FABRICAS_DE_IMAGEN);
+
+/** Sin nada configurado, la mejora de fotos queda apagada. */
+export const PROVEEDOR_DE_IMAGEN_POR_DEFECTO = 'ninguno';
+
+let memoriaDeImagen: ProveedorDeImagen | null = null;
+
+export function proveedorDeImagen(): ProveedorDeImagen {
+  if (memoriaDeImagen) return memoriaDeImagen;
+
+  const elegido = process.env.IA_PROVEEDOR_IMAGEN?.trim() || PROVEEDOR_DE_IMAGEN_POR_DEFECTO;
+  const fabrica = FABRICAS_DE_IMAGEN[elegido];
+
+  if (!fabrica) {
+    console.warn(
+      `[wasi-ai] IA_PROVEEDOR_IMAGEN="${elegido}" no existe. La mejora de fotos queda apagada.`,
+    );
+    const apagado = proveedorImagenNinguno(`proveedor desconocido: ${elegido}`);
+    memoriaDeImagen = apagado;
+    return apagado;
+  }
+
+  memoriaDeImagen = fabrica();
+  return memoriaDeImagen;
+}
+
+/** ¿Se le puede ofrecer la mejora de fotos a la persona? */
+export function imagenDisponible(): boolean {
+  return proveedorDeImagen().disponible();
+}
+
+/** Solo para las pruebas: olvida los proveedores memorizados. */
 export function olvidarProveedor(): void {
   memoria = null;
+  memoriaDeImagen = null;
 }

@@ -1,4 +1,10 @@
-import { FallaDeProveedor, IA_NO_DISPONIBLE, type ProveedorDeIA } from '@/lib/ia/proveedor';
+import {
+  FallaDeProveedor,
+  IA_NO_DISPONIBLE,
+  IMAGEN_NO_DISPONIBLE,
+  type ProveedorDeIA,
+  type ProveedorDeImagen,
+} from '@/lib/ia/proveedor';
 
 /**
  * El proveedor que no hay.
@@ -14,6 +20,18 @@ export function proveedorNinguno(motivo = 'sin proveedor configurado'): Proveedo
     disponible: () => false,
     async generarTexto() {
       throw new FallaDeProveedor(IA_NO_DISPONIBLE, motivo, false);
+    },
+  };
+}
+
+/** Lo mismo para las fotos: sin proveedor, se publican tal como se subieron. */
+export function proveedorImagenNinguno(motivo = 'sin proveedor de imagen'): ProveedorDeImagen {
+  return {
+    nombre: 'ninguno',
+    disponible: () => false,
+    soporta: () => false,
+    async editarImagen() {
+      throw new FallaDeProveedor(IMAGEN_NO_DISPONIBLE, motivo, false);
     },
   };
 }

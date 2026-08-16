@@ -1,8 +1,15 @@
 'use client';
 
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import Image from 'next/image';
 import { cn } from '@/lib/cn';
+import {
+  VARIANTES,
+  agruparVariantes,
+  fotoDeVariante,
+  variantesDisponibles,
+  type ClaveDeVariante,
+} from '@/lib/ia/imagenes';
 import type { Foto } from '@/lib/consultas/aviso';
 
 /**
@@ -16,13 +23,28 @@ import type { Foto } from '@/lib/consultas/aviso';
  *
  * El alto está fijado por relación de aspecto, así que la página no salta
  * cuando las imágenes terminan de bajar.
+ *
+ * Cuando una foto tiene versiones hechas con Wasi AI, no se muestran
+ * como fotos aparte: se agrupan con la original y aparece un selector
+ * —Original · Mejorada · Amoblada— encima. Ver la misma sala tres veces
+ * seguidas no ayuda a nadie; poder alternar entre cómo está y cómo se
+ * vería, sí. Y la etiqueta de la versión elegida se pinta siempre.
  */
 export function Galeria({ fotos, titulo }: { fotos: readonly Foto[]; titulo: string }) {
   const [actual, setActual] = useState(0);
   const [ampliada, setAmpliada] = useState(false);
+  const [elegidas, setElegidas] = useState<Record<string, ClaveDeVariante>>({});
   const tira = useRef<HTMLDivElement>(null);
 
-  const total = fotos.length;
+  const grupos = useMemo(() => agruparVariantes(fotos), [fotos]);
+
+  // Lo que se ve: una entrada por foto, en la versión que la persona
+  // eligió. Sin elegir nada, la original.
+  const mostradas = grupos.map((grupo) =>
+    fotoDeVariante(grupo, elegidas[grupo.original.id] ?? 'original'),
+  );
+
+  const total = mostradas.length;
 
   // Flechas del teclado y Escape mientras está ampliada.
   useEffect(() => {
@@ -46,7 +68,9 @@ export function Galeria({ fotos, titulo }: { fotos: readonly Foto[]; titulo: str
     );
   }
 
-  const foto = fotos[actual]!;
+  const grupo = grupos[actual];
+  const foto = mostradas[actual]!;
+  const opciones = grupo ? variantesDisponibles(grupo) : [];
 
   function mover(paso: number) {
     const siguiente = (actual + paso + total) % total;
@@ -67,8 +91,8 @@ export function Galeria({ fotos, titulo }: { fotos: readonly Foto[]; titulo: str
           }}
           className="flex snap-x snap-mandatory [scrollbar-width:none] overflow-x-auto rounded-2xl [&::-webkit-scrollbar]:hidden"
         >
-          {fotos.map((f, i) => (
-            <div key={f.url} className="relative aspect-[4/3] w-full shrink-0 snap-center">
+          {mostradas.map((f, i) => (
+            <div key={f.id} className="relative aspect-[4/3] w-full shrink-0 snap-center">
               <Image
                 src={f.url}
                 alt={f.alt ?? `${titulo} — foto ${i + 1}`}
@@ -88,9 +112,9 @@ export function Galeria({ fotos, titulo }: { fotos: readonly Foto[]; titulo: str
         </div>
 
         <div className="mt-2 flex items-center justify-center gap-1.5">
-          {fotos.map((f, i) => (
+          {mostradas.map((f, i) => (
             <span
-              key={f.url}
+              key={f.id}
               className={cn(
                 'size-1.5 rounded-full transition-colors',
                 i === actual ? 'bg-fucsia' : 'bg-linea',
@@ -101,6 +125,16 @@ export function Galeria({ fotos, titulo }: { fotos: readonly Foto[]; titulo: str
         <p className="text-tinta-45 mt-1 text-center text-[13px]">
           <span className="cifra">{actual + 1}</span> de <span className="cifra">{total}</span>
         </p>
+
+        {grupo && opciones.length > 1 && (
+          <div className="mt-2 flex justify-center">
+            <SelectorDeVariante
+              opciones={opciones}
+              elegida={elegidas[grupo.original.id] ?? 'original'}
+              alElegir={(v) => setElegidas((p) => ({ ...p, [grupo.original.id]: v }))}
+            />
+          </div>
+        )}
       </div>
 
       {/* Escritorio: foto grande y miniaturas */}
@@ -150,10 +184,20 @@ export function Galeria({ fotos, titulo }: { fotos: readonly Foto[]; titulo: str
           </button>
         </div>
 
+        {grupo && opciones.length > 1 && (
+          <div className="mt-2.5">
+            <SelectorDeVariante
+              opciones={opciones}
+              elegida={elegidas[grupo.original.id] ?? 'original'}
+              alElegir={(v) => setElegidas((p) => ({ ...p, [grupo.original.id]: v }))}
+            />
+          </div>
+        )}
+
         {total > 1 && (
           <ul className="mt-2 flex gap-2 overflow-x-auto pb-1">
-            {fotos.map((f, i) => (
-              <li key={f.url}>
+            {mostradas.map((f, i) => (
+              <li key={f.id}>
                 <button
                   type="button"
                   onClick={() => setActual(i)}
@@ -225,5 +269,46 @@ export function Galeria({ fotos, titulo }: { fotos: readonly Foto[]; titulo: str
         </div>
       )}
     </>
+  );
+}
+
+/**
+ * Original · Mejorada · Amoblada.
+ *
+ * Un grupo de botones de verdad, no pestañas simuladas: se recorre con
+ * el tabulador y el lector de pantalla lee cuál está activa. En móvil el
+ * área táctil llega a los 40 px de alto, que es lo mínimo usable con el
+ * pulgar.
+ */
+function SelectorDeVariante({
+  opciones,
+  elegida,
+  alElegir,
+}: {
+  opciones: readonly ClaveDeVariante[];
+  elegida: ClaveDeVariante;
+  alElegir: (variante: ClaveDeVariante) => void;
+}) {
+  return (
+    <div
+      role="group"
+      aria-label="Ver esta foto en otra versión"
+      className="border-linea inline-flex gap-1 rounded-full border bg-white p-1"
+    >
+      {opciones.map((clave) => (
+        <button
+          key={clave}
+          type="button"
+          onClick={() => alElegir(clave)}
+          aria-pressed={clave === elegida}
+          className={cn(
+            'rounded-full px-3.5 py-1.5 text-[13.5px] font-bold transition-colors',
+            clave === elegida ? 'bg-tinta text-white' : 'text-tinta-60 hover:text-tinta',
+          )}
+        >
+          {VARIANTES[clave]}
+        </button>
+      ))}
+    </div>
   );
 }

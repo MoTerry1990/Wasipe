@@ -79,6 +79,21 @@ export type TipoTrabajoIA =
   | 'search_parse';
 export type EstadoTrabajoIA = 'queued' | 'running' | 'succeeded' | 'failed' | 'canceled';
 
+/** Qué se le hizo a una foto. Lista cerrada: lo que no está, no se puede pedir. */
+export type TipoEdicionMedio =
+  | 'lighting'
+  | 'white_balance'
+  | 'perspective'
+  | 'upscale'
+  | 'staging'
+  | 'style'
+  | 'wall_color'
+  | 'declutter';
+
+/** Revisión de seguridad de moderación. 'blocked' oculta sin borrar. */
+export type EstadoRevisionMedio =
+  'not_required' | 'pending' | 'cleared' | 'flagged' | 'blocked';
+
 type Json = string | number | boolean | null | { [k: string]: Json } | Json[];
 
 /** Lo que hace falta para insertar: unas pocas columnas obligatorias y el resto opcional. */
@@ -222,6 +237,16 @@ export type MedioPropiedad = {
   is_cover: boolean;
   alt: string | null;
   ai_edited: boolean;
+  /** Qué edición se aplicó. Obligatoria en toda imagen editada. */
+  edit_kind: TipoEdicionMedio | null;
+  /** Amoblamiento virtual: cambia la etiqueta, porque promete otra cosa. */
+  is_staged: boolean;
+  review_status: EstadoRevisionMedio;
+  review_reason: string | null;
+  reviewed_at: string | null;
+  reviewed_by: string | null;
+  /** Lo que costó en el proveedor, en millonésimas de dólar. */
+  provider_cost_micros: number | null;
   original_media_id: string | null;
   ai_job_id: string | null;
   /** El archivo tal como lo subieron. Nunca se borra mientras exista el aviso. */
@@ -377,6 +402,10 @@ export type TrabajoIA = {
   /** Huella del pedido: dos iguales son el mismo trabajo. */
   idempotency_key: string | null;
   duration_ms: number | null;
+  attempts: number;
+  max_attempts: number;
+  next_attempt_at: string | null;
+  provider_cost_micros: number | null;
   created_at: string;
   started_at: string | null;
   finished_at: string | null;
@@ -693,6 +722,34 @@ export type Database = {
       };
       /** Confirmación de la persona: sin esto nada se aplica al aviso. */
       aceptar_trabajo_ia: { Args: { p_job_id: string }; Returns: TrabajoIA };
+      /** Reabre un trabajo fallido. null cuando ya no quedan intentos. */
+      reintentar_trabajo_ia: { Args: { p_job_id: string }; Returns: TrabajoIA | null };
+      /**
+       * Agrega la imagen editada como foto NUEVA del aviso.
+       * Exige que el trabajo ya esté aceptado: sin confirmación no entra.
+       */
+      adjuntar_foto_editada: {
+        Args: {
+          p_job_id: string;
+          p_original_media_id: string;
+          p_url: string;
+          p_storage_path: string;
+          p_edit_kind: TipoEdicionMedio;
+          p_width?: number | null;
+          p_height?: number | null;
+          p_bytes?: number | null;
+        };
+        Returns: MedioPropiedad;
+      };
+      /** Marca o bloquea una imagen editada. Solo moderación; nunca borra. */
+      revisar_foto: {
+        Args: {
+          p_media_id: string;
+          p_estado: EstadoRevisionMedio;
+          p_motivo?: string | null;
+        };
+        Returns: MedioPropiedad;
+      };
       descartar_trabajo_ia: { Args: { p_job_id: string }; Returns: TrabajoIA };
     };
     Enums: {
@@ -703,6 +760,8 @@ export type Database = {
       currency: Moneda;
       publication_status: EstadoPublicacion;
       verification_status: EstadoVerificacion;
+      media_edit_kind: TipoEdicionMedio;
+      media_review_status: EstadoRevisionMedio;
     };
   };
 };

@@ -87,6 +87,11 @@ const PANEL: readonly EntradaPanel[] = [
     roles: ['agency_admin', 'admin'],
   },
   { href: '/panel/wasi-ai', texto: 'Wasi AI' },
+  {
+    href: '/panel/moderacion/imagenes',
+    texto: 'Revisión de imágenes',
+    roles: ['moderator', 'admin'],
+  },
   { href: '/panel/configuracion', texto: 'Configuración' },
 ];
 

@@ -25,9 +25,15 @@ import type {
  */
 
 export type Foto = {
+  id: string;
   url: string;
   alt: string | null;
+  /** La genera la base. Si está, hay que pintarla: no es opcional. */
   ai_label: string | null;
+  ai_edited: boolean;
+  is_staged: boolean;
+  /** De qué foto salió, cuando es una versión hecha con Wasi AI. */
+  original_media_id: string | null;
   kind: 'photo' | 'video' | 'tour' | 'floor_plan';
   is_cover: boolean;
   sort_order: number;
@@ -92,7 +98,10 @@ const CAMPOS = `
   parking, age_years, furnished, pet_policy, address_privacy, department, province, district,
   lat, lon, verification_status, views_count, created_at, updated_at, published_at,
   price_dropped_at, owner_id, agency_id,
-  property_media (url, alt, ai_label, kind, is_cover, sort_order),
+  property_media (
+    id, url, alt, ai_label, ai_edited, is_staged, original_media_id,
+    kind, is_cover, sort_order
+  ),
   property_features (feature, value),
   agencies (id, name, slug, logo_url, verification_status)
 `;

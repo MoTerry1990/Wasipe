@@ -28,15 +28,15 @@ const FUNCIONES = [
   },
   {
     titulo: 'Mejora de fotos',
-    estado: 'Muy pronto',
+    estado: 'En pruebas',
     texto:
-      'Corrige luz y encuadre sin inventar nada. La foto original siempre se conserva y toda imagen modificada se muestra etiquetada.',
+      'Luz, color, perspectiva y resolución, sin inventar nada. La foto original siempre se conserva y toda imagen modificada se muestra etiquetada. Está en el panel de cada aviso, en «Fotos y Wasi AI».',
   },
   {
     titulo: 'Ambientación virtual',
-    estado: 'Muy pronto',
+    estado: 'En pruebas',
     texto:
-      'Muestra cómo se vería un ambiente amoblado. Nunca oculta ni retoca defectos estructurales: eso sería engañar al comprador.',
+      'Muestra cómo se vería un ambiente amoblado, con otro estilo o con otro color de pared. Cada una lleva su etiqueta: «Amoblamiento virtual — imagen referencial». Nunca oculta ni retoca defectos estructurales: eso sería engañar al comprador.',
   },
   {
     titulo: 'Video automático',
@@ -89,9 +89,17 @@ export default function WasiAI() {
         <ul className="text-tinta-60 mx-auto mt-4 flex max-w-[58ch] flex-col gap-2 text-left text-[14.5px]">
           <li>· La foto original siempre se conserva y se puede ver.</li>
           <li>
+            · Quien mira un aviso puede cambiar entre la foto original, la mejorada y la
+            amoblada cuando existan.
+          </li>
+          <li>
             · Toda imagen modificada se muestra con la etiqueta «Imagen modificada con Wasi AI».
           </li>
           <li>· La ambientación virtual nunca elimina ni disimula defectos estructurales.</li>
+          <li>
+            · Wasi AI no agrega ni quita ambientes, ventanas o puertas, no cambia las medidas
+            del inmueble y no toca lo que se ve por la ventana.
+          </li>
           <li>· Ninguna sugerencia se publica sin tu confirmación.</li>
           <li>
             · Wasi AI redacta solo con los datos que tú cargaste: nunca afirma que la propiedad

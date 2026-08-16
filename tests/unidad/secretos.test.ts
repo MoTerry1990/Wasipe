@@ -99,7 +99,7 @@ describe('secretos en el repositorio', () => {
       // IA_PROVEEDOR elige un adaptador por su nombre. No es una clave:
       // es la opción por defecto, y verla escrita es justamente lo que
       // muestra que se puede cambiar.
-      .filter((linea) => !/^IA_PROVEEDOR=/.test(linea));
+      .filter((linea) => !/^IA_PROVEEDOR(_IMAGEN)?=/.test(linea));
 
     expect(conValor).toEqual([]);
   });

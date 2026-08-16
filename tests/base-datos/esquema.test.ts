@@ -207,14 +207,32 @@ describe('reglas grabadas en la base', () => {
       `select id, property_id from public.property_media limit 1`,
     );
     await banco.db.query(
-      `insert into public.property_media (property_id, url, ai_edited, original_media_id)
-       values ($1, 'https://ejemplo/editada.jpg', true, $2)`,
+      `insert into public.property_media
+         (property_id, url, ai_edited, original_media_id, edit_kind, review_status)
+       values ($1, 'https://ejemplo/editada.jpg', true, $2, 'lighting', 'pending')`,
       [original?.property_id, original?.id],
     );
     const editada = await una<{ ai_label: string }>(
-      `select ai_label from public.property_media where ai_edited`,
+      `select ai_label from public.property_media where ai_edited and not is_staged`,
     );
     expect(editada?.ai_label).toBe('Imagen modificada con Wasi AI');
+  });
+
+  it('y el amoblamiento virtual lleva la suya, que dice otra cosa', async () => {
+    const original = await una<{ id: string; property_id: string }>(
+      `select id, property_id from public.property_media where not ai_edited limit 1`,
+    );
+    await banco.db.query(
+      `insert into public.property_media
+         (property_id, url, ai_edited, is_staged, original_media_id, edit_kind, review_status)
+       values ($1, 'https://ejemplo/amoblada.jpg', true, true, $2, 'staging', 'pending')`,
+      [original?.property_id, original?.id],
+    );
+    const amoblada = await una<{ ai_label: string }>(
+      `select ai_label from public.property_media where is_staged`,
+    );
+    // No dice "modificada": dice que los muebles no están.
+    expect(amoblada?.ai_label).toBe('Amoblamiento virtual — imagen referencial');
   });
 
   it('no deja guardar una imagen editada sin su original', async () => {
@@ -223,8 +241,9 @@ describe('reglas grabadas en la base', () => {
     );
     await expect(
       banco.db.query(
-        `insert into public.property_media (property_id, url, ai_edited)
-         values ($1, 'https://ejemplo/huerfana.jpg', true)`,
+        `insert into public.property_media
+           (property_id, url, ai_edited, edit_kind, review_status)
+         values ($1, 'https://ejemplo/huerfana.jpg', true, 'lighting', 'pending')`,
         [alguna?.property_id],
       ),
     ).rejects.toThrow(/editada_conserva_original/);

@@ -246,6 +246,7 @@ describe('menú del panel según el rol', () => {
       'Alertas',
       'Inmobiliaria',
       'Wasi AI',
+      'Revisión de imágenes',
       'Configuración',
     ]);
   });
