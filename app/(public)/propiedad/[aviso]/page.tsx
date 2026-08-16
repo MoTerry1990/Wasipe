@@ -15,6 +15,8 @@ import {
 import { Hipoteca } from '@/features/avisos/hipoteca';
 import { MapaDelAviso } from '@/features/avisos/mapa-aviso';
 import { fichaPorCodigo, historialDePrecios, parecidas } from '@/lib/consultas/aviso';
+import { comparablesDe, estadisticaDe } from '@/lib/consultas/mercado';
+import { AnalisisDePrecio } from '@/features/avisos/analisis-de-precio';
 import { tipoDeCambio } from '@/lib/consultas/portada';
 import { monedaPreferida } from '@/lib/preferencias';
 import { esFavorito } from '@/lib/avisos/favoritos';
@@ -98,12 +100,38 @@ export default async function Ficha({ params }: Props) {
   const canonica = enlaceDeAviso(aviso);
   if (`/propiedad/${segmento}` !== canonica) redirect(canonica);
 
-  const [monedaGuardada, cambio, historial, similares, guardado] = await Promise.all([
+  const [
+    monedaGuardada,
+    cambio,
+    historial,
+    similares,
+    guardado,
+    mercado,
+    alquileres,
+    comparables,
+  ] = await Promise.all([
     monedaPreferida(),
     tipoDeCambio(),
     historialDePrecios(aviso.id),
     parecidas(aviso),
     esFavorito(aviso.id),
+    // El corte del último año y del tipo exacto: comparar un
+    // departamento contra el promedio de todos los tipos del distrito
+    // mezcla terrenos y casas, y no dice nada.
+    estadisticaDe({
+      distrito: aviso.district,
+      operacion: aviso.operation,
+      tipo: aviso.property_type,
+      periodo: 'm12',
+    }),
+    // El de alquiler del mismo distrito, para la rentabilidad bruta.
+    estadisticaDe({
+      distrito: aviso.district,
+      operacion: 'rent',
+      tipo: aviso.property_type,
+      periodo: 'm12',
+    }),
+    comparablesDe(aviso.id),
   ]);
 
   const moneda = monedaGuardada;
@@ -253,27 +281,17 @@ export default async function Ficha({ params }: Props) {
             />
           </div>
 
-          {historial.length > 1 && (
-            <section className="border-linea mt-6 rounded-2xl border bg-white p-5">
-              <h2 className="text-lg">Historial de precios</h2>
-              <p className="text-tinta-60 mt-1 text-[14px]">
-                Lo mostramos porque te sirve para negociar.
-              </p>
-              <ul className="mt-3">
-                {historial.map((cambio_) => (
-                  <li
-                    key={cambio_.changed_at}
-                    className="border-linea flex items-center justify-between border-b py-2.5 text-[14.5px] last:border-0"
-                  >
-                    <span className="text-tinta-60">{fecha(cambio_.changed_at)}</span>
-                    <span className="cifra text-tinta font-bold">
-                      {dinero(cambio_.price, cambio_.currency)}
-                    </span>
-                  </li>
-                ))}
-              </ul>
-            </section>
-          )}
+          {/* Evaluación de precio, comparables, historial, costo mensual y
+              rentabilidad. Es el diferenciador del producto y va junto,
+              no repartido por la ficha. */}
+          <AnalisisDePrecio
+            aviso={aviso}
+            estadistica={mercado}
+            alquileres={alquileres}
+            comparables={comparables}
+            historial={historial}
+            tipoDeCambio={cambio}
+          />
 
           <div className="mt-6">
             <Hipoteca precio={aviso.price} moneda={aviso.currency} />

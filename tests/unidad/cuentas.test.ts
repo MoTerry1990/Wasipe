@@ -247,6 +247,7 @@ describe('menú del panel según el rol', () => {
       'Inmobiliaria',
       'Wasi AI',
       'Revisión de imágenes',
+      'Índice de mercado',
       'Configuración',
     ]);
   });

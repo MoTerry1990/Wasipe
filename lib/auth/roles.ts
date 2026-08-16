@@ -92,6 +92,11 @@ const PANEL: readonly EntradaPanel[] = [
     texto: 'Revisión de imágenes',
     roles: ['moderator', 'admin'],
   },
+  {
+    href: '/panel/moderacion/mercado',
+    texto: 'Índice de mercado',
+    roles: ['admin'],
+  },
   { href: '/panel/configuracion', texto: 'Configuración' },
 ];
 

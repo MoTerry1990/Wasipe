@@ -90,6 +90,39 @@ export type TipoEdicionMedio =
   | 'wall_color'
   | 'declutter';
 
+export type PeriodoDeMercado = 'm3' | 'm6' | 'm12' | 'todo';
+
+/**
+ * Una fila del índice de precio por m².
+ *
+ * `sufficient` en false significa que no se llegó a la muestra mínima y
+ * que NO hay cifra que publicar. `pen_per_usd` y `computed_at` van
+ * siempre: sin ellos la cifra no se puede reproducir.
+ */
+export type EstadisticaDeMercado = {
+  department: string;
+  province: string;
+  district: string;
+  operation: Operacion;
+  /** null es el corte «todos los tipos». */
+  property_type: TipoInmueble | null;
+  period: PeriodoDeMercado;
+  listings: number;
+  avg_usd_per_m2: number | null;
+  median_usd_per_m2: number | null;
+  p25_usd_per_m2: number | null;
+  p75_usd_per_m2: number | null;
+  min_usd_per_m2: number | null;
+  max_usd_per_m2: number | null;
+  median_price_usd: number | null;
+  median_area: number | null;
+  /** Cuántos avisos se dejaron fuera por atípicos. Se muestra. */
+  outliers: number;
+  sufficient: boolean;
+  pen_per_usd: number;
+  computed_at: string;
+};
+
 export type FormatoDeVideo = 'vertical' | 'square' | 'horizontal';
 export type PlantillaDeVideo = 'modern' | 'premium' | 'minimal' | 'reel';
 export type EstadoDeVideo =
@@ -665,6 +698,21 @@ export type Database = {
         Update: Partial<TrabajoIA>;
         Relationships: [];
       };
+      market_stats: {
+        Row: EstadisticaDeMercado;
+        Insert: Alta<
+          EstadisticaDeMercado,
+          | 'department'
+          | 'province'
+          | 'district'
+          | 'operation'
+          | 'period'
+          | 'listings'
+          | 'pen_per_usd'
+        >;
+        Update: Partial<EstadisticaDeMercado>;
+        Relationships: [];
+      };
       property_videos: {
         Row: VideoDeAviso;
         Insert: Alta<VideoDeAviso, 'property_id' | 'created_by' | 'format' | 'template'>;
@@ -829,6 +877,27 @@ export type Database = {
       puede_descargar_video: { Args: { p_video_id: string }; Returns: boolean };
       /** La ruta del archivo, solo si corresponde entregarla. */
       registrar_descarga_de_video: { Args: { p_video_id: string }; Returns: string | null };
+      /** Recalcula el índice de mercado entero. Devuelve cuántas filas quedaron. */
+      recalcular_mercado: { Args: Record<string, never>; Returns: number };
+      /**
+       * Los avisos que sustentan la evaluación de precio de uno dado.
+       * Sin poder mirarlos, la evaluación es un número que hay que creer.
+       */
+      comparables_de: {
+        Args: { p_property_id: string; p_limite?: number };
+        Returns: {
+          id: string;
+          code: string;
+          title: string;
+          district: string;
+          price: number;
+          currency: Moneda;
+          total_area: number;
+          price_usd_per_m2: number | null;
+          bedrooms: number | null;
+          published_at: string | null;
+        }[];
+      };
       /**
        * Comparación de hasta cuatro avisos publicados.
        * Los valores salen de la base sin intermediarios: es lo que hace
@@ -889,6 +958,7 @@ export type Database = {
       verification_status: EstadoVerificacion;
       media_edit_kind: TipoEdicionMedio;
       media_review_status: EstadoRevisionMedio;
+      market_period: PeriodoDeMercado;
       video_format: FormatoDeVideo;
       video_template: PlantillaDeVideo;
       video_status: EstadoDeVideo;

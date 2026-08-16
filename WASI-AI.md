@@ -154,7 +154,7 @@ de aceptado o descartado.
 | Mejora de fotos (luz, color, perspectiva, resolución, orden) | Construida. Mismo caso: falta el endpoint del proveedor. |
 | Ambientación virtual (amoblar, estilo, color de pared) | Construida. Mismo caso. |
 | Video automático (3 formatos, 4 plantillas, narración) | Construida. Mismo caso. |
-| Estimación de precio | No empezada |
+| Evaluación de precio e índice por m² | Construida y funcionando **sin proveedor de IA**: es estadística sobre la base. |
 | Búsqueda conversacional (frase → filtros) | Construida y funcionando **sin proveedor de IA**: el parser local no lo necesita. |
 | Comparación y recomendación | Construida y funcionando sin proveedor: es aritmética sobre los datos de la base. |
 
@@ -509,3 +509,117 @@ existe el más barato de estos cuatro.
   uno con la tabla), lo que la comparación **no dice** (calidad de la
   construcción, estado real, gastos no declarados) y la **cuenta** con los
   puntajes a la vista.
+
+
+---
+
+# Mercado: precio por m², evaluación e historial
+
+## 25. La cifra que no se publica
+
+Este es el diferenciador del producto y, por lo mismo, el archivo donde
+más fácil se pierde la confianza. Una cifra publicada sin sustento vale
+menos que no publicar nada, así que la mitad del código y de las pruebas
+sirve para **no** decir algo.
+
+Cuatro reglas, y las cuatro viven en la base:
+
+1. **Solo entran avisos publicados y disponibles.** Un aviso rechazado,
+   pausado, vencido o ya vendido no representa el mercado de hoy. La regla
+   está escrita una sola vez, en la vista `avisos_para_mercado`.
+2. **Los atípicos quedan fuera**, con vallas intercuartílicas de Tukey
+   (Q1 − 1.5·RIC, Q3 + 1.5·RIC). Es el criterio estándar y, sobre todo, es
+   explicable: se puede decir cuántos avisos se dejaron fuera y por qué.
+3. **Debajo de cinco avisos no se publica un número.** La fila existe con
+   `sufficient = false` —para poder decir cuántos hay— pero la pantalla
+   muestra «Pocos datos», no un promedio de dos.
+4. **Todo agregado dice de cuántos avisos sale, cuándo se calculó y con
+   qué tipo de cambio se normalizó.** Sin esas tres cosas la cifra no se
+   puede reproducir, y una cifra que no se puede reproducir no es un dato.
+
+`market_stats` es una tabla y no una vista a propósito: una vista siempre
+parece fresca aunque los datos tengan un mes.
+
+## 26. Los cortes
+
+Cada distrito se calcula por **operación** (venta / alquiler), por **tipo
+de propiedad** (más el corte «todos los tipos») y por **período** (3
+meses, 6 meses, 1 año, todo). Un aviso pertenece a todos los períodos que
+lo cubren, así que los cortes se resuelven en una sola pasada.
+
+Un detalle de Postgres que costó una prueba: `property_type` **no** puede
+ir en la clave primaria, porque una columna de la PK es NOT NULL y el
+corte «todos los tipos» es precisamente NULL. La unicidad va en dos
+índices parciales. Y el `JOIN` que aplica las vallas usa
+`is not distinct from`, no `=`: con `=`, las filas del corte general
+desaparecían en silencio.
+
+## 27. Las cinco bandas
+
+| Banda | Cuándo |
+| --- | --- |
+| Oportunidad | 15% o más debajo de la mediana del distrito |
+| Precio competitivo | entre 5% y 15% debajo |
+| Precio promedio | de −5% a +10% |
+| Precio elevado | más de 10% encima |
+| **Pocos datos** | muestra insuficiente, sin mediana o sin precio por m² |
+
+Los cortes **no son simétricos** a propósito: en el mercado peruano se
+publica con margen para negociar, así que estar 8% encima de la mediana es
+normal y estar 15% debajo no lo es. Un corte simétrico marcaría «elevado»
+a casi la mitad del mercado.
+
+La frase nunca es un «Oportunidad» suelto: siempre dice contra qué se
+compara y de cuántos avisos sale. `evaluarPrecio()` tiene un doble
+cinturón — si la base dice `sufficient` pero hay menos de cinco avisos,
+gana el criterio más conservador.
+
+## 28. Los comparables se pueden mirar
+
+«Comparables» que no se pueden abrir no son comparables: son un número que
+hay que creer. `comparables_de()` devuelve los avisos del mismo distrito,
+tipo y operación, con área dentro de ±40% —la ventana que usan los
+tasadores para «similar»—, y la ficha los muestra con enlace. Cualquiera
+puede abrir los ocho y rehacer la cuenta.
+
+## 29. Historial que no se puede maquillar
+
+`price_history` la escribe un disparador desde el sprint 3, no la
+aplicación: quien publica no puede borrar ni reescribir su propia línea de
+tiempo, y hay pruebas que lo comprueban intentándolo.
+
+El gráfico se dibuja **en dólares**, no en la moneda de cada punto: un
+aviso que pasó de soles a dólares mostraría un salto absurdo. La etiqueta
+sí conserva la moneda original, porque es lo que la persona vio publicado
+ese día. Con un solo punto no se dibuja nada: graficar un único precio
+sugiere un movimiento que no hubo.
+
+Es un SVG plano, sin librería y sin JavaScript. Traer 40 KB de librería de
+gráficos para una polilínea de cinco puntos es lo que hace lenta una ficha
+en un teléfono con señal de barrio.
+
+## 30. Cuánto cuesta de verdad
+
+El precio de lista no es lo que se paga. La ficha suma **cuota estimada +
+mantenimiento** y muestra el total mensual. El mantenimiento se cobra en
+soles aunque el departamento se venda en dólares, así que se convierte con
+el tipo de cambio **a la vista**.
+
+La **rentabilidad bruta** sale de la mediana de alquiler del mismo
+distrito por el área, y solo se publica si esa muestra de alquileres
+alcanza. Además se descarta cualquier resultado por encima de 25% anual:
+eso no es una oportunidad, es un aviso de alquiler cargado en la moneda
+equivocada. El aviso aclara qué **no** descuenta: mantenimiento, predial,
+arbitrios, seguros, corretaje y los meses vacío.
+
+## 31. Recalcular
+
+`recalcular_mercado()` borra y reescribe la tabla entera, así que nunca
+queda una fila vieja mezclada con una nueva. Corre con clave de servicio;
+el rol se comprueba antes, en la acción de servidor, y la función no está
+concedida a `authenticated`. Cada corrida queda en la bitácora de
+auditoría con cuántas filas quedaron y con qué tipo de cambio.
+
+La pantalla de administración muestra primero **cuándo se calculó**: un
+índice de hace tres semanas se ve igual de convincente que uno de hoy, y
+esa es justamente la trampa.
