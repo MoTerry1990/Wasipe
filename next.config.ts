@@ -34,7 +34,11 @@ const nextConfig: NextConfig = {
     // Solo orígenes conocidos. Nada de comodines.
     remotePatterns: [
       { protocol: 'https', hostname: 'res.cloudinary.com', pathname: '/**' },
-      { protocol: 'https', hostname: '*.supabase.co', pathname: '/storage/v1/object/public/**' },
+      {
+        protocol: 'https',
+        hostname: '*.supabase.co',
+        pathname: '/storage/v1/object/public/**',
+      },
     ],
     formats: ['image/avif', 'image/webp'],
     // Un SVG remoto puede traer scripts. Se sirven solo los locales.

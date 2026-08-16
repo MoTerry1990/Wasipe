@@ -104,7 +104,11 @@ describe('secretos en el repositorio', () => {
       // por defecto, y tiene que estar escrito. Dejarlo vacío haría que
       // «apagado» dependa de que nadie lo complete, en vez de ser una
       // decisión declarada.
-      .filter((linea) => !/^PAGOS_EN_VIVO=no\s*$/.test(linea));
+      .filter((linea) => !/^PAGOS_EN_VIVO=no\s*$/.test(linea))
+      // `NEXT_PUBLIC_ENTORNO=desarrollo` es el valor por defecto en local
+      // y tampoco es una credencial. Vercel lo pisa solo con `preview` o
+      // `production`.
+      .filter((linea) => !/^NEXT_PUBLIC_ENTORNO=desarrollo\s*$/.test(linea));
 
     expect(conValor).toEqual([]);
   });

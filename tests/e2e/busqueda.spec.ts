@@ -36,7 +36,9 @@ test.describe('rutas de búsqueda', () => {
     await expect(page).toHaveURL('/comprar/casa/miraflores');
   });
 
-  test('un segmento inventado da 404, pero no deja a nadie en un callejón', async ({ page }) => {
+  test('un segmento inventado da 404, pero no deja a nadie en un callejón', async ({
+    page,
+  }) => {
     // Cambió en el sprint 17. Antes se redirigía a `/comprar` con 200,
     // pensando en quien llega con una errata. El problema es que eso es
     // un 404 blando: para un buscador significa que el sitio tiene

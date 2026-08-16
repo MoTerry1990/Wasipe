@@ -8,6 +8,37 @@ Ninguno se corrigió en este sprint: la instrucción fue auditar, no cambiar.
 
 ## 🔴 Críticos
 
+### P-13 · Originales de imágenes en bucket público — **RESUELTO (sprint 18)**
+
+> Los archivos originales vivían en `avisos`, que es público: cualquiera
+> con la dirección se bajaba la foto sin comprimir y **con sus
+> coordenadas GPS en los metadatos EXIF**. Estaba así desde el sprint 6.
+>
+> Cerrado con el bucket privado `originales`, sin política de UPDATE ni
+> de DELETE. Migración `20260829090000_almacenamiento_separado.sql`.
+>
+> **Las políticas de storage no están probadas**: PGlite no trae ese
+> esquema. Verificar contra Supabase es lo primero del próximo sprint.
+
+### P-14 · El tipo de archivo se leía de lo que declaraba el navegador — **RESUELTO (sprint 18)**
+
+> `file.type` es lo que el navegador *dice*, deducido de la extensión. Un
+> `.exe` renombrado a `.jpg` llegaba declarando `image/jpeg`.
+>
+> Ahora se leen los primeros bytes: `lib/almacenamiento/validacion.ts`.
+> 31 pruebas, incluidos un ejecutable de Windows, un PHP y un SVG.
+
+### P-15 · `unsafe-inline` en la CSP del sitio anterior — **ABIERTO**
+
+> El sitio de Netlify lleva `script-src 'self' 'unsafe-inline'` porque sus
+> páginas usan scripts en línea. Con el escapado del sprint 17 ya no es
+> explotable por la vía de P-01, pero es una red menos.
+>
+> **La aplicación nueva no tiene `unsafe-inline` y no lo va a tener.**
+> Esta deuda es solo del sitio anterior y se cierra cuando se apague, no
+> antes: sacar los scripts a archivos en un sitio que va a morir es
+> trabajo que no vuelve.
+
 ### P-01 · XSS almacenado en tres páginas públicas — **RESUELTO (sprint 17)**
 
 > **Cerrado el 16 de agosto de 2026.** `esc()` y `escUrl()` en

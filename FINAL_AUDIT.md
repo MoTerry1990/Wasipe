@@ -1,6 +1,17 @@
 # Auditoría final
 
-**16 de agosto de 2026** · Sprint 17 · Wasipe
+**16 de agosto de 2026** · Sprints 17 y 18 · Wasipe
+
+> **Actualización del sprint 18.** El veredicto no cambió y sigue siendo
+> el mismo: listo para desplegarse, no listo para lanzarse. Lo que cambió
+> es que ahora se sabe exactamente qué falta, y todo lo que se podía
+> adelantar sin infraestructura está hecho.
+>
+> Puntaje: **5,8 → 6,4**. Subieron almacenamiento y observabilidad;
+> infraestructura, copias y flujos críticos siguen igual, porque no
+> existe el proyecto de Supabase.
+>
+> Ver la sección «Sprint 18» al final.
 
 Esta auditoría se escribió para ser útil, no para tranquilizar. Donde algo
 no se probó, dice «no se probó», y eso no es lo mismo que «funciona».
@@ -255,3 +266,101 @@ En este orden, y no en otro:
 
 Los pagos y Wasi AI pueden esperar. Publicar en Wasipe es gratis, y el
 portal funciona entero sin ninguna de las dos cosas.
+
+---
+
+# Sprint 18 — Infraestructura
+
+**Estado: SPRINT BLOQUEADO POR INFRAESTRUCTURA.**
+
+No existe el proyecto de Supabase. Detalle completo en
+`INFRASTRUCTURE_REPORT.md`; lo que sigue es cómo cambian los puntajes.
+
+## Puntajes actualizados
+
+| Área | Antes | Ahora | Por qué |
+|---|---|---|---|
+| Calidad del código | 9 | **9** | 876 pruebas de unidad y base, 567 de navegador. Nada en rojo |
+| Seguridad — aplicación | 8 | **8** | Igual. Lo nuevo (validación de subidas) suma; nada se comprobó contra Supabase |
+| Seguridad — infraestructura | 3 | **3** | Sin cambios: no hay infraestructura |
+| Base de datos | 7 | **7** | 27 migraciones limpias en PGlite. Cero en Supabase |
+| **Almacenamiento** | — | **7** | Área nueva. Cinco depósitos separados, originales privados, validación real, huellas. Las políticas de storage sin probar |
+| Flujos críticos | 4 | **4** | Los siete siguen sin probar |
+| Accesibilidad | 9 | **9** | Sin cambios |
+| Rendimiento | 6 | **6** | Sin cambios |
+| SEO | 8 | **8** | Sin cambios |
+| **Observabilidad** | 2 | **5** | Sentry integrado y con 14 pruebas de que no filtra datos. Falta el DSN y una comprobación externa |
+| Copias y recuperación | 3 | **3** | Sigue sin restaurarse ninguna |
+| Pagos | 1 | **1** | Sin pasarela, apagado y declarado |
+| Documentación | 9 | **10** | 31 documentos. Los cinco del sprint 18 están escritos para llenarse mientras se ejecuta, no después |
+
+### Promedio: **6,4 sobre 10**
+
+Sigue mandando lo bajo. Infraestructura en 3, copias en 3 y flujos en 4
+son los que deciden, y los tres tienen la misma causa.
+
+## Lo que se arregló
+
+### Los originales estaban en un bucket público · **ALTO**
+
+Desde el sprint 6. Cualquiera con la dirección se bajaba el archivo tal
+como salió del celular: sin comprimir, con sus metadatos EXIF, y **con las
+coordenadas GPS del lugar donde se tomó la foto**.
+
+Una persona que publica su departamento eligió mostrar el distrito. La
+foto de su sala, sin tocar, dice la cuadra.
+
+Arreglado: bucket `originales` privado, sin política de UPDATE ni de
+DELETE. El archivo que subió la persona sigue estando, byte por byte.
+
+### Las imágenes de Wasi AI también · **MEDIO**
+
+Iban al mismo bucket público. Una imagen recién generada no la aprobó
+nadie, y el sprint 10 dejó escrito que ninguna sugerencia se publica sin
+confirmación. Ahora van a `generados`, privado.
+
+### El tipo de archivo se creía · **MEDIO**
+
+La validación miraba `file.type`, que es lo que el navegador *dice*,
+deducido casi siempre de la extensión. Un `.exe` renombrado a `.jpg` llega
+declarando `image/jpeg` y entraba.
+
+Ahora se leen los primeros bytes. Probado con un ejecutable de Windows, un
+PHP y un SVG: los tres se rechazan.
+
+### `image_hash` llevaba tres sprints vacía · **BAJO**
+
+Se agregó en el sprint 15 y nada la llenaba, así que la bandera de foto
+repetida existía pero no encontraba nada. Ahora hay cálculo, función de
+anotado idempotente, lote de relleno y una vista de avance.
+
+## Los criterios del sprint 18
+
+| Criterio | |
+|---|---|
+| Las 27 migraciones aplicadas | ❌ **No hay dónde** |
+| RLS verificado contra Supabase real | ❌ |
+| Vercel Preview funcional | ❌ No desplegado — decisión, ver informe |
+| Los siete flujos probados de verdad | ❌ |
+| Sentry recibió un error sin secretos | ❌ Falta el DSN |
+| Una copia restaurada y comparada | ❌ |
+| Supabase Storage con permisos correctos | ⚠️ Escrito y revisado, sin probar |
+| Los originales protegidos | ⚠️ Igual |
+| `image_hash` funciona para nuevas imágenes | ✅ Probado |
+| Los cobros reales apagados | ✅ |
+| Netlify sigue funcionando | ✅ Sin tocar |
+| No se cambió el DNS | ✅ Sin tocar |
+| Lint, typecheck, pruebas y build verdes | ✅ |
+| Sin vulnerabilidades críticas | ✅ `npm audit` → 0 |
+
+**5 de 14.** Los nueve que faltan tienen la misma causa.
+
+## Veredicto
+
+**NO LISTO PARA LANZAMIENTO.**
+
+Y tampoco «listo para lanzamiento controlado», porque un lanzamiento
+controlado también necesita una base de datos.
+
+Lo que falta sigue sin ser código. Son las cuatro cosas de la última
+sección de `INFRASTRUCTURE_REPORT.md`, y ninguna la puedo hacer yo.

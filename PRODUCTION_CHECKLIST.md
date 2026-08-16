@@ -84,11 +84,17 @@ notarse porque nadie prueba el correo de confirmación.
 
 | | Punto |
 |---|---|
-| ☐ | Las cubetas existen con los mismos nombres que las migraciones |
-| ☐ | La cubeta de videos es **privada** |
+| ☐ | Las seis cubetas existen con los nombres de las migraciones |
+| ☐ | `originales` es **privada** — lleva los EXIF con el GPS |
+| ☐ | `generados` es **privada** — nadie aprobó esas imágenes todavía |
+| ☐ | `videos` es **privada** |
+| ☐ | `originales` **no** admite UPDATE ni DELETE desde el navegador |
 | ☐ | Las políticas de `storage.objects` están aplicadas |
 | ☐ | El límite de tamaño por archivo está puesto |
 | ☐ | Los tipos MIME permitidos están puestos |
+| ☑ | El tipo se valida por contenido, no por lo que declara el navegador |
+| ☑ | Los nombres de archivo no dejan salir de la carpeta |
+| ☑ | `image_hash` se calcula para las imágenes nuevas |
 
 Las políticas están en `20260816090200_almacenamiento.sql`. Una cubeta
 sin políticas con RLS activo no deja escribir a nadie; una cubeta pública
@@ -100,7 +106,7 @@ sin límite de tipo acepta un HTML con script dentro.
 
 | | Punto | Estado |
 |---|---|---|
-| ☑ | P-01: el sitio anterior escapa lo que dibuja | 93 interpolaciones. *Prueba automática* |
+| ☑ | P-01: el sitio anterior escapa lo que dibuja | 129 interpolaciones. *Prueba automática* |
 | ☑ | Los datos estructurados no se pueden romper con `</script>` | *Prueba automática* |
 | ☑ | Ningún componente de cliente consulta tablas privadas | *Prueba automática* |
 | ☑ | Las acciones de administración exigen puesto antes de tocar la base | *Prueba automática* |
@@ -142,13 +148,17 @@ sin límite de tipo acepta un HTML con script dentro.
 
 | | Punto | Estado |
 |---|---|---|
-| ☐ | Sentry recibe errores del servidor y del navegador | **No conectado** |
+| ⚠️ | Sentry integrado, sin DSN | El código está; falta la credencial |
+| ☑ | Los errores no llevan contraseñas, cookies ni datos personales | 14 pruebas |
+| ☐ | Sentry recibe un error de verdad | **Sin verificar** |
 | ☐ | Hay una alerta cuando la tasa de error sube | |
 | ☐ | Hay una comprobación de estado externa | |
 | ☑ | Los errores no exponen nada interno a la persona | El 404 y el error dan un mensaje sin traza |
 
-**Este es el punto más flojo de la lista.** Sin Sentry, cuando algo falle
-en producción nos vamos a enterar porque alguien escriba, no antes.
+**Sigue siendo el punto más flojo,** aunque ya no esté vacío. Con el
+código listo, falta la credencial y una comprobación de estado externa:
+si el sitio deja de responder, no hay servidor que mande el error, así
+que Sentry no se entera de una caída completa.
 
 ---
 
