@@ -133,10 +133,11 @@ Si algún cambio parece exigir tocarla, se pregunta primero.
 - El DNS no se toca sin aprobación expresa.
 
 ## Comandos
-    npm run dev -- -p 3001    Next en desarrollo. El puerto va SIEMPRE explícito:
-                              el script es `next dev` a secas y sin `-p` intenta
-                              el 3000, que es el de Atheos. `.claude/launch.json`
-                              ya lo pasa; a mano hay que escribirlo.
+    npm run dev          Next en desarrollo, en el 3001. El puerto está fijado
+                         dentro del script (`next dev -p 3001`) a propósito: si
+                         se quita, Next intenta el 3000, que es el de Atheos.
+                         No pasarle otro `-p` salvo que el 3001 esté ocupado por
+                         un proceso que NO sea de Wasipe.
     npm run build        build de producción
     npm run lint         eslint
     npm run typecheck    tsc --noEmit
