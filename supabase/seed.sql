@@ -264,7 +264,12 @@ values
    'Cerca del colegio Los Álamos', -12.1085, -76.9841),
   ('c0000005-0000-4000-8000-000000000005', 'Jr. Domeyer 180', 'Barranco', '2',
    'A una cuadra del malecón', -12.1467, -77.0219),
-  ('c0000006-0000-4000-8000-000000000006', 'Km 24.5 carretera a Cieneguilla', null, null,
+  -- Este es el único aviso con privacidad `district_only`, y lleva
+  -- urbanización a propósito: es el caso que prueba que la zona NO se
+  -- copia a `properties` cuando quien publicó pidió mostrar solo el
+  -- distrito. Sin este dato, el guardián no comprobaría nada.
+  ('c0000006-0000-4000-8000-000000000006', 'Km 24.5 carretera a Cieneguilla',
+   'Los Huertos de Cieneguilla', null,
    'Antes del puente', -12.0915, -76.7811),
   ('c0000007-0000-4000-8000-000000000007', 'Calle Misti 412', 'Yanahuara', '4',
    'A dos cuadras del mirador', -16.3905, -71.5528),
@@ -358,6 +363,27 @@ where not exists (
     and sender_id = '33333333-3333-4333-8333-333333333333'
 );
 
+-- ---------------------------------------------------------------------
+-- La zona publicable
+--
+-- `properties.urbanization` es la copia buscable de la urbanización, y se
+-- llena con la misma regla que aplica la aplicación al publicar: **solo
+-- si la privacidad elegida lo permite**. Quien pidió mostrar únicamente
+-- el distrito la conserva en `property_locations` y no acá.
+--
+-- Se hace con un update y no con la columna en el insert de arriba para
+-- no repetir el valor en dos sitios: la fuente es la tabla de la
+-- dirección, siempre.
+-- ---------------------------------------------------------------------
+update public.properties p
+   set urbanization = l.urbanization
+  from public.property_locations l
+ where l.property_id = p.id
+   and l.urbanization is not null
+   and l.urbanization <> ''
+   and p.address_privacy in ('exact', 'approximate');
+
 alter table public.profiles enable trigger profiles_sin_escalada;
 
 commit;
+

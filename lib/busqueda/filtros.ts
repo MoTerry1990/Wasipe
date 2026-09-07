@@ -67,6 +67,9 @@ const esquema = z.object({
   departamento: texto(60),
   provincia: texto(60),
   distrito: texto(80),
+  // La zona dentro del distrito. Se guarda al publicar y solo llega acá
+  // si quien publicó no eligió mostrar únicamente el distrito.
+  zona: texto(80),
 
   // Clasificación
   tipo: z
@@ -161,6 +164,7 @@ const DE_BUSQUEDA = [
   'departamento',
   'provincia',
   'distrito',
+  'zona',
   'tipo',
   'precioMin',
   'precioMax',
@@ -207,6 +211,7 @@ export function urlDeFiltros(filtros: Filtros, cambios: Partial<Filtros> = {}): 
   escribir('departamento', combinados.departamento);
   escribir('provincia', combinados.provincia);
   escribir('distrito', combinados.distrito);
+  escribir('zona', combinados.zona);
   escribir(
     'tipo',
     combinados.tipo ? SLUG_DESDE_TIPO[combinados.tipo as TipoInmueble] : undefined,

@@ -3,7 +3,8 @@
 import { cookies } from 'next/headers';
 import { revalidatePath } from 'next/cache';
 import { leerMoneda } from '@/lib/moneda';
-import { COOKIE_MONEDA, DURACION_PREFERENCIA, LARGO_MAXIMO_DE_NOTA } from '@/lib/preferencias';
+import { COOKIE_MONEDA, DURACION_PREFERENCIA } from '@/lib/preferencias';
+import { LARGO_MAXIMO_DE_NOTA } from '@/lib/validacion/nota';
 import { clienteServidor } from '@/lib/supabase/servidor';
 import { requiereSeccion } from '@/lib/auth/sesion';
 import type { Estado } from '@/features/cuentas/acciones';

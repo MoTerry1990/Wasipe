@@ -226,6 +226,17 @@ export type Propiedad = {
   department: string;
   province: string;
   district: string;
+  /**
+   * La zona dentro del distrito, para poder buscar por ella.
+   *
+   * Es una copia de `property_locations.urbanization`, y vive acá porque
+   * la búsqueda no toca esa tabla: ahí está la dirección exacta.
+   *
+   * Nula cuando quien publicó eligió mostrar solo el distrito. Una
+   * urbanización acota de Miraflores entero a unas pocas cuadras, así que
+   * copiarla igual sería desdecir esa elección.
+   */
+  urbanization: string | null;
   ubigeo: string | null;
   lat: number | null;
   lon: number | null;

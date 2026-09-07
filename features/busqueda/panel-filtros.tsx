@@ -123,6 +123,19 @@ function Campos({
     <>
       <Grupo titulo="Dónde">
         <AutocompletadoUbicacion nombre="distrito" valorInicial={filtros.distrito ?? ''} />
+
+        <label className="solo-lectores" htmlFor={`${prefijo}-zona`}>
+          Urbanización o zona
+        </label>
+        <input
+          id={`${prefijo}-zona`}
+          name="zona"
+          type="text"
+          maxLength={80}
+          defaultValue={filtros.zona ?? ''}
+          placeholder="Urbanización o zona"
+          className="border-linea focus:border-fucsia mt-2 w-full rounded-xl border-[1.5px] bg-white px-3 py-2 text-[14px] outline-none"
+        />
       </Grupo>
 
       <Grupo titulo="Tipo de propiedad">
@@ -347,6 +360,7 @@ function filtrosDelFormulario(datos: FormData, filtros: Filtros): Filtros {
     pagina: undefined,
 
     distrito: leer('distrito'),
+    zona: leer('zona'),
     tipo: tipo ? TIPO_DESDE_SLUG[tipo] : undefined,
     precioMin: numero('precioMin'),
     precioMax: numero('precioMax'),

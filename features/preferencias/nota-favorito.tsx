@@ -2,7 +2,7 @@
 
 import { useState, useTransition } from 'react';
 import { guardarNota, borrarNota } from '@/features/preferencias/acciones';
-import { LARGO_MAXIMO_DE_NOTA } from '@/lib/preferencias';
+import { LARGO_MAXIMO_DE_NOTA } from '@/lib/validacion/nota';
 
 /**
  * La nota de un favorito.

@@ -114,6 +114,30 @@ Ninguno se corrigió en este sprint: la instrucción fue auditar, no cambiar.
 > Las 14 pruebas no lo detectaron porque comprueban las rutas
 > estructuradas, que sí funcionan.
 
+### P-29 · Tres pruebas de `busqueda.spec.ts` fallan, y ninguna por el producto — **ABIERTO**
+
+> Comprobado en el sprint 23C que **las tres fallan sin los cambios de ese
+> sprint**. Se anotan juntas porque comparten la misma raíz: la prueba
+> describe un mundo que ya no existe.
+>
+> **«un segmento inventado da 404»** — violación de modo estricto: el
+> enlace «Departamentos en Miraflores» aparece tres veces en la página de
+> 404 (en el bloque de sugerencias, en la lista y en el pie) y el
+> localizador no elige cuál. Se arregla con un `.first()` o acotando el
+> ámbito, no tocando la página.
+>
+> **«el orden y la vista se eligen desde la barra»** — espera ver
+> «Todavía no hay propiedades acá». Desde que en el sprint 22 se sembró
+> staging, la búsqueda devuelve resultados y el estado vacío no aparece.
+> La prueba daba por sentada una base vacía.
+>
+> **«la búsqueda no se desborda a lo ancho»** — desbordamiento horizontal
+> en móvil. Este sí puede ser del producto y merece mirarse: se comprobó
+> que falla también sin el campo de zona agregado en 23C.
+>
+> Las tres juntas son el motivo por el que P-26 importa: una suite con
+> rojos crónicos deja de avisar cuando aparece uno nuevo.
+
 ### P-26 · La prueba de la vista de mapa es inestable — **ABIERTO**
 
 > `tests/e2e/criticos.spec.ts` → «la vista de mapa abre sin caerse» falla

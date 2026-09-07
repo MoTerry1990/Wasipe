@@ -84,6 +84,20 @@ export async function buscar(filtros: Filtros, tipoDeCambio: number): Promise<Bu
     if (filtros.provincia) consulta = consulta.ilike('province', filtros.provincia);
     if (filtros.distrito) consulta = consulta.ilike('district', filtros.distrito);
 
+    // La zona se busca contra `properties.urbanization` y NO contra
+    // `property_locations`, que es donde se captura. Esa tabla guarda la
+    // dirección exacta y este archivo no la toca por ninguna vía; además,
+    // su política solo la abre cuando quien publicó eligió `exact`.
+    //
+    // La copia en `properties` existe únicamente para las privacidades
+    // que la permiten: quien eligió mostrar solo el distrito la tiene en
+    // nulo, así que su aviso no aparece en un filtro de zona. Se encuentra
+    // por distrito, que es lo que esa persona aceptó.
+    //
+    // `%texto%` y no igualdad: nadie escribe «Chacarilla del Estanque»
+    // entero.
+    if (filtros.zona) consulta = consulta.ilike('urbanization', `%${filtros.zona}%`);
+
     if (filtros.tipo) consulta = consulta.eq('property_type', filtros.tipo);
 
     // --- Precio ---
