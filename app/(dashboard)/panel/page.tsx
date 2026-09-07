@@ -12,9 +12,21 @@ export const metadata = { title: 'Resumen' };
 /**
  * Resumen del panel.
  *
- * Las cifras salen de la base con la sesión de la persona, así que la
- * RLS ya filtró: aunque esta consulta no llevara ningún `where`, no
- * podría contar avisos ajenos.
+ * **Cada cifra lleva su propio `where`, y no es redundante.**
+ *
+ * Este comentario decía lo contrario: que las consultas salen con la
+ * sesión de la persona, así que RLS ya filtró y ninguna podría contar
+ * avisos ajenos. Eso es falso, y la creencia costó el defecto: la
+ * consulta de avisos no llevaba `where` y a Rosa, con tres avisos, el
+ * panel le decía ocho —todos los publicados del portal más los suyos—.
+ *
+ * RLS acota **lo que se puede leer**. No dice de quién es. Un aviso
+ * publicado de otra persona es perfectamente legible: por eso existe el
+ * portal. Contarlo como propio es la aplicación equivocándose, no la base
+ * fallando, y por eso nunca hubo un error que mirar.
+ *
+ * La consulta pone de quién y en qué estado. RLS pone hasta dónde. Las
+ * dos capas, siempre.
  */
 export default async function Panel({
   searchParams,
@@ -26,8 +38,15 @@ export default async function Panel({
   const supabase = await clienteServidor();
 
   const [avisos, favoritos, consultas] = await Promise.all([
-    supabase.from('properties').select('id', { count: 'exact', head: true }),
-    supabase.from('favorites').select('property_id', { count: 'exact', head: true }),
+    supabase
+      .from('properties')
+      .select('id', { count: 'exact', head: true })
+      .eq('owner_id', perfil.id)
+      .eq('publication_status', 'published'),
+    supabase
+      .from('favorites')
+      .select('property_id', { count: 'exact', head: true })
+      .eq('user_id', perfil.id),
     supabase.from('inquiries').select('id', { count: 'exact', head: true }).eq('status', 'new'),
   ]);
 
