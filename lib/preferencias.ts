@@ -23,3 +23,15 @@ export async function monedaPreferida(): Promise<Moneda> {
   const almacen = await cookies();
   return leerMoneda(almacen.get(COOKIE_MONEDA)?.value);
 }
+
+/**
+ * Cuánto puede medir la nota de un favorito.
+ *
+ * Doscientos ochenta caracteres: lo que entra en un recordatorio de por
+ * qué guardaste algo —«preguntar por el mantenimiento», «queda a tres
+ * cuadras del colegio»— y no lo suficiente para escribir un contrato.
+ * La base admite hasta 500 con un CHECK; este es más estrecho a
+ * propósito, y es el que ve la persona. Si algún día se afloja acá, el
+ * de la base sigue siendo el techo.
+ */
+export const LARGO_MAXIMO_DE_NOTA = 280;

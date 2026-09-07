@@ -6,6 +6,7 @@ import { EstadoVacio } from '@/components/estados/estado-vacio';
 import { dinero, porMetro } from '@/lib/formato';
 import { OPERACION, TIPO_INMUEBLE } from '@/lib/etiquetas';
 import { enlaceDeAviso } from '@/lib/avisos/enlace';
+import { NotaDelFavorito } from '@/features/preferencias/nota-favorito';
 import type { Moneda, Operacion, TipoInmueble } from '@/types/base-datos';
 
 export const metadata = { title: 'Favoritos' };
@@ -78,11 +79,7 @@ export default async function Favoritos() {
                     {porMetro(aviso.price_per_m2, aviso.currency)}
                   </p>
                 )}
-                {note && (
-                  <p className="border-linea text-tinta-60 mt-3 border-t pt-3 text-[13.5px] italic">
-                    {note}
-                  </p>
-                )}
+                <NotaDelFavorito avisoId={property_id} nota={note} />
               </Tarjeta>
             </li>
           ))}
