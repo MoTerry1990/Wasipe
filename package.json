@@ -14,7 +14,7 @@
     "legacy": "npm --prefix legacy run verificar",
     "test:db": "vitest run tests/base-datos",
     "sembrar": "node --env-file-if-exists=.env scripts/sembrar.mjs",
-    "db:push": "supabase db push",
+    "db:push": "node scripts/db-push.mjs",
     "db:reset": "supabase db reset",
     "tipos": "supabase gen types typescript --linked > types/base-datos.generado.ts"
   },

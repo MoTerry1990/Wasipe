@@ -159,6 +159,20 @@ Antes de `db:push` contra un proyecto real se corre siempre
 `scripts/verificar-proyecto.mjs`: confirma a qué proyecto apunta y si la base
 está vacía. **Si sale con código 2, no se migra.**
 
+### Migrar no necesita `supabase link`
+
+`db:push` pasa `--db-url` con la cadena de `.env.local`, así que el CLI habla
+directo con la base. **No hace falta enlazar el proyecto ni crear un token
+personal de acceso.** Y es lo correcto también por aislamiento: `supabase
+link` sin argumentos abre la lista de proyectos de la cuenta, donde también
+están los de Atheos; una cadena de conexión apunta a un anfitrión y a uno
+solo, sin lista de la que equivocarse.
+
+Si alguna vez hace falta enlazar de verdad —para `db diff` o
+`gen types --linked`—, siempre con la referencia explícita:
+`npx supabase link --project-ref <referencia>`. **Nunca `supabase link` a
+secas.**
+
 ## Pruebas — y qué no cubren
 - **Vitest** para unidad y base de datos. Las de base corren contra
   **PGlite**, en memoria.
