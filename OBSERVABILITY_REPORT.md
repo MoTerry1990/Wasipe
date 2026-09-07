@@ -123,3 +123,41 @@ completa no genera ningún evento**. Si el servidor no responde, no hay
 nadie que mande el error. Sentry sirve para los fallos *dentro* de una
 aplicación que funciona; para saber que dejó de funcionar hace falta algo
 que pregunte desde afuera.
+
+---
+
+## Ejecución — sprint 22 · 6 de setiembre de 2026
+
+**Estado: SIN VERIFICAR. Sentry no está configurado en Vercel.**
+
+El proyecto `wasipe-web` puede existir en Sentry, pero **no hay ninguna
+variable de Sentry en el proyecto de Vercel**, ni en Preview ni en
+Production. Comprobado con `vercel env ls`: las nueve variables del
+Preview son las de Supabase, la aplicación, los adaptadores de IA y el
+interruptor de pagos. Ninguna de Sentry.
+
+Sin `NEXT_PUBLIC_SENTRY_DSN`, Sentry **no se inicializa**: ni una
+petición, ni peso extra en el paquete. Es el comportamiento previsto y
+está probado, pero significa que el Preview hoy **no reporta nada**.
+
+Queda sin verificar, y hay que decirlo entero:
+
+| Qué | Estado |
+|---|---|
+| El evento llega a Sentry | ⬜ sin verificar |
+| Entorno `staging` | ⬜ sin verificar |
+| Sin cookies, contraseñas, teléfonos, correos ni coordenadas | ⬜ **sin verificar contra un evento real** |
+
+Sobre el último punto, para que no se lea de más: hay **14 pruebas de
+unidad** que comprueban el filtrado sobre eventos construidos a mano, y
+siguen en verde. Lo que no existe es la comprobación sobre un evento que
+haya viajado de verdad hasta Sentry, que es lo que este sprint pedía.
+
+Para desbloquearlo hace falta, en Vercel → wasipe → Environment
+Variables, ámbito **Preview**:
+
+    NEXT_PUBLIC_SENTRY_DSN     el DSN del proyecto wasipe-web
+
+Y opcionalmente, para que las trazas no salgan minificadas:
+
+    SENTRY_ORG · SENTRY_PROJECT · SENTRY_AUTH_TOKEN

@@ -1,16 +1,29 @@
+# Todos los patrones de carpeta llevan barra inicial a propósito.
+#
+# Sin ella, un patrón como `supabase/` excluye CUALQUIER carpeta con ese
+# nombre a cualquier profundidad. `supabase/` a secas se llevaba también
+# `lib/supabase/`, donde viven los cinco clientes de los que depende toda
+# la aplicación, y el build moría con «Can't resolve
+# '@/lib/supabase/servidor'». Estuvo así desde el Sprint 3 y no se notó
+# hasta el primer despliegue, en el Sprint 22, porque hasta entonces el
+# proyecto nunca se había desplegado.
+#
+# La barra inicial ancla el patrón a la raíz del proyecto, que es lo que
+# se quería en los cinco casos.
+
 # El stack anterior (Hono + Netlify Functions) se conserva como referencia
 # durante la migración, pero no forma parte del build de Vercel. Excluirlo
 # evita subir ~40 MB y que Vercel detecte dos proyectos en el repositorio.
-legacy/
+/legacy/
 
 # Documentación de diseño y auditoría: no hace falta en el despliegue.
 *.md
 !README.md
 
-tests/
-supabase/
-scripts/
+/tests/
+/supabase/
+/scripts/
 playwright.config.ts
 vitest.config.ts
-test-results/
-playwright-report/
+/test-results/
+/playwright-report/

@@ -39,6 +39,27 @@ Ninguno se corrigió en este sprint: la instrucción fue auditar, no cambiar.
 > antes: sacar los scripts a archivos en un sitio que va a morir es
 > trabajo que no vuelve.
 
+### P-19 · El Preview se declara indexable — **ABIERTO · P0 antes del lanzamiento**
+
+> **Encontrado en el sprint 22**, en el primer despliegue de Preview.
+>
+> El Preview responde `<meta name="robots" content="index, follow">` y un
+> `robots.txt` con `Allow: /`. O sea que se ofrece a Google como si fuera
+> el sitio de verdad.
+>
+> La causa: **`NEXT_PUBLIC_ENTORNO` solo se usa en
+> `lib/observabilidad/sentry.ts`.** Ni `app/robots.ts` ni
+> `lib/seo/indexable.ts` lo consultan; la decisión de indexar depende solo
+> de combinaciones de filtros, nunca del entorno.
+>
+> **Lo que hace falta:** `robots` debe responder `noindex` y `Disallow`
+> cuando `NEXT_PUBLIC_ENTORNO !== 'produccion'`.
+>
+> Hoy no es explotable porque la protección de despliegue de Vercel bloquea
+> el acceso anónimo al Preview. Pero eso es una segunda línea de defensa
+> que se apaga con un clic, y entonces queda contenido duplicado
+> compitiendo contra el sitio real. **Bloqueante antes de lanzar.**
+
 ### P-01 · XSS almacenado en tres páginas públicas — **RESUELTO (sprint 17)**
 
 > **Cerrado el 16 de agosto de 2026.** `esc()` y `escUrl()` en
@@ -201,18 +222,32 @@ error real, pero conviene revisarlo al migrar a componentes.
 
 Hoy `/buscar?distrito=miraflores`. Para SEO conviene `/venta/departamentos/miraflores`.
 
+### P-20 · El título de la portada repite «Wasipe»
+
+Visto en el Preview del sprint 22:
+
+    Wasipe · Departamentos, casas y proyectos en venta y alquiler en el Perú · Wasipe
+
+La plantilla de título añade el sufijo del sitio a un título que ya lo
+traía. Es la etiqueta que muestra Google, así que conviene arreglarlo,
+pero no rompe nada.
+
 ---
 
 ## Resumen
 
 | Gravedad | Cantidad |
 |---|---:|
-| 🔴 Crítico | 2 |
+| 🔴 Crítico | 3 |
 | 🟠 Alto | 4 |
 | 🟡 Medio | 6 |
-| 🔵 Bajo | 6 |
+| 🔵 Bajo | 7 |
 
 **Los tres que más urgen:**
 1. **P-01** — XSS, antes de que entre el primer usuario real
 2. **P-03** — Cloudinary, sin eso nadie publica
 3. **P-02** — desplegar la búsqueda, hoy da 404
+
+**Bloqueante antes de lanzar:** **P-19** — el Preview se ofrece a Google
+como si fuera el sitio. Hoy lo tapa la protección de despliegue de Vercel,
+que se apaga con un clic.

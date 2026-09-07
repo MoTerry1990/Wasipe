@@ -125,3 +125,83 @@ horas, se pierden cuatro horas» sin haberlo medido.
 
 Se llena esta tabla y `PRODUCTION_CHECKLIST.md` §2 deja de estar
 bloqueado. Es uno de los tres puntos que hoy impiden lanzar.
+
+---
+
+## Ejecución — sprint 22 · 6 de setiembre de 2026
+
+**Estado: la copia funciona. La restauración NO quedó demostrada.**
+
+### Lo que sí se hizo
+
+| | |
+|---|---|
+| Origen | `wasipe-staging` (`kcsditeaaszvmwirjazo`), PostgreSQL **17.6** |
+| Herramienta | `pg_dump` **17.11**, instalada localmente |
+| Volcado completo | `--schema=public --no-owner --no-privileges` → **183 216 bytes** |
+| Volcado de esquema | `--schema-only` → **174 567 bytes** |
+| Cadena de conexión dentro del archivo | **no** (comprobado) |
+| Archivos | fuera del repositorio, en la carpeta temporal de la sesión |
+
+Conteos de referencia en el origen:
+
+| Objeto | Cantidad |
+|---|---:|
+| tablas | 28 |
+| vistas | 6 |
+| índices | 107 |
+| políticas | 73 |
+| funciones | 66 |
+| restricciones | 174 |
+| enums | 33 |
+| disparadores | 20 |
+| **filas** | **0** |
+
+### Lo que no se pudo demostrar
+
+El ensayo se corrió contra **PGlite**, elegido porque es la garantía más
+fuerte de que no puede tocar staging: la base no existe fuera del proceso.
+Resultado con `scripts/ensayo-restauracion.mjs`:
+
+    sentencias: 470 · aplicadas 389 · fallidas 81
+
+    64 × relation "public.properties" does not exist
+    10 × relation "public.property_locations" does not exist
+     2 × type "extensions.geography" does not exist
+     5 × (otras, en cascada)
+
+Las 81 salen de **dos**. `extensions.geography` no existe porque **PGlite
+no trae PostGIS**; sin ese tipo no se crean `properties` ni
+`property_locations`, y todo lo que las referencia cae detrás.
+
+Conteos restaurados contra referencia: 26 de 28 tablas, 1 de 6 vistas,
+81 de 107 índices, 59 de 73 políticas. Un solo conteo coincidió.
+
+**Conclusión: PGlite no sirve como destino de restauración de este
+proyecto.** Sirve para las pruebas de RLS, que es para lo que está, pero
+no para un ensayo de recuperación.
+
+### Tres cosas que hay que saber antes de una emergencia
+
+1. **El destino necesita PostGIS.** Sin la extensión no se restauran las
+   dos tablas centrales del producto. Cualquier base de recuperación tiene
+   que tenerla instalada *antes*.
+
+2. **El volcado se restaura con `psql`, no con un driver.** `pg_dump` 17
+   escribe `\restrict` y `\unrestrict` al principio y al final, y cierra
+   cada bloque de datos con `\.`. Son metacomandos de psql: alimentar el
+   archivo a un cliente de Postgres da `syntax error at or near "\"` y no
+   dice por qué.
+
+3. **Los roles no viajan.** Un volcado de `--schema=public` no incluye
+   `anon`, `authenticated` ni `service_role`, pero las 73 políticas los
+   nombran. Hay que crearlos en el destino antes de restaurar, o usar
+   `supabase db dump --role-only`.
+
+### Lo que falta
+
+Un Postgres 17 con PostGIS como destino, y restaurar con `psql`. El
+servidor local instalado en este sprint responde en el 5432, pero no se
+usó: haría falta su contraseña, y adivinarla no es forma de trabajar.
+
+**`PRODUCTION_CHECKLIST.md` §2 sigue bloqueado.**

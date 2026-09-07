@@ -191,3 +191,58 @@ devuelva texto no quiere decir que el texto sirva.
 
 El de cobro queda fuera a propósito: `PAGOS_EN_VIVO=no` y la regla del
 sprint dice que no se activa nada bajo ninguna circunstancia.
+
+---
+
+## Ejecución — sprint 22 · 6 de setiembre de 2026
+
+### Vercel Preview
+
+| Qué | Resultado |
+|---|---|
+| Proyecto creado | ✅ `wasipe`, nuevo, ámbito `moterry1991` |
+| Despliegue | ✅ Preview, nunca producción |
+| URL | `https://wasipe-3322qml7j-moterry1991.vercel.app` |
+| URL estable de rama | `https://wasipe-git-main-moterry1991.vercel.app` |
+| Portada carga | ✅ 187 KB, `lang="es-PE"` |
+| Español | ✅ sin Buy, Rent, Search, Sign In, Dashboard, Settings |
+| Skyline intacto | ✅ **47 de 47 trazos y 31 de 31 colores**, comparados contra el componente |
+| `NEXT_PUBLIC_URL_SITIO` | ✅ sitemap y canónica apuntan al Preview, no a producción |
+| Indexable | ❌ responde `index, follow` — **P-19 en `KNOWN_ISSUES.md`** |
+
+El primer despliegue falló: `.vercelignore` traía `supabase/` sin barra
+inicial, y ese patrón se llevaba también `lib/supabase/`. Estaba así desde
+el sprint 3 y no se notó porque el proyecto nunca se había desplegado.
+Corregido anclando los cinco patrones de carpeta.
+
+### Los siete flujos
+
+| Flujo | Estado | Motivo |
+|---|---|---|
+| Contacto con anunciante | ⬜ no ejecutado | Ver abajo |
+| Guardar borrador | ⬜ no ejecutado | Ver abajo |
+| Enviar a revisión | ⬜ no ejecutado | Ver abajo |
+| Descripción con IA | ➖ no aplica | `IA_PROVEEDOR=ninguno` en Preview; diferido al sprint 25 |
+| Imagen con IA | ➖ no aplica | Sin proveedor de imagen |
+| Video con IA | ➖ no aplica | Sin proveedor de video |
+| Cobro de prueba | ➖ excluido | `PAGOS_EN_VIVO=no`, regla del sprint |
+
+Los tres primeros no corrieron por dos razones concretas:
+
+1. **La aplicación tiene una sola ruta de API** (`app/auth/callback`). Todo
+   lo demás va por Server Actions, así que estos flujos solo existen dentro
+   de la interfaz y hay que conducir un navegador para probarlos.
+2. **El Preview está detrás de la protección de despliegue de Vercel**
+   —responde 302 a `vercel.com/sso-api`— y **la base no tiene datos**: 28
+   tablas, 0 filas. Sin cuenta ni aviso publicado no hay flujo que probar.
+
+Para ejecutarlos hace falta un token de excepción de la protección y
+sembrar datos de prueba en staging.
+
+### Storage y RLS
+
+Verificados en el sprint 21 contra Supabase real, no acá. Ver el reporte
+de ese sprint: 28 tablas con RLS, aislamiento entre usuarios demostrado
+con dos identidades, originales inaccesibles con objeto presente, y siete
+funciones que estaban al alcance de un visitante sin sesión, cerradas con
+la migración `20260906200000_permisos_de_funciones.sql`.
