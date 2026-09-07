@@ -7,6 +7,7 @@ import { supabaseConfigurado } from '@/lib/supabase/entorno';
 import { requiereCuentaLista } from '@/lib/auth/sesion';
 import { puedePublicar } from '@/lib/auth/roles';
 import { TIPO_DESDE_SLUG } from '@/lib/catalogo';
+import { esMotivoDeCierre } from '@/lib/etiquetas';
 import {
   esquemaDeAviso,
   pasosIncompletos,
@@ -437,19 +438,6 @@ export async function enlaceAlOriginal(
 // ---------------------------------------------------------------------
 // Cerrar un aviso
 // ---------------------------------------------------------------------
-
-/** Los tres finales posibles de un aviso, y cómo se llaman en pantalla. */
-export const MOTIVOS_DE_CIERRE = {
-  sold: 'Lo vendí',
-  rented: 'Lo alquilé',
-  withdrawn: 'Ya no lo ofrezco',
-} as const;
-
-export type MotivoDeCierre = keyof typeof MOTIVOS_DE_CIERRE;
-
-export function esMotivoDeCierre(valor: string): valor is MotivoDeCierre {
-  return valor in MOTIVOS_DE_CIERRE;
-}
 
 /**
  * Cierra un aviso: vendido, alquilado o retirado.

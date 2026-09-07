@@ -448,16 +448,19 @@ describe('la revisión de seguridad', () => {
 // ---------------------------------------------------------------------
 
 describe('el archivo original en storage', () => {
+  // Desde el sprint 23B el original vive en su propio depósito privado.
+  // Estas pruebas lo escribían en `avisos`, el bucket público, y pasaban:
+  // comprobaban que después no se pudiera tocar, no dónde había quedado.
   it('no se sobrescribe', async () => {
     await banco.comoUsuario(CUENTAS.rosa, (db) =>
-      db.query(`insert into storage.objects (bucket_id, name) values ('avisos', $1)`, [
+      db.query(`insert into storage.objects (bucket_id, name) values ('originales', $1)`, [
         `${AVISOS.miraflores}/original/1.jpg`,
       ]),
     );
 
     const resultado = await banco.comoUsuario(CUENTAS.rosa, (db) =>
       db.query(
-        `update storage.objects set name = $1 where bucket_id = 'avisos' and name = $2`,
+        `update storage.objects set name = $1 where bucket_id = 'originales' and name = $2`,
         [`${AVISOS.miraflores}/original/1.jpg`, `${AVISOS.miraflores}/original/1.jpg`],
       ),
     );
@@ -466,7 +469,7 @@ describe('el archivo original en storage', () => {
 
   it('ni se borra', async () => {
     const resultado = await banco.comoUsuario(CUENTAS.rosa, (db) =>
-      db.query(`delete from storage.objects where bucket_id = 'avisos' and name = $1`, [
+      db.query(`delete from storage.objects where bucket_id = 'originales' and name = $1`, [
         `${AVISOS.miraflores}/original/1.jpg`,
       ]),
     );

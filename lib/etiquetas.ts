@@ -70,6 +70,28 @@ export const ESTADO_INMUEBLE: Record<EstadoInmueble, string> = {
   withdrawn: 'Retirado',
 };
 
+/**
+ * Los tres finales de un aviso, en primera persona.
+ *
+ * `ESTADO_INMUEBLE` dice cómo está el aviso —«Vendido»— y esto dice qué
+ * hace quien cierra —«Lo vendí»—. Son dos textos distintos a propósito:
+ * uno es una etiqueta que se lee y el otro un botón que se pulsa.
+ *
+ * `reserved` no está: reservar no es cerrar, y ofrecerlo en el mismo menú
+ * mezclaría «esto ya no está» con «esto está pero en trámite».
+ */
+export const MOTIVOS_DE_CIERRE = {
+  sold: 'Lo vendí',
+  rented: 'Lo alquilé',
+  withdrawn: 'Ya no lo ofrezco',
+} as const;
+
+export type MotivoDeCierre = keyof typeof MOTIVOS_DE_CIERRE;
+
+export function esMotivoDeCierre(valor: string): valor is MotivoDeCierre {
+  return valor in MOTIVOS_DE_CIERRE;
+}
+
 export const ESTADO_PUBLICACION: Record<EstadoPublicacion, string> = {
   draft: 'Borrador',
   in_review: 'En revisión',

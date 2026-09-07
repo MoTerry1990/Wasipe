@@ -323,25 +323,55 @@ describe('fotos del aviso', () => {
     ).rejects.toThrow(/row-level security/i);
   });
 
-  it('EL ORIGINAL NO SE PUEDE BORRAR', async () => {
+  it('EL ORIGINAL NO ENTRA AL DEPÓSITO PÚBLICO', async () => {
+    // Esta prueba decía lo contrario hasta el sprint 23B: daba por buena
+    // la escritura de un original en `avisos` y solo comprobaba que
+    // después no se pudiera borrar. Con eso, el archivo sin tocar —con
+    // sus metadatos EXIF y las coordenadas GPS de la casa— quedaba
+    // públicamente legible en un bucket público, y la prueba pasaba.
+    await expect(
+      banco.comoUsuario(CUENTAS.lucia, (db) =>
+        db.query(`insert into storage.objects (bucket_id, name) values ('avisos', $1)`, [
+          `${carpeta}/original/1755000000000.bin`,
+        ]),
+      ),
+    ).rejects.toThrow(/row-level security/i);
+  });
+
+  it('el original va a su propio depósito, y ahí NO SE PUEDE BORRAR', async () => {
     await banco.comoUsuario(CUENTAS.lucia, (db) =>
-      db.query(`insert into storage.objects (bucket_id, name) values ('avisos', $1)`, [
+      db.query(`insert into storage.objects (bucket_id, name) values ('originales', $1)`, [
         `${carpeta}/original/1755000000000.bin`,
       ]),
     );
 
     const borradas = await banco.comoUsuario(CUENTAS.lucia, (db) =>
-      db.query(`delete from storage.objects where name like $1`, [`${carpeta}/original/%`]),
+      db.query(`delete from storage.objects where bucket_id = 'originales' and name like $1`, [
+        `${carpeta}/original/%`,
+      ]),
     );
 
-    // La política de borrado excluye la subcarpeta "original".
+    // Sobre `originales` no hay política de DELETE, así que no alcanza
+    // ninguna fila. El archivo que subió la persona sigue estando.
     expect(borradas.affectedRows ?? 0).toBe(0);
 
     const { rows } = await banco.db.query<{ n: number }>(
-      `select count(*)::int as n from storage.objects where name like $1`,
+      `select count(*)::int as n from storage.objects
+        where bucket_id = 'originales' and name like $1`,
       [`${carpeta}/original/%`],
     );
     expect(rows[0]?.n).toBe(1);
+  });
+
+  it('y un visitante no lo ve', async () => {
+    const visibles = await banco.comoAnonimo(async (db) => {
+      const { rows } = await db.query<{ n: number }>(
+        `select count(*)::int as n from storage.objects where bucket_id = 'originales'`,
+      );
+      return Number(rows[0]!.n);
+    });
+
+    expect(visibles).toBe(0);
   });
 
   it('la versión que se muestra sí se puede quitar', async () => {

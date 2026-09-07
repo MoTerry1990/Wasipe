@@ -114,6 +114,44 @@ Ninguno se corrigió en este sprint: la instrucción fue auditar, no cambiar.
 > Las 14 pruebas no lo detectaron porque comprueban las rutas
 > estructuradas, que sí funcionan.
 
+### P-26 · La prueba de la vista de mapa es inestable — **ABIERTO**
+
+> `tests/e2e/criticos.spec.ts` → «la vista de mapa abre sin caerse» falla
+> por tiempo de espera cuando corre junto a otras y pasa cuando corre
+> sola. Comprobado en el sprint 23B que **falla igual antes y después** de
+> los cambios de ese sprint: es previo.
+>
+> La causa es el `networkidle` del ayudante `esperar()`. Esperar a que no
+> quede ninguna petición es frágil en una página que agrupa marcadores y
+> vuelve a pedir datos al mover el mapa.
+>
+> Una prueba que falla a veces es peor que ninguna: enseña a ignorar el
+> rojo.
+
+### P-27 · Sentry pide `onRouterTransitionStart` — **ABIERTO**
+
+> El build avisa:
+>
+>     ACTION REQUIRED: To instrument navigations, the Sentry SDK requires
+>     you to export an `onRouterTransitionStart` hook from your
+>     instrumentation-client file.
+>
+> Sin eso, los errores que ocurren **durante una navegación** no quedan
+> asociados a la ruta que se estaba abriendo. No rompe nada y no impide el
+> build; es una línea en `instrumentation-client.ts`.
+
+### P-28 · Avatares y logos nombran su bucket a mano — **ABIERTO**
+
+> `features/cuentas/acciones.ts` escribe `.from('avatares')` y
+> `.from('logos')` en vez de pasar por `BUCKET_DE`.
+>
+> Hoy no tiene consecuencia: los dos depósitos son públicos a propósito y
+> ahí van fotos de perfil y logotipos, que se muestran en cualquier parte.
+> Se anota porque **es el mismo patrón que causó P-13**: el mapa decía una
+> cosa y la llamada real decía otra, y nadie las comparó durante cuatro
+> sprints. La prueba nueva del sprint 23B solo cubre las fuentes que
+> manejan fotos de avisos.
+
 ### P-23 · Mensaje de Zod sin traducir en el asistente de publicación — **ABIERTO · sprint 23**
 
 > **Se probó el arreglo durante el sprint 22 y se revirtió por alcance.**

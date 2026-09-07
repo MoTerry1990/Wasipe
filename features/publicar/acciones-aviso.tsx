@@ -11,8 +11,8 @@ import {
   editarAviso,
   cerrarAviso,
   reabrirAviso,
-  MOTIVOS_DE_CIERRE,
 } from '@/features/publicar/acciones';
+import { MOTIVOS_DE_CIERRE } from '@/lib/etiquetas';
 import type { EstadoPublicacion, EstadoInmueble } from '@/types/base-datos';
 import type { Estado } from '@/features/cuentas/acciones';
 
