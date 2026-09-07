@@ -241,10 +241,20 @@ const restore = spawnSync(
   ],
   { encoding: 'utf8' },
 );
-const errores = (restore.stderr ?? '')
-  .split('\n')
-  .filter((l) => /^psql:.*ERROR/.test(l));
+/**
+ * `schema "public" already exists` no es un fallo: el volcado trae
+ * `CREATE SCHEMA public` y toda base recién creada ya lo tiene. Contarlo
+ * como error convertiría una restauración perfecta en un rojo, que es la
+ * peor clase de falso negativo: el día que haga falta de verdad, nadie
+ * confía en el resultado.
+ */
+const INOCUOS = [/schema "public" already exists/i];
 
+const todos = (restore.stderr ?? '').split('\n').filter((l) => /^psql:.*ERROR/.test(l));
+const errores = todos.filter((l) => !INOCUOS.some((r) => r.test(l)));
+const inocuos = todos.length - errores.length;
+
+if (inocuos > 0) console.log(gris(`  (${inocuos} error(es) inocuo(s) ignorado(s))`));
 if (errores.length === 0) bien('psql aplicó el volcado sin un solo error');
 else {
   console.log(amarillo(`  ${errores.length} error(es) durante la restauración:`));

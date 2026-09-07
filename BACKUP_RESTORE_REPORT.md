@@ -1,6 +1,6 @@
 # Copia y restauración
 
-**Estado: SIN EJECUTAR — no existe la base que copiar.**
+**Estado: VERIFICADA en el sprint 22.** Ver la segunda pasada al final.
 
 ---
 
@@ -205,3 +205,92 @@ servidor local instalado en este sprint responde en el 5432, pero no se
 usó: haría falta su contraseña, y adivinarla no es forma de trabajar.
 
 **`PRODUCTION_CHECKLIST.md` §2 sigue bloqueado.**
+
+---
+
+## Segunda pasada — sprint 22, con PostGIS y contraseña real
+
+**Estado: RESTAURACIÓN VERIFICADA.**
+
+Con PostGIS 3.6 en el Postgres local y `LOCAL_DB_URL` apuntando de verdad
+al servidor, `scripts/ensayo-restauracion.mjs` hace el ciclo entero solo:
+respalda, crea una base nueva, la prepara, restaura con `psql`, compara y
+borra. Sale con código 0.
+
+### Respaldo
+
+| | |
+|---|---|
+| Origen | `wasipe-staging`, PostgreSQL 17.6, con datos sembrados |
+| Herramienta | `pg_dump` 17.11 |
+| Tamaño | **201 121 bytes** |
+| Cadena de conexión dentro del archivo | **no** |
+
+### Destino
+
+Base `wasipe_restauracion`, creada y eliminada dentro del mismo ensayo.
+Antes de restaurar hay que ponerle lo que el volcado **da por sentado y no
+trae**:
+
+- **PostGIS en el esquema `extensions`.** El volcado usa
+  `extensions.geography`. Sin la extensión no se crean `properties` ni
+  `property_locations`, que son las dos tablas centrales del producto.
+- **Los roles `anon`, `authenticated` y `service_role`.** Son del clúster,
+  no de la base. No viajan en un volcado de `public`, pero las 73
+  políticas los nombran.
+- **`auth.uid()`, `auth.role()` y `auth.users`.** Las políticas llaman a
+  las dos primeras, y las claves foráneas apuntan a la tercera.
+
+### Comparación
+
+| Objeto | Origen | Restaurado | |
+|---|---:|---:|---|
+| tablas | 28 | 28 | ✓ |
+| vistas | 6 | 6 | ✓ |
+| índices | 107 | 107 | ✓ |
+| políticas | 73 | 73 | ✓ |
+| funciones | 66 | 66 | ✓ |
+| enums | 33 | 33 | ✓ |
+| disparadores | 20 | 20 | ✓ |
+
+| Tabla | Origen | Restaurado | |
+|---|---:|---:|---|
+| agencies | 1 | 1 | ✓ |
+| agency_members | 1 | 1 | ✓ |
+| exchange_rates | 1 | 1 | ✓ |
+| favorites | 2 | 2 | ✓ |
+| inquiries | 1 | 1 | ✓ |
+| price_history | 9 | 9 | ✓ |
+| profile_districts | 3 | 3 | ✓ |
+| profiles | 4 | 4 | ✓ |
+| properties | 8 | 8 | ✓ |
+| property_features | 16 | 16 | ✓ |
+| property_locations | 8 | 8 | ✓ |
+| property_media | 24 | 24 | ✓ |
+| **TOTAL** | **78** | **78** | ✓ |
+
+**Ninguna tabla restaurada quedó sin RLS.** Que las tablas lleguen no
+sirve de nada si llegan desprotegidas, y ese era el riesgo real de dar por
+buena una restauración mirando solo el conteo de tablas.
+
+### Lo que hay que saber antes de una emergencia
+
+1. **El destino necesita PostGIS**, instalado *antes* de restaurar.
+2. **Se restaura con `psql`, no con un driver.** `pg_dump` 17 escribe
+   `\restrict` y `\unrestrict`, y cierra cada bloque de datos con `\.`.
+   Son metacomandos de psql: un cliente de Postgres da
+   «syntax error at or near "\"» y no dice por qué.
+3. **Los roles no viajan.** Hay que crearlos en el destino.
+4. **`schema "public" already exists` es ruido.** El volcado trae
+   `CREATE SCHEMA public` y toda base nueva ya lo tiene. El ensayo lo
+   ignora a propósito: contarlo como error convertía una restauración
+   perfecta en un rojo, y ese es el peor falso negativo posible — el día
+   que haga falta de verdad, nadie confía en el resultado.
+
+### Verificación de que no se tocó staging
+
+Conteos de staging antes y después del ensayo: **idénticos**, 78 filas.
+Ninguna base `wasipe_*` quedó en el servidor local. Ningún archivo de
+respaldo quedó en disco.
+
+**`PRODUCTION_CHECKLIST.md` §2 queda desbloqueado.**
