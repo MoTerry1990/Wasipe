@@ -258,3 +258,86 @@ describe('lo que se escribe en los registros', () => {
     expect(culpables).toEqual([]);
   });
 });
+
+// ---------------------------------------------------------------------
+// P-13 · El original de una foto nunca en un depósito público
+// ---------------------------------------------------------------------
+/**
+ * Esta es la prueba que faltó en el sprint 18.
+ *
+ * Ese sprint creó el depósito privado `originales`, escribió la capa
+ * `lib/almacenamiento/` y dio P-13 por cerrado. Todo eso era cierto y
+ * nada de eso estaba conectado: `features/publicar/fotos.tsx` es un
+ * componente de cliente, no podía importar una capa `server-only`, y
+ * siguió escribiendo `'avisos'` a mano —el bucket público— para el
+ * archivo sin tocar. Con sus metadatos EXIF y las coordenadas GPS de la
+ * casa adentro, accesibles adivinando la ruta.
+ *
+ * El sprint 21 verificó que el bucket privado era inaccesible, y pasó:
+ * estaba vacío. Nadie verificó por dónde entraban las fotos de verdad.
+ *
+ * Una prueba de comportamiento no lo habría visto tampoco —subir una
+ * foto «funciona» de las dos maneras—. Por eso esta mira el código.
+ */
+describe('el original de una foto no puede terminar en un depósito público', () => {
+  const PUBLICOS = ['avisos', 'avatares', 'logos'];
+
+  /** Las fuentes que manejan fotos de un aviso. */
+  const DE_FOTOS = FUENTES.filter(
+    ({ ruta }) => ruta.startsWith('features/publicar/') || ruta.startsWith('features/avisos/'),
+  );
+
+  it('ninguna nombra un bucket a mano: pasan por BUCKET_DE', () => {
+    const culpables = DE_FOTOS.filter(({ fuente }) =>
+      PUBLICOS.some((b) => fuente.includes(".from('" + b + "')")),
+    ).map(({ ruta }) => ruta);
+
+    // Un literal suelto es exactamente cómo empezó P-13: el mapa decía
+    // una cosa y la llamada real decía otra, y nadie las comparó.
+    expect(culpables).toEqual([]);
+  });
+
+  it('donde se arma la ruta del original, el depósito es el privado', () => {
+    let revisadas = 0;
+
+    for (const { ruta, fuente } of DE_FOTOS) {
+      const lineas = fuente.split('\n');
+
+      lineas.forEach((linea, i) => {
+        if (!/rutaDeFoto\([^)]*,\s*true\s*\)/.test(linea)) return;
+        revisadas++;
+
+        // Sin comentarios: el que explica por qué esto cambió nombra el
+        // bucket viejo, y la prueba tiene que mirar el código, no la
+        // prosa que lo rodea.
+        const alrededor = lineas
+          .slice(Math.max(0, i - 4), i + 8)
+          .map((l) => l.replace(/\/\/.*$/, '').replace(/^\s*\*.*$/, ''))
+          .join('\n');
+        const donde = ruta + ':' + (i + 1);
+
+        // Vale el nombre lógico del depósito o el del mapa.
+        expect(
+          /BUCKET_DE\.originales|'originales'/.test(alrededor),
+          donde + ' arma la ruta del original sin nombrar el depósito privado',
+        ).toBe(true);
+
+        expect(
+          PUBLICOS.some((b) => alrededor.includes(b)),
+          donde + ' arma la ruta del original cerca de un depósito público',
+        ).toBe(false);
+      });
+    }
+
+    // Sin esto, el día que nadie suba originales la prueba pasaría sin
+    // haber comprobado nada, que es la forma más silenciosa de fallar.
+    expect(revisadas).toBeGreaterThan(0);
+  });
+
+  it('y el depósito de originales está declarado privado', async () => {
+    const { DEPOSITOS } = await import('@/lib/almacenamiento/proveedor');
+    expect(DEPOSITOS.originales.publico).toBe(false);
+    expect(DEPOSITOS.generadas.publico).toBe(false);
+    expect(DEPOSITOS.videos.publico).toBe(false);
+  });
+});

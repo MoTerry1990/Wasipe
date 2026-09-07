@@ -10,6 +10,7 @@ import {
   FOTOS_MINIMAS,
   FOTOS_MAXIMAS,
 } from '@/lib/validacion/aviso';
+import { BUCKET_DE } from '@/lib/almacenamiento/proveedor';
 import { Aviso } from '@/components/estados/estado-error';
 import { cn } from '@/lib/cn';
 
@@ -114,11 +115,25 @@ export function Fotos({
       try {
         // 1. El original, primero. Si algo falla después, al menos el
         //    archivo tal como lo subieron quedó guardado.
+        //
+        //    Va al depósito PRIVADO. El archivo sin tocar lleva los
+        //    metadatos EXIF, y ahí van las coordenadas GPS de dónde se
+        //    tomó la foto: quien publica eligió mostrar el distrito, no
+        //    la cuadra. Hasta el sprint 23B esta línea decía `'avisos'`
+        //    —el bucket público— y bastaba con adivinar la ruta para
+        //    bajarse la foto original de la casa de cualquiera.
         const rutaOriginal = rutaDeFoto(carpeta, marca, true);
-        await supabase.storage.from('avisos').upload(rutaOriginal, archivo, {
-          contentType: archivo.type,
-          upsert: false,
-        });
+        const { error: falloOriginal } = await supabase.storage
+          .from(BUCKET_DE.originales)
+          .upload(rutaOriginal, archivo, {
+            contentType: archivo.type,
+            upsert: false,
+          });
+
+        // Si el original no se pudo guardar, no se sigue. Antes el error
+        // se descartaba en silencio y la foto quedaba publicada sin
+        // respaldo, sin que nadie se enterara.
+        if (falloOriginal) throw falloOriginal;
 
         setEnCurso((v) => v.map((e) => (e.id === clave ? { ...e, avance: 45 } : e)));
 
@@ -129,7 +144,7 @@ export function Fotos({
 
         setEnCurso((v) => v.map((e) => (e.id === clave ? { ...e, avance: 70 } : e)));
 
-        const { error: fallo } = await supabase.storage.from('avisos').upload(ruta, cuerpo, {
+        const { error: fallo } = await supabase.storage.from(BUCKET_DE.publicas).upload(ruta, cuerpo, {
           contentType: comprimida ? 'image/webp' : archivo.type,
           upsert: false,
         });
@@ -138,7 +153,7 @@ export function Fotos({
 
         const {
           data: { publicUrl },
-        } = supabase.storage.from('avisos').getPublicUrl(ruta);
+        } = supabase.storage.from(BUCKET_DE.publicas).getPublicUrl(ruta);
 
         nuevas.push({ id: clave, url: publicUrl, alt: '', portada: false });
         setEnCurso((v) => v.filter((e) => e.id !== clave));
@@ -188,7 +203,9 @@ export function Fotos({
 
     try {
       const supabase = clienteNavegador();
-      await supabase.storage.from('avisos').remove([rutaDeFoto(carpeta, Number(foto.id))]);
+      await supabase.storage
+        .from(BUCKET_DE.publicas)
+        .remove([rutaDeFoto(carpeta, Number(foto.id))]);
     } catch {
       // Si el archivo queda huérfano no es grave: no se ve en ningún
       // lado y una tarea de limpieza lo recoge después.

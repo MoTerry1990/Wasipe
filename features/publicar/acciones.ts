@@ -7,7 +7,13 @@ import { supabaseConfigurado } from '@/lib/supabase/entorno';
 import { requiereCuentaLista } from '@/lib/auth/sesion';
 import { puedePublicar } from '@/lib/auth/roles';
 import { TIPO_DESDE_SLUG } from '@/lib/catalogo';
-import { esquemaDeAviso, pasosIncompletos, type BorradorDeAviso } from '@/lib/validacion/aviso';
+import {
+  esquemaDeAviso,
+  pasosIncompletos,
+  rutaDeFoto,
+  type BorradorDeAviso,
+} from '@/lib/validacion/aviso';
+import { almacenamiento } from '@/lib/almacenamiento/supabase';
 import { desplazarPunto, centroDeDistrito } from '@/lib/avisos/desplazar';
 import type { Estado } from '@/features/cuentas/acciones';
 
@@ -388,4 +394,42 @@ function aBorrador(aviso: Record<string, unknown>): BorradorDeAviso {
       .sort((a, b) => a.sort_order - b.sort_order)
       .map((m) => ({ id: m.id, url: m.url, alt: m.alt ?? '', portada: m.is_cover })),
   };
+}
+
+/**
+ * Enlace temporal al archivo original de una foto.
+ *
+ * El original vive en un depósito privado porque lleva los metadatos EXIF
+ * con las coordenadas de dónde se tomó. Quien administra el aviso sí
+ * tiene derecho a bajárselo —es su foto— y esta es la única forma de
+ * entregárselo: un enlace que caduca, no una dirección permanente que se
+ * pueda reenviar.
+ *
+ * **Quién puede no lo decide esta función.** El enlace se pide con la
+ * sesión de quien llama, así que lo resuelve la política
+ * `el original lo ve quien administra el aviso` de `storage.objects`. Si
+ * la persona no administra ese aviso, Supabase no firma nada y acá llega
+ * `null`. Escribir la comprobación también acá sería una segunda fuente
+ * de verdad que puede quedar desalineada con la primera.
+ */
+export async function enlaceAlOriginal(
+  avisoId: string,
+  marca: number,
+): Promise<{ ok: true; url: string } | { ok: false; mensaje: string }> {
+  await quienPublica();
+
+  if (!supabaseConfigurado()) {
+    return { ok: false, mensaje: 'No pudimos preparar la descarga en este momento.' };
+  }
+
+  const url = await almacenamiento().urlFirmada(
+    'originales',
+    rutaDeFoto(avisoId, marca, true),
+    // Cinco minutos: alcanza para descargar y no para reenviar.
+    300,
+  );
+
+  return url
+    ? { ok: true, url }
+    : { ok: false, mensaje: 'No pudimos preparar la descarga de esa foto.' };
 }

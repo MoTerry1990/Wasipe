@@ -126,3 +126,28 @@ export interface ProveedorDeAlmacenamiento {
    */
   borrar(deposito: Deposito, rutas: readonly string[]): Promise<{ borrados: number }>;
 }
+
+/**
+ * El nombre lógico al bucket de verdad.
+ *
+ * Vive acá, y no en el adaptador de Supabase, porque **el navegador
+ * también lo necesita**: las fotos se suben directo a Storage y quien
+ * las sube tiene que saber a qué depósito van.
+ *
+ * Que estuviera solo del lado del servidor es lo que dejó abierto P-13
+ * durante cuatro sprints. El sprint 18 creó el depósito privado
+ * `originales` y escribió esta capa; `features/publicar/fotos.tsx`, que
+ * es un componente de cliente y no podía importarla, siguió escribiendo
+ * `'avisos'` a mano —el bucket público— para el original y para la
+ * versión mostrada. El arreglo existía y no estaba conectado.
+ *
+ * Un solo mapa, importable desde los dos lados, es lo que impide que
+ * vuelva a pasar.
+ */
+export const BUCKET_DE: Record<Deposito, string> = {
+  originales: 'originales',
+  publicas: 'avisos',
+  generadas: 'generados',
+  videos: 'videos',
+  perfiles: 'avatares',
+};

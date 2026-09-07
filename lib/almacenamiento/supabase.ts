@@ -3,6 +3,7 @@ import 'server-only';
 import { clienteServidor } from '@/lib/supabase/servidor';
 import { supabaseConfigurado } from '@/lib/supabase/entorno';
 import {
+  BUCKET_DE,
   DEPOSITOS,
   type Deposito,
   type ProveedorDeAlmacenamiento,
@@ -17,15 +18,6 @@ import {
  * Cloudinary, se escribe un archivo hermano y se cambia una línea en
  * `almacenamiento()`.
  */
-
-/** El nombre lógico a el bucket de verdad. Es lo único que traduce. */
-const BUCKET: Record<Deposito, string> = {
-  originales: 'originales',
-  publicas: 'avisos',
-  generadas: 'generados',
-  videos: 'videos',
-  perfiles: 'avatares',
-};
 
 class AlmacenamientoSupabase implements ProveedorDeAlmacenamiento {
   readonly nombre = 'supabase';
@@ -48,7 +40,7 @@ class AlmacenamientoSupabase implements ProveedorDeAlmacenamiento {
     try {
       const supabase = await clienteServidor();
       const { error } = await supabase.storage
-        .from(BUCKET[deposito])
+        .from(BUCKET_DE[deposito])
         .upload(ruta, contenido, { contentType: opciones.tipo, upsert: sobreescribir });
 
       if (error) {
@@ -90,7 +82,7 @@ class AlmacenamientoSupabase implements ProveedorDeAlmacenamiento {
     const base = process.env.NEXT_PUBLIC_SUPABASE_URL;
     if (!base) return null;
 
-    return `${base}/storage/v1/object/public/${BUCKET[deposito]}/${ruta}`;
+    return `${base}/storage/v1/object/public/${BUCKET_DE[deposito]}/${ruta}`;
   }
 
   async urlFirmada(deposito: Deposito, ruta: string, segundos: number): Promise<string | null> {
@@ -99,7 +91,7 @@ class AlmacenamientoSupabase implements ProveedorDeAlmacenamiento {
     try {
       const supabase = await clienteServidor();
       const { data, error } = await supabase.storage
-        .from(BUCKET[deposito])
+        .from(BUCKET_DE[deposito])
         .createSignedUrl(ruta, Math.max(30, Math.min(segundos, 3600)));
 
       return error ? null : (data?.signedUrl ?? null);
@@ -113,7 +105,7 @@ class AlmacenamientoSupabase implements ProveedorDeAlmacenamiento {
 
     try {
       const supabase = await clienteServidor();
-      const { data, error } = await supabase.storage.from(BUCKET[deposito]).download(ruta);
+      const { data, error } = await supabase.storage.from(BUCKET_DE[deposito]).download(ruta);
       if (error || !data) return null;
       return await data.arrayBuffer();
     } catch {
@@ -126,7 +118,7 @@ class AlmacenamientoSupabase implements ProveedorDeAlmacenamiento {
 
     try {
       const supabase = await clienteServidor();
-      const { data, error } = await supabase.storage.from(BUCKET[deposito]).remove([...rutas]);
+      const { data, error } = await supabase.storage.from(BUCKET_DE[deposito]).remove([...rutas]);
       return { borrados: error ? 0 : (data?.length ?? 0) };
     } catch {
       return { borrados: 0 };
