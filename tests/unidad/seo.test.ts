@@ -370,3 +370,46 @@ describe('fuera de producción no se indexa nada', () => {
   // next/font/google, que necesita el build de Next. Esa mitad se
   // verifica sobre el Preview desplegado, que es donde importa.
 });
+
+/**
+ * El título no repite la marca.
+ *
+ * La portada servía «Wasipe · Departamentos, casas y proyectos en venta y
+ * alquiler en el Perú · Wasipe». La página ponía la marca adelante y la
+ * plantilla del layout, `%s · Wasipe`, la ponía otra vez atrás. Nadie lo
+ * vio porque cada mitad, mirada sola, era correcta.
+ */
+describe('el título de una página', () => {
+  it('la portada no lleva la marca adelante: la pone la plantilla', async () => {
+    const { metadata } = await import('@/app/(public)/page');
+    const titulo = typeof metadata.title === 'string' ? metadata.title : '';
+
+    expect(titulo).not.toMatch(/^Wasipe/);
+    expect(titulo.length).toBeGreaterThan(0);
+  });
+
+  it('ninguna página empieza por la marca', async () => {
+    // Cualquier página que la ponga adelante va a duplicarla igual que la
+    // portada. Es más barato prohibirlo acá que descubrirlo en Google.
+    const { readFileSync, readdirSync, statSync } = await import('node:fs');
+    const { join, relative, sep } = await import('node:path');
+
+    const raiz = join(__dirname, '..', '..');
+    const paginas: string[] = [];
+
+    const recorrer = (carpeta: string) => {
+      for (const nombre of readdirSync(carpeta)) {
+        const ruta = join(carpeta, nombre);
+        if (statSync(ruta).isDirectory()) recorrer(ruta);
+        else if (/^page\.tsx$/.test(nombre)) paginas.push(ruta);
+      }
+    };
+    recorrer(join(raiz, 'app'));
+
+    const culpables = paginas
+      .filter((ruta) => /title:\s*['"`]Wasipe/.test(readFileSync(ruta, 'utf8')))
+      .map((ruta) => relative(raiz, ruta).split(sep).join('/'));
+
+    expect(culpables).toEqual([]);
+  });
+});

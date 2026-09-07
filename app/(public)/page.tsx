@@ -25,7 +25,10 @@ import { DatosEstructurados } from '@/components/ui/migas';
 import { organizacion, sitioWeb } from '@/lib/seo/estructurados';
 
 export const metadata: Metadata = {
-  title: 'Wasipe · Departamentos, casas y proyectos en venta y alquiler en el Perú',
+  // Sin «Wasipe» adelante: la plantilla del layout es `%s · Wasipe` y lo
+  // añade sola. Con las dos cosas, el título servido decía
+  // «Wasipe · … · Wasipe», que es lo que veía Google.
+  title: 'Departamentos, casas y proyectos en venta y alquiler en el Perú',
   description:
     'Busca departamentos, casas, terrenos y proyectos en venta y alquiler en todo el Perú, con el precio por m² siempre visible. Publicar es gratis.',
   alternates: { canonical: '/' },

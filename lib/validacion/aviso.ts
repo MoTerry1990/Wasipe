@@ -1,6 +1,10 @@
 import { z } from 'zod';
 import { TIPO_DESDE_SLUG } from '@/lib/catalogo';
 
+// Deja los mensajes por defecto de Zod en español. Va antes de que se
+// construya cualquier esquema de este archivo.
+import './idioma';
+
 /**
  * Validación del asistente de publicación.
  *
@@ -39,7 +43,13 @@ const opcional = <T extends z.ZodTypeAny>(esquema: T) => esquema.optional().catc
 // ---------------------------------------------------------------------
 export const pasoOperacion = z.object({
   operacion: z.enum(['sale', 'rent', 'project'], { message: 'Elige si vendes o alquilas' }),
-  tipo: z.string().refine((v) => Boolean(TIPO_DESDE_SLUG[v]), 'Elige qué tipo de propiedad es'),
+  // El mensaje va en el `z.string()` y no solo en el `refine`: el del
+  // refine solo aplica si el valor ya es una cadena, y mientras nadie
+  // elige nada el valor es `undefined`. Ese hueco es el que mostraba
+  // «Invalid input: expected string, received undefined» en pantalla.
+  tipo: z
+    .string({ message: 'Elige qué tipo de propiedad es' })
+    .refine((v) => Boolean(TIPO_DESDE_SLUG[v]), 'Elige qué tipo de propiedad es'),
 });
 
 // ---------------------------------------------------------------------

@@ -172,3 +172,52 @@ describe('regla de idioma', () => {
     expect(formato).toContain('US$ ');
   });
 });
+
+/**
+ * Los mensajes de validación, en español.
+ *
+ * El paso 1 de `/publicar` mostraba en pantalla «Invalid input: expected
+ * string, received undefined». No era un descuido de ese campo: el
+ * mensaje escrito a mano en su `.refine()` solo aplica si el valor ya es
+ * una cadena, y mientras nadie elige nada el valor es `undefined`. Ahí
+ * habla Zod, en inglés.
+ *
+ * Se arregló con un mapa global, así que estas pruebas miran el mapa y no
+ * el campo: arreglar campo por campo deja el próximo sin cubrir.
+ */
+describe('los mensajes por defecto de Zod están en español', () => {
+  it('el caso que lo destapó: el tipo sin elegir', async () => {
+    const { pasoOperacion } = await import('@/lib/validacion/aviso');
+
+    const resultado = pasoOperacion.safeParse({ operacion: 'sale' });
+    expect(resultado.success).toBe(false);
+
+    const mensaje = resultado.error?.issues.map((i) => i.message).join(' ') ?? '';
+    expect(mensaje).not.toMatch(/Invalid input|expected|received/i);
+    expect(mensaje).toContain('Elige qué tipo de propiedad es');
+  });
+
+  it('un campo cualquiera que llega vacío no habla en inglés', async () => {
+    await import('@/lib/validacion/aviso');
+    const { z } = await import('zod');
+
+    // Un esquema nuevo, sin mensajes propios: lo que responda sale del
+    // mapa global y de ningún otro lado.
+    const suelto = z.object({ algo: z.string() });
+    const mensaje = suelto.safeParse({}).error?.issues[0]?.message ?? '';
+
+    expect(mensaje).not.toMatch(/Invalid input|expected|received|required/i);
+    expect(mensaje).toBe('Falta completar este campo');
+  });
+
+  it('y los de largo tampoco', async () => {
+    await import('@/lib/validacion/aviso');
+    const { z } = await import('zod');
+
+    const corto = z.string().min(10).safeParse('hola');
+    expect(corto.error?.issues[0]?.message).toBe('Escribe al menos 10 caracteres');
+
+    const largo = z.string().max(3).safeParse('demasiado');
+    expect(largo.error?.issues[0]?.message).toBe('No puede pasar de 3 caracteres');
+  });
+});
