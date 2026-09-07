@@ -246,3 +246,50 @@ de ese sprint: 28 tablas con RLS, aislamiento entre usuarios demostrado
 con dos identidades, originales inaccesibles con objeto presente, y siete
 funciones que estaban al alcance de un visitante sin sesión, cerradas con
 la migración `20260906200000_permisos_de_funciones.sql`.
+
+---
+
+## Los siete flujos — ejecutados · 7 de setiembre de 2026
+
+Contra el Preview real, con la protección de despliegue salvada con token
+de excepción, cuentas sembradas y sesión iniciada de verdad.
+
+| Flujo | Resultado esperado | Resultado real | Evidencia | Estado |
+|---|---|---|---|---|
+| **Contacto con anunciante** | La consulta llega y queda registrada | Llegó | `inquiries` 1 → 2, estado `new`; `lead_events` registró `contact_form` | ✅ |
+| **Guardar borrador** | El borrador se guarda y se recupera | Se guardó solo al avanzar de paso | Fila en `listing_drafts` con `user_id` de Lucía, `datos: {"tipo":"departamento"}` | ✅ |
+| **Enviar a revisión** | Pasa a `in_review` | Pasó | `WSP-001007` de `draft` a `in_review`, con `submitted_at`. **Lucía no pudo tocar el aviso de Rosa: 0 filas.** | ✅ |
+| Descripción con IA | Devuelve texto | — | `IA_PROVEEDOR=ninguno` en Preview | ➖ sprint 25 |
+| Imagen con IA | Conserva el original | — | Sin proveedor de imagen | ➖ sprint 25 |
+| Video con IA | Genera o devuelve el crédito | — | Sin proveedor de video | ➖ sprint 25 |
+| Cobro de prueba | — | — | `PAGOS_EN_VIVO=no`, excluido por regla | ➖ |
+
+La tercera fila es la que más vale: no solo comprueba que el cambio de
+estado funciona, sino que **RLS impide hacerlo sobre un aviso ajeno**.
+Con la misma petición y otra sesión, la base devuelve cero filas.
+
+### Lo que apareció por el camino
+
+**El inicio de sesión estaba roto para todas las cuentas sembradas.**
+Respondía 500 con «Database error querying schema». La causa no era ni la
+configuración ni los permisos: la siembra inserta en `auth.users` por SQL
+y dejaba `confirmation_token`, `recovery_token`, `email_change` y
+`email_change_token_new` en `NULL`. El servicio de autenticación de
+Supabase está escrito en Go y las lee como texto; un `NULL` ahí revienta
+el escaneo. Corregido en `supabase/seed.sql` y reparado en staging.
+
+**El asistente de publicación muestra un mensaje sin traducir:** «Invalid
+input: expected string, received undefined», un error de Zod que llega
+crudo a la pantalla. Anotado como P-23.
+
+**El rol de Rosa Quispe quedó en `buyer`** aunque la siembra la trata como
+propietaria y le asigna avisos. Su panel no muestra «Mis propiedades», así
+que desde la interfaz no podría enviar su propio borrador a revisión.
+Anotado como P-24.
+
+### Demostración 5 de RLS
+
+`service_role` y `sb_secret_` no aparecen en los paquetes de JavaScript
+del navegador. Comprobado sobre los 856 KB que sirve el Preview, buscando
+además el valor literal de la clave de servicio y la contraseña de la
+base: ninguno está.

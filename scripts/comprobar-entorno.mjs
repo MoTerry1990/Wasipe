@@ -51,7 +51,7 @@ function cargarEnvLocal() {
   return { encontrado: true };
 }
 
-const envLocal = cargarEnvLocal();
+cargarEnvLocal();
 
 const VARIABLES = [
   // [nombre, obligatoria, publicaAProposito, para qué]

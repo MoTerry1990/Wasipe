@@ -1,4 +1,5 @@
 import type { NextConfig } from 'next';
+import { withSentryConfig } from '@sentry/nextjs';
 
 /**
  * Cabeceras de seguridad.
@@ -67,4 +68,30 @@ const nextConfig: NextConfig = {
   },
 };
 
-export default nextConfig;
+/**
+ * Sentry en el build.
+ *
+ * Sin este envoltorio el plugin de Sentry no corre: no se suben source
+ * maps y, sobre todo, **la instrumentación del cliente no se inyecta**.
+ * Faltaba, y el resultado era que el navegador no reportaba un solo error
+ * aunque el DSN estuviera bien configurado.
+ *
+ * `sourcemaps.disable` cuando no hay `SENTRY_AUTH_TOKEN`: sin token no se
+ * pueden subir, y dejar que lo intente solo llena el build de avisos. Con
+ * token puesto, se suben y las trazas dejan de salir minificadas.
+ */
+export default withSentryConfig(nextConfig, {
+  silent: !process.env.CI,
+  org: process.env.SENTRY_ORG,
+  project: process.env.SENTRY_PROJECT,
+  sourcemaps: { disable: !process.env.SENTRY_AUTH_TOKEN },
+
+  // El túnel evita que los bloqueadores de anuncios se coman los errores
+  // del navegador. Es una ruta propia del sitio, no un dominio de fuera.
+  tunnelRoute: '/reporte-errores',
+
+  // Los mapas no se publican: se suben a Sentry y se borran del paquete.
+  // Si quedaran, cualquiera reconstruye el código fuente del sitio.
+  widenClientFileUpload: false,
+  disableLogger: true,
+});

@@ -35,35 +35,46 @@ on conflict (day) do update set pen_per_usd = excluded.pen_per_usd;
 -- El trigger `al_crear_usuario` crea el perfil correspondiente.
 -- La contraseña de todas es "wasipe-demo-2026" (solo para desarrollo).
 -- ---------------------------------------------------------------------
+-- Las cuatro columnas de token van en cadena vacía y NO en NULL, aunque
+-- la tabla admita NULL. El servicio de autenticación de Supabase está
+-- escrito en Go y las lee como texto: un NULL ahí revienta el escaneo y
+-- sale al cliente como «Database error querying schema», un 500 en cada
+-- inicio de sesión. Cuesta de encontrar porque el mensaje no menciona ni
+-- la columna ni la tabla.
+--
+-- Descubierto en el sprint 22, al correr el flujo de guardar un borrador
+-- contra el Preview: la siembra funcionaba, los perfiles se creaban, y
+-- nadie podía entrar.
 insert into auth.users (
   id, instance_id, aud, role, email, encrypted_password,
   email_confirmed_at, raw_app_meta_data, raw_user_meta_data,
-  created_at, updated_at
+  created_at, updated_at,
+  confirmation_token, recovery_token, email_change, email_change_token_new
 )
 values
   ('11111111-1111-4111-8111-111111111111', '00000000-0000-0000-0000-000000000000',
    'authenticated', 'authenticated', 'rosa.quispe@ejemplo.pe',
    crypt('wasipe-demo-2026', gen_salt('bf')), now(),
    '{"provider":"email","providers":["email"]}'::jsonb,
-   '{"full_name":"Rosa Quispe"}'::jsonb, now(), now()),
+   '{"full_name":"Rosa Quispe"}'::jsonb, now(), now(), '', '', '', ''),
 
   ('22222222-2222-4222-8222-222222222222', '00000000-0000-0000-0000-000000000000',
    'authenticated', 'authenticated', 'martin.alarcon@ejemplo.pe',
    crypt('wasipe-demo-2026', gen_salt('bf')), now(),
    '{"provider":"email","providers":["email"]}'::jsonb,
-   '{"full_name":"Martín Alarcón"}'::jsonb, now(), now()),
+   '{"full_name":"Martín Alarcón"}'::jsonb, now(), now(), '', '', '', ''),
 
   ('33333333-3333-4333-8333-333333333333', '00000000-0000-0000-0000-000000000000',
    'authenticated', 'authenticated', 'lucia.ferrer@ejemplo.pe',
    crypt('wasipe-demo-2026', gen_salt('bf')), now(),
    '{"provider":"email","providers":["email"]}'::jsonb,
-   '{"full_name":"Lucía Ferrer"}'::jsonb, now(), now()),
+   '{"full_name":"Lucía Ferrer"}'::jsonb, now(), now(), '', '', '', ''),
 
   ('44444444-4444-4444-8444-444444444444', '00000000-0000-0000-0000-000000000000',
    'authenticated', 'authenticated', 'moderacion@ejemplo.pe',
    crypt('wasipe-demo-2026', gen_salt('bf')), now(),
    '{"provider":"email","providers":["email"]}'::jsonb,
-   '{"full_name":"Equipo de moderación"}'::jsonb, now(), now())
+   '{"full_name":"Equipo de moderación"}'::jsonb, now(), now(), '', '', '', '')
 on conflict (id) do nothing;
 
 -- Por si la base no tiene el trigger de registro (por ejemplo, cuando se

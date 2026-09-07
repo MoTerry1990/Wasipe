@@ -185,13 +185,11 @@ const destino = await conectar(conBase(LOCAL, BASE));
 await destino.query('create schema if not exists extensions');
 await destino.query('create schema if not exists auth');
 
-let conPostgis = true;
 try {
   await destino.query('create extension if not exists postgis schema extensions');
   const v = await destino.query('select extensions.postgis_version() as v');
   bien(`PostGIS disponible: ${v.rows[0].v.split(' ')[0]}`);
 } catch (error) {
-  conPostgis = false;
   mal(`PostGIS no disponible: ${error.message.split('\n')[0]}`);
 }
 
@@ -290,12 +288,12 @@ for (const k of Object.keys(OBJETOS)) {
 
 console.log('\n  tabla                  origen  restaurado');
 const tablasConFilas = new Set([...Object.keys(antes.filas), ...Object.keys(despues.filas)]);
-let igualesFilas = 0;
+let filasIguales = 0;
 for (const t of [...tablasConFilas].sort()) {
   const a = antes.filas[t] ?? 0;
   const b = despues.filas[t] ?? 0;
   const ok = a === b;
-  if (ok) igualesFilas++;
+  if (ok) filasIguales++;
   console.log(
     `  ${t.padEnd(22)} ${String(a).padStart(6)}  ${String(b).padStart(10)}   ${ok ? verde('=') : rojo(`≠ (${b - a})`)}`,
   );
@@ -340,6 +338,10 @@ unlinkSync(ARCHIVO);
 bien('Archivo de respaldo eliminado');
 
 titulo('Resultado');
-console.log(fallos === 0 ? verde('  Restauración verificada.') : rojo(`  ${fallos} problema(s).`));
+console.log(
+  fallos === 0
+    ? verde(`  Restauración verificada: ${igualesEstructura} conteos de estructura y ${filasIguales} tabla(s) con datos, todo igual.`)
+    : rojo(`  ${fallos} problema(s).`),
+);
 console.log();
 process.exitCode = fallos > 0 ? 1 : 0;

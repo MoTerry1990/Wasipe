@@ -55,7 +55,27 @@ create table if not exists auth.users (
   raw_app_meta_data jsonb,
   raw_user_meta_data jsonb,
   created_at timestamptz default now(),
-  updated_at timestamptz default now()
+  updated_at timestamptz default now(),
+
+  -- Las columnas de token del servicio de autenticación. No las usa
+  -- ninguna política ni ninguna consulta de Wasipe, y por eso faltaban.
+  --
+  -- Faltar tuvo un costo. En el sprint 22, la siembra insertaba en
+  -- auth.users sin ponerlas, quedaban en NULL, y el servicio de
+  -- autenticación de Supabase —escrito en Go, que las lee como texto—
+  -- respondía 500 en cada inicio de sesión. Acá no se notaba: sin las
+  -- columnas, la siembra no podía siquiera intentar dejarlas mal.
+  --
+  -- Un doble de prueba más pobre que el original no solo deja de probar
+  -- cosas: esconde los errores que se cometen contra el original.
+  confirmation_token text default '',
+  recovery_token text default '',
+  email_change text default '',
+  email_change_token_new text default '',
+  email_change_token_current text default '',
+  phone_change text default '',
+  phone_change_token text default '',
+  reauthentication_token text default ''
 );
 
 -- ---------------------------------------------------------------------

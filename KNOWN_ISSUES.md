@@ -39,7 +39,63 @@ Ninguno se corrigió en este sprint: la instrucción fue auditar, no cambiar.
 > antes: sacar los scripts a archivos en un sitio que va a morir es
 > trabajo que no vuelve.
 
-### P-21 · Sentry nunca se inicializa en el navegador — **ABIERTO · P0 antes del lanzamiento**
+### P-22 · Sentry no filtra los datos que van dentro del texto del error — **ABIERTO · P0 antes del lanzamiento**
+
+> **Encontrado en el sprint 22**, sobre un evento que viajó de verdad.
+>
+> Se disparó un error con un correo, un teléfono peruano, unas coordenadas
+> de Lima y una contraseña metidos **dentro del mensaje**, y con una cookie
+> puesta. En el sobre que salió hacia Sentry:
+>
+>     cabecera cookie      ausente ✅
+>     cookie de prueba     ausente ✅
+>     correo               PRESENTE ❌
+>     teléfono             PRESENTE ❌
+>     coordenadas          PRESENTE ❌
+>     contraseña           PRESENTE ❌
+>
+> `limpiarEvento()` limpia `user`, `request`, `extra`, `contexts` y
+> `breadcrumbs`. **Lee** `exception.values[0].value` solo para descartar
+> ruido de extensiones del navegador, y nunca lo sanea; a `evento.message`
+> ni lo toca.
+>
+> No es hipotético: los errores de validación y los de Supabase repiten el
+> valor que falló, y en este producto ese valor es un correo o un teléfono.
+>
+> Las 14 pruebas no lo detectaron porque comprueban las rutas
+> estructuradas, que sí funcionan.
+
+### P-23 · Mensaje de Zod sin traducir en el asistente de publicación — **ABIERTO**
+
+> El paso 1 de `/publicar` muestra en pantalla:
+>
+>     Invalid input: expected string, received undefined
+>
+> Es el mensaje por defecto de Zod llegando crudo al usuario. Viola la
+> regla de idioma, y además no le dice nada a quien lo lee.
+
+### P-24 · El rol de Rosa Quispe quedó en `buyer` en la siembra — **ABIERTO**
+
+> La siembra la trata como propietaria —le asigna avisos, incluido el
+> borrador con tres fotos— pero su perfil queda con rol `buyer`.
+>
+> La causa: el disparador `al_crear_usuario` crea el perfil con el rol por
+> defecto, el `insert into profiles` posterior lleva
+> `on conflict do nothing` y no hace nada, y el `update` que la ajusta
+> pone teléfono, biografía e intención **pero no el rol**. Los `update` de
+> Martín y Lucía sí lo ponen.
+>
+> Consecuencia: su panel no muestra «Mis propiedades», así que desde la
+> interfaz no puede enviar su propio borrador a revisión.
+
+### P-21 · Sentry nunca se inicializa en el navegador — **RESUELTO (sprint 22)**
+
+> Cerrado con `withSentryConfig` en `next.config.ts` y el archivo
+> `instrumentation-client.ts`. Verificado sobre el Preview: el sobre sale
+> por el túnel `/reporte-errores` y Sentry responde 200, con
+> `environment: staging`.
+>
+> Lo de abajo queda como estaba, porque explica por qué pasó.
 
 > **Encontrado en el sprint 22**, con el DSN ya configurado en Preview.
 >
@@ -274,6 +330,6 @@ pero no rompe nada.
 2. **P-03** — Cloudinary, sin eso nadie publica
 3. **P-02** — desplegar la búsqueda, hoy da 404
 
-**Bloqueantes antes de lanzar:** **P-21** — nadie se entera de un error en el navegador de un usuario. **P-19** — el Preview se ofrece a Google
+**Bloqueantes antes de lanzar:** **P-22** — los datos personales que van dentro del texto de un error llegan a Sentry sin filtrar. **P-19** — el Preview se ofrece a Google
 como si fuera el sitio. Hoy lo tapa la protección de despliegue de Vercel,
 que se apaga con un clic.

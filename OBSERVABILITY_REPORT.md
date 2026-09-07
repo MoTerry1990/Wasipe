@@ -205,3 +205,60 @@ el módulo llegue a cargarse en el navegador.
 | Sin datos personales en el evento | ⬜ sin verificar sobre un evento real |
 
 Anotado como **P-21** en `KNOWN_ISSUES.md`.
+
+---
+
+## Tercera pasada — sprint 22, con el enganche arreglado
+
+Se agregó `withSentryConfig` a `next.config.ts` y se creó
+`instrumentation-client.ts`, que es de donde Next 15 en adelante carga la
+inicialización del navegador. Redesplegado y verificado sobre el Preview.
+
+### 1 · ¿Llega a Sentry? — **sí**
+
+Con el transporte del cliente envuelto en el navegador, un error no
+capturado produce un sobre que sale por el túnel y Sentry **acepta**:
+
+    POST /reporte-errores?o=…&p=…&r=us  →  200
+
+Seis envíos, los seis en 200. El túnel es una ruta del propio sitio
+(`/reporte-errores`), así que los bloqueadores de anuncios no se comen los
+errores del navegador.
+
+En el servidor, la ruta de prueba `/api/prueba-sentry?romper=si` responde
+**500** y el error queda capturado por `onRequestError`.
+
+### 2 · Entorno — **`staging`**
+
+Leído en tiempo de ejecución de las opciones del cliente ya inicializado,
+y confirmado dentro del sobre que viaja:
+
+    "environment":"staging"
+
+### 3 · Datos personales — **falla parcial**
+
+El evento se disparó a propósito con un correo, un teléfono peruano, unas
+coordenadas de Lima y una contraseña, todos inventados, metidos **dentro
+del texto del error**. Y además con una cookie puesta. Lo que salió:
+
+| Dato | En el sobre |
+|---|---|
+| cabecera `cookie` | **ausente** ✅ |
+| la cookie de prueba | **ausente** ✅ |
+| correo | **presente** ❌ |
+| teléfono | **presente** ❌ |
+| coordenadas | **presente** ❌ |
+| contraseña | **presente** ❌ |
+
+El filtro funciona donde mira y no mira donde hace falta.
+`limpiarEvento()` limpia `user`, `request` —cookies, cabeceras, datos y
+query—, `extra`, `contexts` y `breadcrumbs`. **Lee**
+`exception.values[0].value` únicamente para descartar ruido de extensiones
+del navegador, y nunca lo sanea. Tampoco toca `evento.message`.
+
+O sea: **cualquier dato personal que viaje dentro del texto de un error
+llega a Sentry intacto.** Y eso no es hipotético en un portal
+inmobiliario: los errores de validación y los de Supabase suelen repetir
+el valor que falló, y ese valor es un correo o un teléfono.
+
+Anotado como **P-22**.
