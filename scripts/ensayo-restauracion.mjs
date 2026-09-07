@@ -1,189 +1,335 @@
 /**
- * Ensayo de restauración: aplica el volcado de staging sobre una base
- * aislada y compara los conteos contra los de referencia.
+ * Ensayo de recuperación: respalda staging y lo restaura en una base
+ * nueva y aislada del Postgres local.
  *
- * El destino es PGlite, en memoria. No es una elección de comodidad: es
- * la garantía más fuerte de que este ensayo no puede tocar staging ni por
- * accidente, porque la base ni siquiera existe fuera de este proceso.
+ * Existe porque `FINAL_AUDIT.md` viene marcando desde el sprint 17 que
+ * **nunca se restauró una copia**. Una copia que no se restauró no es una
+ * copia, es un archivo: no se sabe si está completa, si el formato se lee
+ * ni cuánto tarda. Y eso se descubre el peor día posible.
+ *
+ * Lo que hace, en orden:
+ *
+ *   1. Cuenta el origen.
+ *   2. `pg_dump` del esquema `public`, con datos.
+ *   3. Crea una base nueva en el servidor local, con nombre propio.
+ *   4. Le pone lo que el volcado da por sentado y no trae: PostGIS en el
+ *      esquema `extensions`, los roles de Supabase y `auth.uid()`.
+ *   5. Restaura con **psql**, no con un driver (ver abajo).
+ *   6. Compara conteos contra el origen.
+ *   7. Borra la base y el archivo.
+ *
+ * **Por qué psql y no un driver:** `pg_dump` 17 abre y cierra el archivo
+ * con `\restrict` y `\unrestrict`, y cierra cada bloque de datos con `\.`.
+ * Son metacomandos de psql, no SQL. Alimentar el volcado a un cliente de
+ * Postgres da «syntax error at or near "\"» sin decir por qué.
+ *
+ * Nunca toca staging más que para leer, y nunca imprime una cadena de
+ * conexión.
+ *
+ * Uso:
+ *   node scripts/ensayo-restauracion.mjs
  */
 
-import { PGlite } from '@electric-sql/pglite';
-import { pg_trgm } from '@electric-sql/pglite/contrib/pg_trgm';
-import { unaccent } from '@electric-sql/pglite/contrib/unaccent';
-import { btree_gist } from '@electric-sql/pglite/contrib/btree_gist';
-import { pgcrypto } from '@electric-sql/pglite/contrib/pgcrypto';
-import { readFileSync } from 'node:fs';
+import pg from 'pg';
+import { spawnSync } from 'node:child_process';
+import { readFileSync, existsSync, unlinkSync, statSync } from 'node:fs';
+import { join } from 'node:path';
+import { tmpdir } from 'node:os';
 
-const RESPALDO = process.argv[2];
 const verde = (t) => `\x1b[32m${t}\x1b[0m`;
 const rojo = (t) => `\x1b[31m${t}\x1b[0m`;
 const gris = (t) => `\x1b[90m${t}\x1b[0m`;
+const amarillo = (t) => `\x1b[33m${t}\x1b[0m`;
 
-const REFERENCIA = {
-  tablas: 28,
-  vistas: 6,
-  indices: 107,
-  politicas: 73,
-  funciones: 66,
-  restricciones: 174,
-  enums: 33,
-  disparadores: 20,
+const titulo = (t) => {
+  console.log(`\n${t}`);
+  console.log(gris('─'.repeat(t.length)));
 };
 
-const db = await PGlite.create({
-  extensions: { pg_trgm, unaccent, btree_gist, pgcrypto },
-});
+function cargar() {
+  const ruta = join(process.cwd(), '.env.local');
+  if (!existsSync(ruta)) return;
+  for (const linea of readFileSync(ruta, 'utf8').split(/\r?\n/)) {
+    const l = linea.trim();
+    if (!l || l.startsWith('#')) continue;
+    const i = l.indexOf('=');
+    if (i < 1) continue;
+    const n = l.slice(0, i).trim();
+    const v = l
+      .slice(i + 1)
+      .trim()
+      .replace(/^["']|["']$/g, '');
+    if (v && !process.env[n]) process.env[n] = v;
+  }
+}
+cargar();
 
-// Los roles de Supabase no vienen en el volcado del esquema `public`:
-// pertenecen al clúster. Sin ellos, cada CREATE POLICY … TO anon falla.
-// Esto es parte del procedimiento de recuperación y hay que decirlo.
-await db.exec(`
-  create role anon;
-  create role authenticated;
-  create role service_role;
-  create role supabase_auth_admin;
-  create role supabase_storage_admin;
-  create schema if not exists auth;
-  create schema if not exists storage;
-  create schema if not exists extensions;
-`);
+const ORIGEN = process.env.SUPABASE_DB_URL;
+const LOCAL = process.env.LOCAL_DB_URL;
+const BASE = 'wasipe_restauracion';
+const ARCHIVO = join(tmpdir(), `respaldo-wasipe-${Date.now()}.sql`);
 
-// auth.uid() y auth.role(): las usan las políticas y viven en el esquema
-// de la plataforma, que tampoco viaja en este volcado.
-await db.exec(`
+if (!ORIGEN || !LOCAL) {
+  console.error(rojo('Faltan SUPABASE_DB_URL o LOCAL_DB_URL en .env.local.'));
+  process.exit(1);
+}
+
+/** La misma cadena local, apuntando a otra base. */
+const conBase = (cadena, nombre) => cadena.replace(/\/[^/?]*(\?|$)/, `/${nombre}$1`);
+
+const conectar = async (cadena) => {
+  const esLocal = /localhost|127\.0\.0\.1/.test(cadena);
+  const c = new pg.Client({
+    connectionString: cadena,
+    ...(esLocal ? {} : { ssl: { rejectUnauthorized: false } }),
+  });
+  await c.connect();
+  return c;
+};
+
+const OBJETOS = {
+  tablas: `select count(*)::int n from pg_tables where schemaname='public'`,
+  vistas: `select count(*)::int n from pg_views where schemaname='public'`,
+  indices: `select count(*)::int n from pg_indexes where schemaname='public'`,
+  politicas: `select count(*)::int n from pg_policies where schemaname='public'`,
+  funciones: `select count(*)::int n from pg_proc p join pg_namespace ns on ns.oid=p.pronamespace where ns.nspname='public'`,
+  enums: `select count(*)::int n from pg_type t join pg_namespace ns on ns.oid=t.typnamespace where ns.nspname='public' and t.typtype='e'`,
+  disparadores: `select count(*)::int n from pg_trigger tg join pg_class t on t.oid=tg.tgrelid join pg_namespace ns on ns.oid=t.relnamespace where ns.nspname='public' and not tg.tgisinternal`,
+};
+
+async function medir(cliente) {
+  const out = { estructura: {}, filas: {}, filasTotales: 0 };
+  for (const [k, sql] of Object.entries(OBJETOS)) {
+    out.estructura[k] = Number((await cliente.query(sql)).rows[0].n);
+  }
+  const { rows } = await cliente.query(
+    `select tablename from pg_tables where schemaname='public' order by tablename`,
+  );
+  for (const { tablename } of rows) {
+    const n = Number(
+      (await cliente.query(`select count(*)::int n from public."${tablename}"`)).rows[0].n,
+    );
+    if (n > 0) out.filas[tablename] = n;
+    out.filasTotales += n;
+  }
+  return out;
+}
+
+let fallos = 0;
+const bien = (t) => console.log(`  ${verde('✓')} ${t}`);
+const mal = (t) => {
+  console.log(`  ${rojo('✗')} ${t}`);
+  fallos++;
+};
+
+// ---------------------------------------------------------------------
+// 1 · Medir el origen
+// ---------------------------------------------------------------------
+titulo('1 · Origen (staging)');
+const origen = await conectar(ORIGEN);
+const antes = await medir(origen);
+await origen.end();
+console.log(
+  `  ${Object.entries(antes.estructura)
+    .map(([k, v]) => `${k} ${v}`)
+    .join(' · ')}`,
+);
+console.log(
+  `  filas: ${antes.filasTotales} en ${Object.keys(antes.filas).length} tabla(s)`,
+);
+
+// ---------------------------------------------------------------------
+// 2 · Respaldar
+// ---------------------------------------------------------------------
+titulo('2 · Respaldo');
+const dump = spawnSync(
+  'pg_dump',
+  [ORIGEN, '--schema=public', '--no-owner', '--no-privileges', '--file', ARCHIVO],
+  { encoding: 'utf8', env: { ...process.env, PGSSLMODE: 'require' } },
+);
+if (dump.status !== 0) {
+  mal(`pg_dump falló: ${(dump.stderr ?? '').split('\n')[0]}`);
+  process.exit(1);
+}
+const bytes = statSync(ARCHIVO).size;
+bien(`pg_dump: ${bytes.toLocaleString('es-PE')} bytes`);
+
+const contenido = readFileSync(ARCHIVO, 'utf8');
+if (/postgres(ql)?:\/\//.test(contenido)) mal('El archivo contiene una cadena de conexión');
+else bien('El archivo no contiene ninguna cadena de conexión');
+
+// ---------------------------------------------------------------------
+// 3 · Base nueva y aislada
+// ---------------------------------------------------------------------
+titulo('3 · Base de destino');
+const admin = await conectar(LOCAL);
+await admin.query(`drop database if exists ${BASE}`);
+await admin.query(`create database ${BASE}`);
+bien(`Creada «${BASE}» en el servidor local`);
+
+// Los roles son del clúster, no de la base: no vienen en el volcado, pero
+// las políticas los nombran.
+for (const rol of ['anon', 'authenticated', 'service_role']) {
+  await admin.query(
+    `do $$ begin if not exists (select 1 from pg_roles where rolname='${rol}') then create role ${rol}; end if; end $$`,
+  );
+}
+bien('Roles anon, authenticated y service_role disponibles');
+await admin.end();
+
+// ---------------------------------------------------------------------
+// 4 · Lo que el volcado da por sentado
+// ---------------------------------------------------------------------
+titulo('4 · Preparar el destino');
+const destino = await conectar(conBase(LOCAL, BASE));
+await destino.query('create schema if not exists extensions');
+await destino.query('create schema if not exists auth');
+
+let conPostgis = true;
+try {
+  await destino.query('create extension if not exists postgis schema extensions');
+  const v = await destino.query('select extensions.postgis_version() as v');
+  bien(`PostGIS disponible: ${v.rows[0].v.split(' ')[0]}`);
+} catch (error) {
+  conPostgis = false;
+  mal(`PostGIS no disponible: ${error.message.split('\n')[0]}`);
+}
+
+for (const ext of ['pg_trgm', 'unaccent', 'btree_gist', 'pgcrypto']) {
+  await destino.query(`create extension if not exists ${ext} schema extensions`);
+}
+bien('pg_trgm, unaccent, btree_gist y pgcrypto instaladas');
+
+await destino.query(`
   create or replace function auth.uid() returns uuid language sql stable
     as $$ select nullif(current_setting('request.jwt.claims', true)::json->>'sub','')::uuid $$;
   create or replace function auth.role() returns text language sql stable
     as $$ select nullif(current_setting('request.jwt.claims', true)::json->>'role','') $$;
-  create table if not exists auth.users (id uuid primary key, email text);
+  create table if not exists auth.users (
+    id uuid primary key,
+    email text,
+    raw_user_meta_data jsonb default '{}'::jsonb
+  );
 `);
+bien('auth.uid(), auth.role() y auth.users creadas');
 
-let sql = readFileSync(RESPALDO, 'utf8');
+// Las claves foráneas a auth.users no se satisfacen solas: el volcado de
+// `public` no trae los usuarios. Se copian los identificadores del origen.
+const orig2 = await conectar(ORIGEN);
+const usuarios = await orig2.query('select id from auth.users');
+await orig2.end();
+for (const { id } of usuarios.rows) {
+  await destino.query(`insert into auth.users (id) values ($1) on conflict do nothing`, [id]);
+}
+bien(`${usuarios.rowCount} usuario(s) de auth copiados para las claves foráneas`);
+await destino.end();
 
-const antes = sql.length;
-
-// pg_dump 17 abre y cierra el archivo con `\restrict` y `\unrestrict`.
-// Son metacomandos de psql, no SQL: cualquier cosa que no sea psql
-// —un driver, PGlite— muere con «syntax error at or near "\"».
-// Dicho de otro modo: **un volcado 17.x se restaura con psql, no
-// alimentándoselo a un cliente de Postgres.** Vale saberlo antes de una
-// emergencia, no durante.
-const metacomandos = (sql.match(/^\\(restrict|unrestrict)\b.*$/gim) ?? []).length;
-sql = sql.replace(/^\\(restrict|unrestrict)\b.*$/gim, '');
-
-// PGlite no trae PostGIS. Un volcado de `--schema=public` no incluye la
-// extensión —en Supabase vive en el esquema `extensions`— pero sí las
-// columnas que dependen de ella.
-sql = sql.replace(/^CREATE EXTENSION IF NOT EXISTS postgis.*$/gim, '');
-sql = sql.replace(/^COMMENT ON EXTENSION postgis.*$/gim, '');
-
-console.log(
-  gris(
-    `volcado: ${(antes / 1024).toFixed(0)} KB · metacomandos de psql retirados: ${metacomandos}\n`,
-  ),
+// ---------------------------------------------------------------------
+// 5 · Restaurar con psql
+// ---------------------------------------------------------------------
+titulo('5 · Restauración');
+const restore = spawnSync(
+  'psql',
+  [
+    conBase(LOCAL, BASE),
+    '--set',
+    'ON_ERROR_STOP=0',
+    '--quiet',
+    '--no-psqlrc',
+    '--file',
+    ARCHIVO,
+  ],
+  { encoding: 'utf8' },
 );
+const errores = (restore.stderr ?? '')
+  .split('\n')
+  .filter((l) => /^psql:.*ERROR/.test(l));
 
-// El esquema `public` ya existe en cualquier base recién creada.
-sql = sql.replace(/^CREATE SCHEMA public;$/gim, '');
-sql = sql.replace(/^COMMENT ON SCHEMA public.*$/gim, '');
-
-/**
- * Parte el volcado en sentencias respetando los cuerpos entre `$$`, que
- * llevan puntos y coma adentro. Aplicarlo todo de una vez sirve de poco:
- * PGlite aborta en el primer error y no se sabe qué más habría fallado.
- * Sentencia por sentencia dice exactamente qué no se restaura.
- */
-function sentencias(texto) {
-  const fuera = [];
-  let actual = '';
-  let etiqueta = null;
-  for (const linea of texto.split(/\r?\n/)) {
-    if (linea.trim().startsWith('--') && !etiqueta) continue;
-    actual += linea + '\n';
-    const marcas = linea.match(/\$[A-Za-z_]*\$/g) ?? [];
-    for (const m of marcas) {
-      if (etiqueta === null) etiqueta = m;
-      else if (etiqueta === m) etiqueta = null;
-    }
-    if (!etiqueta && linea.trimEnd().endsWith(';')) {
-      if (actual.trim()) fuera.push(actual.trim());
-      actual = '';
-    }
-  }
-  if (actual.trim()) fuera.push(actual.trim());
-  return fuera;
-}
-
-const partes = sentencias(sql);
-const fallos = [];
-let aplicadas = 0;
-
-for (const sentencia of partes) {
-  try {
-    await db.exec(sentencia);
-    aplicadas++;
-  } catch (error) {
-    fallos.push({
-      motivo: error.message.split('\n')[0].slice(0, 110),
-      sentencia: sentencia.slice(0, 70).replace(/\s+/g, ' '),
-    });
-  }
-}
-
-console.log(`sentencias: ${partes.length} · aplicadas ${aplicadas} · fallidas ${fallos.length}`);
-if (fallos.length) {
+if (errores.length === 0) bien('psql aplicó el volcado sin un solo error');
+else {
+  console.log(amarillo(`  ${errores.length} error(es) durante la restauración:`));
   const porMotivo = new Map();
-  for (const f of fallos) porMotivo.set(f.motivo, (porMotivo.get(f.motivo) ?? 0) + 1);
-  console.log(rojo('\nMotivos de fallo:'));
-  for (const [motivo, veces] of [...porMotivo].sort((a, b) => b[1] - a[1])) {
-    console.log(`  ${String(veces).padStart(4)} × ${motivo}`);
+  for (const e of errores) {
+    const m = e.replace(/^psql:[^:]*:\d+: /, '').slice(0, 100);
+    porMotivo.set(m, (porMotivo.get(m) ?? 0) + 1);
   }
-} else {
-  console.log(verde('El volcado se aplicó completo.'));
+  for (const [m, veces] of [...porMotivo].sort((a, b) => b[1] - a[1]).slice(0, 8)) {
+    console.log(`      ${String(veces).padStart(3)} × ${m}`);
+  }
+  fallos++;
 }
 
-const q = async (s) => Number((await db.query(s)).rows[0].n);
+// ---------------------------------------------------------------------
+// 6 · Comparar
+// ---------------------------------------------------------------------
+titulo('6 · Origen contra restaurado');
+const restaurado = await conectar(conBase(LOCAL, BASE));
+const despues = await medir(restaurado);
 
-const obtenido = {
-  tablas: await q(`select count(*)::int n from pg_tables where schemaname='public'`),
-  vistas: await q(`select count(*)::int n from pg_views where schemaname='public'`),
-  indices: await q(`select count(*)::int n from pg_indexes where schemaname='public'`),
-  politicas: await q(`select count(*)::int n from pg_policies where schemaname='public'`),
-  funciones: await q(
-    `select count(*)::int n from pg_proc p join pg_namespace ns on ns.oid=p.pronamespace where ns.nspname='public'`,
-  ),
-  restricciones: await q(
-    `select count(*)::int n from pg_constraint c join pg_class t on t.oid=c.conrelid join pg_namespace ns on ns.oid=t.relnamespace where ns.nspname='public'`,
-  ),
-  enums: await q(
-    `select count(*)::int n from pg_type t join pg_namespace ns on ns.oid=t.typnamespace where ns.nspname='public' and t.typtype='e'`,
-  ),
-  disparadores: await q(
-    `select count(*)::int n from pg_trigger tg join pg_class t on t.oid=tg.tgrelid join pg_namespace ns on ns.oid=t.relnamespace where ns.nspname='public' and not tg.tgisinternal`,
-  ),
-};
-
-console.log('\nConteos: referencia (staging) contra restaurado');
-console.log(gris('─'.repeat(52)));
-console.log('objeto            referencia  restaurado  ');
-let iguales = 0;
-for (const clave of Object.keys(REFERENCIA)) {
-  const r = REFERENCIA[clave];
-  const o = obtenido[clave];
-  const ok = r === o;
-  if (ok) iguales++;
+console.log('  objeto            origen  restaurado');
+let igualesEstructura = 0;
+for (const k of Object.keys(OBJETOS)) {
+  const a = antes.estructura[k];
+  const b = despues.estructura[k];
+  const ok = a === b;
+  if (ok) igualesEstructura++;
   console.log(
-    `${clave.padEnd(16)} ${String(r).padStart(10)}  ${String(o).padStart(10)}   ${ok ? verde('=') : rojo('≠ faltan ' + (r - o))}`,
+    `  ${k.padEnd(16)} ${String(a).padStart(6)}  ${String(b).padStart(10)}   ${ok ? verde('=') : rojo(`≠ (${b - a})`)}`,
   );
 }
 
-// RLS: que las tablas lleguen no sirve si llegan desprotegidas.
-const sinRls = await q(
-  `select count(*)::int n from pg_class c join pg_namespace ns on ns.oid=c.relnamespace
-     where ns.nspname='public' and c.relkind='r' and not c.relrowsecurity`,
+console.log('\n  tabla                  origen  restaurado');
+const tablasConFilas = new Set([...Object.keys(antes.filas), ...Object.keys(despues.filas)]);
+let igualesFilas = 0;
+for (const t of [...tablasConFilas].sort()) {
+  const a = antes.filas[t] ?? 0;
+  const b = despues.filas[t] ?? 0;
+  const ok = a === b;
+  if (ok) igualesFilas++;
+  console.log(
+    `  ${t.padEnd(22)} ${String(a).padStart(6)}  ${String(b).padStart(10)}   ${ok ? verde('=') : rojo(`≠ (${b - a})`)}`,
+  );
+}
+console.log(
+  `  ${'TOTAL'.padEnd(22)} ${String(antes.filasTotales).padStart(6)}  ${String(despues.filasTotales).padStart(10)}   ${
+    antes.filasTotales === despues.filasTotales ? verde('=') : rojo('≠')
+  }`,
 );
-console.log(`\nTablas restauradas SIN RLS: ${sinRls === 0 ? verde('0') : rojo(String(sinRls))}`);
 
-console.log(`\n${iguales} de ${Object.keys(REFERENCIA).length} conteos coinciden.`);
-await db.close();
-process.exitCode = iguales === Object.keys(REFERENCIA).length && sinRls === 0 ? 0 : 1;
+// Que las tablas lleguen no sirve si llegan desprotegidas.
+const sinRls = Number(
+  (
+    await restaurado.query(
+      `select count(*)::int n from pg_class c join pg_namespace ns on ns.oid=c.relnamespace
+         where ns.nspname='public' and c.relkind='r' and not c.relrowsecurity`,
+    )
+  ).rows[0].n,
+);
+if (sinRls === 0) bien('\n  Ninguna tabla restaurada quedó sin RLS');
+else mal(`\n  ${sinRls} tabla(s) restaurada(s) SIN RLS`);
+
+if (igualesEstructura !== Object.keys(OBJETOS).length)
+  mal(`Solo ${igualesEstructura} de ${Object.keys(OBJETOS).length} conteos de estructura coinciden`);
+if (antes.filasTotales !== despues.filasTotales) mal('Las filas no coinciden');
+
+await restaurado.end();
+
+// ---------------------------------------------------------------------
+// 7 · Limpiar
+// ---------------------------------------------------------------------
+titulo('7 · Limpieza');
+const limpiador = await conectar(LOCAL);
+await limpiador.query(
+  `select pg_terminate_backend(pid) from pg_stat_activity where datname='${BASE}' and pid <> pg_backend_pid()`,
+);
+await limpiador.query(`drop database if exists ${BASE}`);
+await limpiador.end();
+bien(`Base «${BASE}» eliminada`);
+
+unlinkSync(ARCHIVO);
+bien('Archivo de respaldo eliminado');
+
+titulo('Resultado');
+console.log(fallos === 0 ? verde('  Restauración verificada.') : rojo(`  ${fallos} problema(s).`));
+console.log();
+process.exitCode = fallos > 0 ? 1 : 0;

@@ -39,6 +39,32 @@ Ninguno se corrigió en este sprint: la instrucción fue auditar, no cambiar.
 > antes: sacar los scripts a archivos en un sitio que va a morir es
 > trabajo que no vuelve.
 
+### P-21 · Sentry nunca se inicializa en el navegador — **ABIERTO · P0 antes del lanzamiento**
+
+> **Encontrado en el sprint 22**, con el DSN ya configurado en Preview.
+>
+> Se descargaron los once paquetes de JavaScript del Preview —621 KB— y
+> «sentry» aparece **cero veces**. No es la variable: son dos omisiones de
+> configuración.
+>
+> 1. **`next.config.ts` no envuelve nada con `withSentryConfig`.** Sin eso
+>    el plugin no corre: ni source maps, ni inyección del cliente.
+> 2. **Falta `instrumentation-client.ts`.** Desde Next 15 la
+>    inicialización del navegador se carga de ahí. El proyecto tiene
+>    `sentry.client.config.ts`, que era lo de Next 14 y que **Next 16 ya
+>    no lee**. Estamos en Next `^16.3.1`.
+>
+> El servidor sí está enganchado: `instrumentation.ts` importa
+> `sentry.server.config` y Next lo llama. Así que **un error del servidor
+> probablemente se reporta y uno del navegador no puede reportarse nunca**.
+>
+> Las 14 pruebas de filtrado no podían detectarlo: prueban el módulo
+> aislado con eventos construidos a mano. Ninguna comprueba que el módulo
+> llegue a cargarse.
+>
+> Lanzar así significa no enterarse de ningún error que le ocurra a un
+> usuario en su navegador. **Bloqueante.**
+
 ### P-19 · El Preview se declara indexable — **ABIERTO · P0 antes del lanzamiento**
 
 > **Encontrado en el sprint 22**, en el primer despliegue de Preview.
@@ -238,7 +264,7 @@ pero no rompe nada.
 
 | Gravedad | Cantidad |
 |---|---:|
-| 🔴 Crítico | 3 |
+| 🔴 Crítico | 4 |
 | 🟠 Alto | 4 |
 | 🟡 Medio | 6 |
 | 🔵 Bajo | 7 |
@@ -248,6 +274,6 @@ pero no rompe nada.
 2. **P-03** — Cloudinary, sin eso nadie publica
 3. **P-02** — desplegar la búsqueda, hoy da 404
 
-**Bloqueante antes de lanzar:** **P-19** — el Preview se ofrece a Google
+**Bloqueantes antes de lanzar:** **P-21** — nadie se entera de un error en el navegador de un usuario. **P-19** — el Preview se ofrece a Google
 como si fuera el sitio. Hoy lo tapa la protección de despliegue de Vercel,
 que se apaga con un clic.

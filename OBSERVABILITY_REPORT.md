@@ -161,3 +161,47 @@ Variables, ámbito **Preview**:
 Y opcionalmente, para que las trazas no salgan minificadas:
 
     SENTRY_ORG · SENTRY_PROJECT · SENTRY_AUTH_TOKEN
+
+---
+
+## Segunda pasada — sprint 22, con el DSN ya puesto
+
+`NEXT_PUBLIC_SENTRY_DSN` quedó configurada en el ámbito Preview y se
+volvió a desplegar. **Sentry sigue sin funcionar en el navegador, y no es
+por la variable.**
+
+Se descargaron los once paquetes de JavaScript que sirve el Preview —
+621 149 bytes — y se buscó en ellos:
+
+    menciones de «sentry»            0
+    DSN presente                     0
+
+Cero. Con el DSN configurado. La causa son dos omisiones en la
+configuración del build, no en las variables:
+
+1. **`next.config.ts` no envuelve la configuración con
+   `withSentryConfig`.** Sin eso el plugin de Sentry no corre: no se
+   suben source maps y la configuración de cliente no se inyecta.
+
+2. **Falta `instrumentation-client.ts`.** Desde Next 15, la inicialización
+   del navegador se carga desde ese archivo. Este proyecto tiene
+   `sentry.client.config.ts`, que era lo correcto en Next 14 y que
+   **Next 16 ya no lee**. El repositorio está en Next `^16.3.1`.
+
+El servidor es otra historia: `instrumentation.ts` importa
+`sentry.server.config` para el runtime de Node, y a ese sí lo llama Next.
+O sea que **un error del servidor probablemente sí se reporta y uno del
+navegador no puede reportarse nunca**.
+
+Esto explica por qué las 14 pruebas de filtrado no lo detectaron: prueban
+el módulo aislado, con eventos construidos a mano. Ninguna comprueba que
+el módulo llegue a cargarse en el navegador.
+
+| Qué | Estado |
+|---|---|
+| El evento del navegador llega a Sentry | ❌ **imposible hoy** |
+| El evento del servidor llega a Sentry | ⬜ sin verificar |
+| Entorno `staging` | ⬜ sin verificar |
+| Sin datos personales en el evento | ⬜ sin verificar sobre un evento real |
+
+Anotado como **P-21** en `KNOWN_ISSUES.md`.

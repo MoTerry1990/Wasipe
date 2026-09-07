@@ -13,7 +13,7 @@
     "test:e2e": "playwright test",
     "legacy": "npm --prefix legacy run verificar",
     "test:db": "vitest run tests/base-datos",
-    "sembrar": "node --env-file-if-exists=.env scripts/sembrar.mjs",
+    "sembrar": "node --env-file-if-exists=.env --env-file-if-exists=.env.local scripts/sembrar.mjs",
     "db:push": "node scripts/db-push.mjs",
     "db:reset": "supabase db reset",
     "tipos": "supabase gen types typescript --linked > types/base-datos.generado.ts"
