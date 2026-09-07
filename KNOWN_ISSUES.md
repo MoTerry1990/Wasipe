@@ -39,7 +39,7 @@ Ninguno se corrigió en este sprint: la instrucción fue auditar, no cambiar.
 > antes: sacar los scripts a archivos en un sitio que va a morir es
 > trabajo que no vuelve.
 
-### P-25 · El panel contaba los avisos de todo el mundo como propios — **RESUELTO (sprint 22)**
+### P-25 · El panel cuenta los avisos de todo el mundo como propios — **ABIERTO · sprint 23**
 
 > Encontrado al verificar P-24. El resumen del panel decía a Rosa
 > «8 avisos publicados» cuando tiene tres: dos publicados y uno en
@@ -59,8 +59,22 @@ Ninguno se corrigió en este sprint: la instrucción fue auditar, no cambiar.
 > que se puede leer, no dice de quién es. Esa parte la pone la consulta,
 > siempre.
 >
-> Cerrado con los dos filtros. Verificado en el Preview: ahora dice
-> «2 avisos publicados».
+> **El propio archivo lo dice al revés.** El docstring de
+> `app/(dashboard)/panel/page.tsx` afirma:
+>
+> > «Las cifras salen de la base con la sesión de la persona, así que la
+> > RLS ya filtró: aunque esta consulta no llevara ningún `where`, no
+> > podría contar avisos ajenos.»
+>
+> Eso es falso, y es la creencia que causó el defecto. RLS impide **leer**
+> avisos que no correspondan; no impide contar los que sí corresponde leer
+> —todos los publicados— y presentarlos como propios. Al arreglarlo hay
+> que corregir también ese comentario, o el próximo lo vuelve a creer.
+>
+> **Se probó el arreglo durante el sprint 22 y se revirtió por alcance:**
+> agregar `.eq('owner_id', perfil.id)` y
+> `.eq('publication_status', 'published')` deja el contador en «2 avisos
+> publicados», que es lo correcto. Queda para el sprint 23.
 
 ### P-22 · Sentry no filtra los datos que van dentro del texto del error — **RESUELTO (sprint 22)**
 
@@ -100,13 +114,22 @@ Ninguno se corrigió en este sprint: la instrucción fue auditar, no cambiar.
 > Las 14 pruebas no lo detectaron porque comprueban las rutas
 > estructuradas, que sí funcionan.
 
-### P-23 · Mensaje de Zod sin traducir en el asistente de publicación — **RESUELTO (sprint 22)**
+### P-23 · Mensaje de Zod sin traducir en el asistente de publicación — **ABIERTO · sprint 23**
 
-> **Cerrado.** `lib/validacion/idioma.ts` pone los mensajes por defecto de
-> Zod en español para todo el proyecto, y el campo `tipo` recibió el suyo.
-> Arreglar campo por campo habría dejado el próximo sin cubrir.
+> **Se probó el arreglo durante el sprint 22 y se revirtió por alcance.**
+> Queda anotado cómo, para que el sprint 23 no lo investigue de nuevo.
 >
-> Lo de abajo queda como estaba, porque explica qué pasó.
+> La causa exacta: el campo se declara
+> `tipo: z.string().refine(…, 'Elige qué tipo de propiedad es')`, y ese
+> mensaje **solo aplica si el valor ya es una cadena**. Mientras no se
+> elige nada el valor es `undefined`, falla el `z.string()` de antes, y
+> ahí habla Zod en inglés. El mismo patrón se repite en varios campos
+> más: cualquier `z.string()` sin mensaje propio que pueda llegar vacío.
+>
+> Arreglarlos uno por uno deja el próximo sin cubrir. Lo que funciona es
+> un mapa global de errores en español con `z.config({ customError })`
+> —Zod 4— importado antes de construir los esquemas, más el mensaje
+> propio del campo `tipo`. Probado y verde.
 
 > El paso 1 de `/publicar` muestra en pantalla:
 >
@@ -383,11 +406,16 @@ pero no rompe nada.
 2. **P-03** — Cloudinary, sin eso nadie publica
 3. **P-02** — desplegar la búsqueda, hoy da 404
 
-**Bloqueantes antes de lanzar:** ninguno abierto. P-19, P-21, P-22, P-23,
-P-24 y P-25 se cerraron en el sprint 22, todos verificados contra el
-Preview desplegado y no solo con pruebas.
+**Bloqueantes antes de lanzar:** ninguno abierto. P-19, P-21, P-22 y P-24
+se cerraron en el sprint 22, verificados contra el Preview desplegado y no
+solo con pruebas.
 
-Lo que sigue abierto y no bloquea el lanzamiento, pero conviene mirar:
-las 19 funciones `SECURITY DEFINER` sin comprobación interna,
-`saldo_de_creditos` entre autenticados, el borrado de EXIF sin
-implementar, y `fast-uri` en el árbol de producción vía Sentry.
+**Pendientes para el sprint 23:** P-23 (mensaje de Zod en inglés) y P-25
+(el panel cuenta avisos ajenos como propios). Los dos se probaron durante
+el sprint 22 y se revirtieron por alcance; el arreglo de cada uno está
+anotado en su entrada.
+
+Abierto y sin bloquear: las 19 funciones `SECURITY DEFINER` sin
+comprobación interna, `saldo_de_creditos` entre autenticados, el borrado
+de EXIF sin implementar, y `fast-uri` en el árbol de producción vía
+Sentry.
