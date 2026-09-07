@@ -38,7 +38,7 @@ export default async function MisPropiedades({
   const { data: avisos } = await supabase
     .from('properties')
     .select(
-      'id, code, title, district, operation, property_type, currency, price, price_per_m2, publication_status, rejection_reason, views_count, inquiries_count, created_at, built_area, total_area',
+      'id, code, title, district, operation, property_type, currency, price, price_per_m2, publication_status, status, rejection_reason, views_count, inquiries_count, created_at, built_area, total_area',
     )
     .order('created_at', { ascending: false });
 
@@ -120,6 +120,7 @@ export default async function MisPropiedades({
                 <AccionesDelAviso
                   avisoId={aviso.id}
                   estado={aviso.publication_status}
+                  disponibilidad={aviso.status}
                   motivoRechazo={aviso.rejection_reason}
                 />
 

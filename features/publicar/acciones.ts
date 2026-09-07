@@ -433,3 +433,95 @@ export async function enlaceAlOriginal(
     ? { ok: true, url }
     : { ok: false, mensaje: 'No pudimos preparar la descarga de esa foto.' };
 }
+
+// ---------------------------------------------------------------------
+// Cerrar un aviso
+// ---------------------------------------------------------------------
+
+/** Los tres finales posibles de un aviso, y cómo se llaman en pantalla. */
+export const MOTIVOS_DE_CIERRE = {
+  sold: 'Lo vendí',
+  rented: 'Lo alquilé',
+  withdrawn: 'Ya no lo ofrezco',
+} as const;
+
+export type MotivoDeCierre = keyof typeof MOTIVOS_DE_CIERRE;
+
+export function esMotivoDeCierre(valor: string): valor is MotivoDeCierre {
+  return valor in MOTIVOS_DE_CIERRE;
+}
+
+/**
+ * Cierra un aviso: vendido, alquilado o retirado.
+ *
+ * Sale de los listados públicos en el momento, y no hay que programarlo:
+ * la política `el publico ve los avisos publicados` exige
+ * `status = 'available'`, así que en cuanto deja de estarlo el aviso
+ * desaparece de la búsqueda y de su ficha para todo el que no sea su
+ * dueño o moderación.
+ *
+ * Quién puede cerrarlo lo decide RLS —`cada quien edita sus avisos`— y
+ * desde qué estado lo decide el disparador `proteger_estados_aviso`. Acá
+ * se valida el motivo, que es lo único que la base no puede saber: que
+ * llegue uno de los tres y no una cadena cualquiera.
+ */
+export async function cerrarAviso(propertyId: string, motivo: string): Promise<Estado> {
+  await quienPublica();
+  if (!supabaseConfigurado()) return SIN_CONEXION;
+
+  if (!esMotivoDeCierre(motivo)) {
+    return { ok: false, mensaje: 'Elige por qué cierras el aviso.' };
+  }
+
+  try {
+    const supabase = await clienteServidor();
+    const { error } = await supabase
+      .from('properties')
+      .update({ status: motivo })
+      .eq('id', propertyId);
+
+    if (error) {
+      // El disparador habla en español y dice lo que corresponde; el
+      // resto de los errores no tienen por qué llegarle a nadie crudos.
+      const suyo = /Solo se puede cerrar/i.test(error.message);
+      return {
+        ok: false,
+        mensaje: suyo
+          ? 'Solo puedes cerrar un aviso que esté publicado o pausado.'
+          : 'No pudimos cerrar el aviso. Reintenta en un momento.',
+      };
+    }
+  } catch {
+    return SIN_CONEXION;
+  }
+
+  revalidatePath('/panel/mis-propiedades');
+  return { ok: true, mensaje: 'Listo. El aviso ya no aparece en las búsquedas.' };
+}
+
+/**
+ * Vuelve a ofrecer un aviso cerrado.
+ *
+ * Una venta se cae, un inquilino se arrepiente. Reabrir no pasa por
+ * revisión otra vez: el aviso ya estaba aprobado y su contenido no
+ * cambió.
+ */
+export async function reabrirAviso(propertyId: string): Promise<Estado> {
+  await quienPublica();
+  if (!supabaseConfigurado()) return SIN_CONEXION;
+
+  try {
+    const supabase = await clienteServidor();
+    const { error } = await supabase
+      .from('properties')
+      .update({ status: 'available' })
+      .eq('id', propertyId);
+
+    if (error) return { ok: false, mensaje: 'No pudimos reabrir el aviso.' };
+  } catch {
+    return SIN_CONEXION;
+  }
+
+  revalidatePath('/panel/mis-propiedades');
+  return { ok: true, mensaje: 'Listo, el aviso vuelve a aparecer.' };
+}

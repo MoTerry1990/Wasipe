@@ -9,8 +9,11 @@ import {
   archivarAviso,
   reenviarARevision,
   editarAviso,
+  cerrarAviso,
+  reabrirAviso,
+  MOTIVOS_DE_CIERRE,
 } from '@/features/publicar/acciones';
-import type { EstadoPublicacion } from '@/types/base-datos';
+import type { EstadoPublicacion, EstadoInmueble } from '@/types/base-datos';
 import type { Estado } from '@/features/cuentas/acciones';
 
 /**
@@ -40,14 +43,20 @@ const ENCABEZADO_DE_MODERACION: Partial<Record<EstadoPublicacion, string>> = {
 export function AccionesDelAviso({
   avisoId,
   estado,
+  disponibilidad,
   motivoRechazo,
 }: {
   avisoId: string;
   estado: EstadoPublicacion;
+  /** `available` mientras se ofrezca; vendido, alquilado o retirado si no. */
+  disponibilidad: EstadoInmueble;
   motivoRechazo: string | null;
 }) {
   const [resultado, setResultado] = useState<Estado>({});
+  const [cerrando, setCerrando] = useState(false);
   const [enCurso, empezar] = useTransition();
+
+  const disponible = disponibilidad === 'available';
 
   const correr = (accion: () => Promise<Estado>) => () => {
     empezar(async () => setResultado(await accion()));
@@ -121,6 +130,31 @@ export function AccionesDelAviso({
           </button>
         )}
 
+        {/* Cerrar: solo desde publicado o pausado, que es de donde la base
+            lo acepta. Ofrecerlo sobre un borrador sería prometer algo que
+            el disparador va a rechazar. */}
+        {disponible && (estado === 'published' || estado === 'paused') && (
+          <button
+            type="button"
+            disabled={enCurso}
+            onClick={() => setCerrando((v) => !v)}
+            className={BOTON}
+          >
+            Ya no está disponible
+          </button>
+        )}
+
+        {!disponible && (
+          <button
+            type="button"
+            disabled={enCurso}
+            onClick={correr(() => reabrirAviso(avisoId))}
+            className={BOTON}
+          >
+            Volver a ofrecerlo
+          </button>
+        )}
+
         {(estado === 'rejected' || estado === 'archived' || estado === 'expired') && (
           <button
             type="button"
@@ -143,6 +177,49 @@ export function AccionesDelAviso({
           </button>
         )}
       </div>
+
+      {/* El motivo se pregunta y no se asume. «Vendido» y «retirado» dejan
+          el aviso igual de invisible, pero no son lo mismo: el precio de
+          una venta cerrada alimenta el índice por m², y el de algo que se
+          retiró sin venderse lo ensuciaría. */}
+      {cerrando && disponible && (
+        <div className="border-linea flex flex-col gap-2 rounded-xl border-[1.5px] bg-white p-3.5">
+          <p className="text-tinta text-[13.5px] font-bold">¿Por qué lo cierras?</p>
+          <p className="text-tinta-60 text-[12.5px]">
+            Dejará de aparecer en las búsquedas. Puedes volver a ofrecerlo cuando quieras.
+          </p>
+          <div className="mt-1 flex flex-wrap gap-2">
+            {Object.entries(MOTIVOS_DE_CIERRE).map(([motivo, texto]) => (
+              <button
+                key={motivo}
+                type="button"
+                disabled={enCurso}
+                onClick={() => {
+                  setCerrando(false);
+                  correr(() => cerrarAviso(avisoId, motivo))();
+                }}
+                className={BOTON}
+              >
+                {texto}
+              </button>
+            ))}
+            <button
+              type="button"
+              disabled={enCurso}
+              onClick={() => setCerrando(false)}
+              className={`${BOTON} ml-auto`}
+            >
+              Mejor no
+            </button>
+          </div>
+        </div>
+      )}
+
+      {!disponible && (
+        <p className="text-tinta-45 text-[12.5px]">
+          Este aviso está cerrado y no aparece en las búsquedas.
+        </p>
+      )}
 
       {estado !== 'archived' && (
         <p className="text-tinta-45 text-[12.5px]">
