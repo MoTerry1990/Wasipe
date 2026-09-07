@@ -44,4 +44,5 @@ id_rsa*
 
 # Enlaces a proyectos de servicios externos
 .supabase/
+supabase/.temp/
 .sentryclirc

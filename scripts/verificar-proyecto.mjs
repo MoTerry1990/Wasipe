@@ -52,12 +52,17 @@ cargar();
 
 const url = process.env.NEXT_PUBLIC_SUPABASE_URL ?? '';
 const anon = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ?? '';
+const secreta = process.env.SUPABASE_SERVICE_ROLE_KEY ?? '';
 
 console.log('\nVerificación previa a las migraciones');
 console.log(gris('Solo lectura. No se crea, altera ni borra nada.\n'));
 
-if (!url || !anon) {
-  console.log(rojo('Faltan NEXT_PUBLIC_SUPABASE_URL o NEXT_PUBLIC_SUPABASE_ANON_KEY.'));
+if (!url || !anon || !secreta) {
+  console.log(
+    rojo(
+      'Faltan NEXT_PUBLIC_SUPABASE_URL, NEXT_PUBLIC_SUPABASE_ANON_KEY o SUPABASE_SERVICE_ROLE_KEY.',
+    ),
+  );
   console.log(gris('Complétalas en .env.local y vuelve a correr esto.\n'));
   process.exit(1);
 }
@@ -103,15 +108,24 @@ if (!/^[a-z]{20}$/.test(referencia)) {
 
 /**
  * PostgREST publica su esquema en la raíz de la API. Es una petición de
- * solo lectura y no necesita permisos especiales: devuelve qué tablas ve
- * el rol anónimo.
+ * solo lectura, y hay que hacerla con la **clave secreta**, por dos
+ * motivos distintos:
  *
- * Con la base vacía no hay nada que ver, que es exactamente lo que se
- * quiere confirmar antes de migrar.
+ *  1. **Supabase ya no deja consultar ese punto con la clave pública.**
+ *     Con las claves de formato nuevo (`sb_publishable_…`) responde 401 y
+ *     «Only secret API keys can be used for this endpoint». Con la clave
+ *     pública anterior, en formato JWT, sí funcionaba.
+ *
+ *  2. **La clave pública daría un falso negativo.** El rol anónimo solo
+ *     ve lo que RLS le deja ver, así que una base con tablas bien
+ *     protegidas se vería igual que una vacía. Y «vacía» es justamente lo
+ *     que estamos tratando de confirmar antes de migrar encima.
+ *
+ * La clave no se imprime nunca: solo viaja en la cabecera.
  */
 async function mirarLaBase() {
   const respuesta = await fetch(`${url}/rest/v1/`, {
-    headers: { apikey: anon, Authorization: `Bearer ${anon}` },
+    headers: { apikey: secreta },
   });
 
   if (!respuesta.ok) {
@@ -126,31 +140,35 @@ async function mirarLaBase() {
   return { ok: true, tablas };
 }
 
+/**
+ * Se asigna `process.exitCode` en vez de llamar a `process.exit()`: en
+ * Windows, cortar el proceso con una petición todavía abierta hace que
+ * libuv aborte con «Assertion failed: !(handle->flags & UV_HANDLE_CLOSING)»,
+ * y ese aborto pisa el código de salida con un 127. Justo el código que
+ * este script existe para comunicar.
+ */
 try {
   const resultado = await mirarLaBase();
 
   if (!resultado.ok) {
     console.log(rojo(`  No se pudo consultar: ${resultado.motivo}`));
     console.log(gris('  Revisa que la URL y la clave sean del mismo proyecto.\n'));
-    process.exit(1);
-  }
-
-  const { tablas } = resultado;
-
-  if (tablas.length === 0) {
+    process.exitCode = 1;
+  } else if (resultado.tablas.length === 0) {
     console.log(verde('  ✓ La base está vacía. Se puede migrar.'));
     console.log(gris('    Ninguna tabla publicada en el esquema público.\n'));
-    process.exit(0);
+    process.exitCode = 0;
+  } else {
+    const { tablas } = resultado;
+    console.log(amarillo(`  ⚠ La base YA tiene ${tablas.length} tabla(s):`));
+    for (const tabla of tablas.slice(0, 20)) console.log(`      ${tabla}`);
+    if (tablas.length > 20) console.log(`      … y ${tablas.length - 20} más`);
+    console.log();
+    console.log(amarillo('  No se migra encima sin mirar. Copia de seguridad primero.\n'));
+    process.exitCode = 2;
   }
-
-  console.log(amarillo(`  ⚠ La base YA tiene ${tablas.length} tabla(s):`));
-  for (const tabla of tablas.slice(0, 20)) console.log(`      ${tabla}`);
-  if (tablas.length > 20) console.log(`      … y ${tablas.length - 20} más`);
-  console.log();
-  console.log(amarillo('  No se migra encima sin mirar. Copia de seguridad primero.\n'));
-  process.exit(2);
 } catch (error) {
   console.log(rojo(`  Falló la conexión: ${error.message}`));
   console.log(gris('  ¿El proyecto está activo? ¿La URL es la correcta?\n'));
-  process.exit(1);
+  process.exitCode = 1;
 }

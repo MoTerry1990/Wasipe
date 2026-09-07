@@ -114,6 +114,17 @@ for (const [nombre, obligatoria, publica, paraQue] of VARIABLES) {
     problemas++;
   }
 
+  // Un marcador de posición sin reemplazar cuenta como «presente» si solo
+  // se mira si hay algo escrito, y esa comprobación a medias ya costó un
+  // intento de migración: la cadena de conexión venía del panel con
+  // `[YOUR-PASSWORD]` literal adentro y no falló hasta el `db push`.
+  if (valor && /\[[^\]]*\]|your.?password|tu.?contrase/i.test(valor)) {
+    console.log(
+      `${' '.repeat(12)} ${rojo('ERROR: quedó el marcador de posición del panel sin reemplazar')}`,
+    );
+    problemas++;
+  }
+
   console.log();
 }
 
