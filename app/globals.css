@@ -1,6 +1,20 @@
 @import 'tailwindcss';
 
 /**
+ * Los estilos de MapLibre.
+ *
+ * Van acá y no dentro del componente del mapa a propósito: importarlos
+ * desde un componente de cliente los mete en el paquete de esa ruta y
+ * Tailwind los procesa después, con lo que el orden de las reglas depende
+ * de por dónde entró cada una. Acá el orden es el del archivo, que es
+ * predecible.
+ *
+ * Sin esto, el mapa se dibuja pero los controles y la atribución salen
+ * sin forma.
+ */
+@import 'maplibre-gl/dist/maplibre-gl.css';
+
+/**
  * Identidad visual de Wasipe.
  *
  * Los colores y tipografías salen tal cual del sitio anterior

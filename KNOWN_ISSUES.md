@@ -114,6 +114,35 @@ Ninguno se corrigió en este sprint: la instrucción fue auditar, no cambiar.
 > Las 14 pruebas no lo detectaron porque comprueban las rutas
 > estructuradas, que sí funcionan.
 
+### P-30 · La vista de mapa nunca termina de cargar — **ABIERTO · bloquea la cartografía**
+
+> **Es previo, y es la explicación de P-26.**
+>
+> `/comprar?vista=mapa` se queda para siempre en «Cargando el mapa…». En
+> el DOM queda el límite de Suspense sin resolver:
+>
+>     <template data-dgst="BAILOUT_TO_CLIENT_SIDE_RENDERING">
+>     <div role="status">Cargando el mapa…</div>
+>
+> `vista-resultados.tsx` carga el componente con `next/dynamic` y
+> `ssr: false`. Esa promesa nunca resuelve. **`dynamic` no tiene estado de
+> error**, así que un módulo que falla al cargarse se ve exactamente igual
+> que uno que tarda: cargando, para siempre, sin una línea en consola.
+>
+> Comprobado en el sprint 23D **guardando los cambios de ese sprint y
+> volviendo al código anterior**: falla igual. No lo introdujo la
+> cartografía.
+>
+> Descartado además: WebGL está disponible, React hidrata el resto de la
+> página, los fragmentos responden 200 y no hay error en consola ni
+> rechazo sin capturar.
+>
+> Con un `import` estático en vez de `dynamic`, el componente **sí rinde**.
+> Ese es el hilo del que tirar.
+>
+> Mientras esto no se arregle, la cartografía integrada en el sprint 23D
+> no se puede ver ni verificar, aunque compile y pase todo lo demás.
+
 ### P-29 · Tres pruebas de `busqueda.spec.ts` fallan, y ninguna por el producto — **ABIERTO**
 
 > Comprobado en el sprint 23C que **las tres fallan sin los cambios de ese

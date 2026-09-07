@@ -1,15 +1,9 @@
 'use client';
 
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import Link from 'next/link';
-import {
-  agrupar,
-  limitesDe,
-  proyectar,
-  tienePuntoPublico,
-  ZOOM_MAXIMO,
-  ZOOM_MINIMO,
-} from '@/lib/mapa/agrupar';
+import { agrupar, limitesDe, tienePuntoPublico } from '@/lib/mapa/agrupar';
+import { ESTILO_DE_TESELAS, ATRIBUCION } from '@/lib/mapa/teselas';
 import { precioMostrado } from '@/lib/moneda';
 import { numero } from '@/lib/formato';
 import { TIPO_INMUEBLE } from '@/lib/etiquetas';
@@ -20,19 +14,44 @@ import type { Moneda } from '@/types/base-datos';
 /**
  * Mapa de resultados.
  *
- * Dibuja los avisos de la búsqueda actual sobre un plano proyectado a
- * partir de sus propias coordenadas, agrupados por cercanía. Acercar
- * parte los grupos; alejar los junta.
+ * Dibuja los avisos de la búsqueda actual sobre las calles reales,
+ * agrupados por cercanía. Acercar parte los grupos; alejar los junta.
  *
- * LO QUE FALTA: la cartografía de fondo (las calles) necesita un
- * proveedor de mapas con su clave. Mientras no esté configurada, el
- * fondo es liso y se avisa. Los marcadores, la agrupación y la
- * sincronización con la lista sí funcionan.
+ * **La cartografía la pone MapLibre GL con teselas de OpenFreeMap**, sin
+ * clave y sin cuenta. Hasta el sprint 23D el fondo era un degradado liso
+ * y se avisaba en pantalla: los marcadores flotaban sobre nada.
+ *
+ * Lo que cambió al poner el fondo, y por qué:
+ *
+ * La agrupación, los marcadores y la sincronización con la lista son los
+ * mismos. Lo único que se movió es **de dónde sale la posición en
+ * pantalla**. Antes la calculaba una proyección lineal propia, en
+ * porcentajes del contenedor. Eso servía sobre un fondo liso, donde no
+ * hay nada con qué comparar; sobre calles de verdad no sirve, porque
+ * MapLibre dibuja en Mercator y una proyección lineal deja los alfileres
+ * corridos respecto de la cuadra que dicen señalar. Ahora la posición la
+ * da `map.project()`, así que el marcador cae donde el mapa dice.
  *
  * Lo que NUNCA se dibuja es la dirección exacta: el punto que llega acá
- * ya viene desplazado, y los avisos publicados como "solo distrito" no
+ * ya viene desplazado, y los avisos publicados como «solo distrito» no
  * entran al mapa.
  */
+
+/**
+ * El tipo del mapa, en posición de tipo y nada más.
+ *
+ * No se importa con `import type { Map } from 'maplibre-gl'` arriba:
+ * aunque TypeScript lo borre, deja el especificador en el módulo y el
+ * empaquetador lo ata al fragmento perezoso. Con eso, el `dynamic()` de
+ * este componente se quedaba cargando para siempre —sin error, porque
+ * `dynamic` no tiene estado de error— y el mapa nunca aparecía. Un
+ * `import()` en posición de tipo no existe en tiempo de ejecución.
+ */
+type MapaLibre = import('maplibre-gl').Map;
+
+/** Lo que hace falta saber del mapa para colocar un marcador. */
+type Vista = { zoom: number; version: number };
+
 export function MapaResultados({
   avisos,
   moneda,
@@ -46,7 +65,14 @@ export function MapaResultados({
   seleccionado: string | null;
   onSeleccionar: (id: string | null) => void;
 }) {
-  const [zoom, setZoom] = useState(4);
+  const contenedor = useRef<HTMLDivElement | null>(null);
+  const mapa = useRef<MapaLibre | null>(null);
+
+  // `version` cambia en cada movimiento del mapa y es lo que obliga a
+  // recalcular las posiciones. El zoom aparte, porque además decide cómo
+  // se agrupan los puntos.
+  const [vista, setVista] = useState<Vista>({ zoom: 4, version: 0 });
+  const [listo, setListo] = useState(false);
 
   const ubicables = useMemo(
     () =>
@@ -57,9 +83,105 @@ export function MapaResultados({
   );
 
   const limites = useMemo(() => limitesDe(ubicables), [ubicables]);
-  const grupos = useMemo(() => agrupar(ubicables, zoom), [ubicables, zoom]);
+  const grupos = useMemo(() => agrupar(ubicables, vista.zoom), [ubicables, vista.zoom]);
 
   const ocultos = avisos.length - ubicables.length;
+
+  // -------------------------------------------------------------------
+  // El mapa
+  // -------------------------------------------------------------------
+  useEffect(() => {
+    if (!contenedor.current || mapa.current || !limites) return;
+
+    let cancelado = false;
+
+    // Import dinámico: MapLibre toca `window` al cargarse y este módulo
+    // también se evalúa al renderizar en el servidor.
+    void import('maplibre-gl').then(({ Map: MapaGL, AttributionControl }) => {
+      if (cancelado || !contenedor.current) return;
+
+      const m = new MapaGL({
+        container: contenedor.current,
+        style: ESTILO_DE_TESELAS,
+        bounds: [
+          [limites.oeste, limites.sur],
+          [limites.este, limites.norte],
+        ],
+        fitBoundsOptions: { padding: 56, maxZoom: 16 },
+        // La atribución la ponemos nosotros: el estilo de OpenFreeMap no
+        // la declara, y los datos son de OpenStreetMap.
+        attributionControl: false,
+        // Sin rotar ni inclinar: no aporta nada para buscar casas y
+        // complica el gesto en móvil.
+        pitchWithRotate: false,
+        dragRotate: false,
+        touchZoomRotate: true,
+      });
+
+      m.addControl(new AttributionControl({ compact: true, customAttribution: ATRIBUCION }));
+      m.touchZoomRotate?.disableRotation();
+
+      const sincronizar = () =>
+        setVista((v) => ({ zoom: Math.round(m.getZoom()), version: v.version + 1 }));
+
+      m.on('load', () => {
+        if (cancelado) return;
+        setListo(true);
+        sincronizar();
+      });
+      m.on('move', sincronizar);
+
+      mapa.current = m;
+    });
+
+    return () => {
+      cancelado = true;
+      mapa.current?.remove();
+      mapa.current = null;
+    };
+    // Solo al montar: los cambios de límites se manejan abajo, sin
+    // rehacer el mapa entero.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // Una búsqueda nueva mueve la cámara, no reconstruye el mapa.
+  useEffect(() => {
+    if (!mapa.current || !listo || !limites) return;
+    mapa.current.fitBounds(
+      [
+        [limites.oeste, limites.sur],
+        [limites.este, limites.norte],
+      ],
+      { padding: 56, maxZoom: 16, duration: 400 },
+    );
+  }, [limites, listo]);
+
+  /**
+   * Dónde cae cada grupo en la pantalla, según el mapa.
+   *
+   * Se calcula en un efecto y se guarda en estado en vez de proyectar al
+   * vuelo dentro del render. No es un rodeo: `mapa.current` es una
+   * referencia, y leerla mientras se renderiza es justo lo que React no
+   * garantiza —el valor puede cambiar sin que nada se vuelva a dibujar—.
+   * Acá el disparador es explícito: cambió el mapa de sitio, o cambiaron
+   * los grupos.
+   */
+  const [posiciones, setPosiciones] = useState<Record<string, { x: number; y: number }>>({});
+
+  useEffect(() => {
+    const m = mapa.current;
+    if (!m || !listo) return;
+
+    const nuevas: Record<string, { x: number; y: number }> = {};
+    for (const grupo of grupos) {
+      const { x, y } = m.project([grupo.lon, grupo.lat]);
+      nuevas[grupo.id] = { x, y };
+    }
+    setPosiciones(nuevas);
+  }, [grupos, listo, vista.version]);
+
+  const acercar = () => mapa.current?.zoomIn();
+  const alejar = () => mapa.current?.zoomOut();
 
   if (!limites) {
     return (
@@ -77,75 +199,82 @@ export function MapaResultados({
 
   return (
     <div className="border-linea relative h-full min-h-[24rem] overflow-hidden rounded-2xl border bg-[linear-gradient(160deg,#E4F1FC,#F4F6F8)]">
-      <div className="absolute inset-0" role="application" aria-label="Mapa de resultados">
-        {grupos.map((grupo) => {
-          const { x, y } = proyectar(grupo, limites);
-          const cantidad = grupo.puntos.length;
-          const unico = cantidad === 1 ? grupo.puntos[0]! : null;
-          const activo = unico ? unico.id === seleccionado : false;
+      <div ref={contenedor} className="absolute inset-0" data-mapa="teselas" />
 
-          if (unico) {
-            const precio = precioMostrado(unico, moneda, tipoDeCambio);
+      <div
+        className="pointer-events-none absolute inset-0"
+        role="application"
+        aria-label="Mapa de resultados"
+      >
+        {listo &&
+          grupos.map((grupo) => {
+            const punto = posiciones[grupo.id];
+            if (!punto) return null;
+
+            const cantidad = grupo.puntos.length;
+            const unico = cantidad === 1 ? grupo.puntos[0]! : null;
+            const activo = unico ? unico.id === seleccionado : false;
+
+            if (unico) {
+              const precio = precioMostrado(unico, moneda, tipoDeCambio);
+              return (
+                <Link
+                  key={grupo.id}
+                  href={`/aviso/${unico.id}`}
+                  style={{ left: punto.x, top: punto.y }}
+                  onMouseEnter={() => onSeleccionar(unico.id)}
+                  onMouseLeave={() => onSeleccionar(null)}
+                  onFocus={() => onSeleccionar(unico.id)}
+                  onBlur={() => onSeleccionar(null)}
+                  className={cn(
+                    'cifra pointer-events-auto absolute -translate-x-1/2 -translate-y-1/2 rounded-full px-2.5 py-1 text-[12.5px] font-bold whitespace-nowrap shadow-md transition-[transform,background-color]',
+                    activo
+                      ? 'bg-fucsia z-20 scale-110 text-white'
+                      : 'text-tinta hover:bg-fucsia z-10 bg-white hover:text-white',
+                  )}
+                  title={`${TIPO_INMUEBLE[unico.property_type]} en ${unico.district}`}
+                >
+                  {precio.texto}
+                </Link>
+              );
+            }
+
             return (
-              <Link
+              <button
                 key={grupo.id}
-                href={`/aviso/${unico.id}`}
-                style={{ left: `${x}%`, top: `${y}%` }}
-                onMouseEnter={() => onSeleccionar(unico.id)}
-                onMouseLeave={() => onSeleccionar(null)}
-                onFocus={() => onSeleccionar(unico.id)}
-                onBlur={() => onSeleccionar(null)}
-                className={cn(
-                  'cifra absolute -translate-x-1/2 -translate-y-1/2 rounded-full px-2.5 py-1 text-[12.5px] font-bold whitespace-nowrap shadow-md transition-[transform,background-color]',
-                  activo
-                    ? 'bg-fucsia z-20 scale-110 text-white'
-                    : 'text-tinta hover:bg-fucsia z-10 bg-white hover:text-white',
-                )}
-                title={`${TIPO_INMUEBLE[unico.property_type]} en ${unico.district}`}
+                type="button"
+                style={{ left: punto.x, top: punto.y }}
+                onClick={acercar}
+                className="bg-turquesa cifra pointer-events-auto absolute z-10 grid size-11 -translate-x-1/2 -translate-y-1/2 place-items-center rounded-full text-[13px] font-extrabold text-white shadow-md transition-transform hover:scale-110"
               >
-                {precio.texto}
-              </Link>
+                {numero(cantidad)}
+                <span className="solo-lectores">
+                  {cantidad} propiedades en esta zona. Acercar para separarlas.
+                </span>
+              </button>
             );
-          }
-
-          return (
-            <button
-              key={grupo.id}
-              type="button"
-              style={{ left: `${x}%`, top: `${y}%` }}
-              onClick={() => setZoom((z) => Math.min(z + 2, ZOOM_MAXIMO))}
-              className="bg-turquesa cifra absolute z-10 grid size-11 -translate-x-1/2 -translate-y-1/2 place-items-center rounded-full text-[13px] font-extrabold text-white shadow-md transition-transform hover:scale-110"
-            >
-              {numero(cantidad)}
-              <span className="solo-lectores">
-                {cantidad} propiedades en esta zona. Acercar para separarlas.
-              </span>
-            </button>
-          );
-        })}
+          })}
       </div>
 
       {/* Acercar y alejar */}
       <div className="absolute top-3 right-3 z-30 flex flex-col overflow-hidden rounded-xl bg-white shadow-md">
         <button
           type="button"
-          onClick={() => setZoom((z) => Math.min(z + 1, ZOOM_MAXIMO))}
-          disabled={zoom >= ZOOM_MAXIMO}
+          onClick={acercar}
           className="text-tinta hover:bg-niebla px-3 py-2 text-lg font-bold disabled:opacity-40"
         >
           +<span className="solo-lectores">Acercar</span>
         </button>
         <button
           type="button"
-          onClick={() => setZoom((z) => Math.max(z - 1, ZOOM_MINIMO))}
-          disabled={zoom <= ZOOM_MINIMO}
+          onClick={alejar}
           className="border-linea text-tinta hover:bg-niebla border-t px-3 py-2 text-lg font-bold disabled:opacity-40"
         >
           −<span className="solo-lectores">Alejar</span>
         </button>
       </div>
 
-      <p className="text-tinta-60 absolute bottom-3 left-3 z-30 max-w-[22rem] rounded-lg bg-white/90 px-3 py-2 text-[12px]">
+      <p className="text-tinta-60 pointer-events-none absolute bottom-3 left-3 z-30 max-w-[22rem] rounded-lg bg-white/90 px-3 py-2 text-[12px]">
         Las ubicaciones son aproximadas: el punto está desplazado unos 300 m de la dirección
         real.
         {ocultos > 0 &&
