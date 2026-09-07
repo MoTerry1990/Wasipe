@@ -338,3 +338,35 @@ describe('los datos estructurados', () => {
     }
   });
 });
+
+/**
+ * El Preview no se ofrece a Google.
+ *
+ * En el sprint 22, el primer despliegue respondía `index, follow` y un
+ * `robots.txt` con `Allow: /`. `NEXT_PUBLIC_ENTORNO` estaba configurada y
+ * **solo la leía Sentry**: ni `app/robots.ts` ni los metadatos la
+ * consultaban.
+ *
+ * Lo único que lo tapaba era la protección de despliegue de Vercel, que se
+ * apaga con un clic. Dos copias del mismo portal compitiendo por las
+ * mismas búsquedas es contenido duplicado, y sacar una del índice después
+ * lleva semanas.
+ */
+describe('fuera de producción no se indexa nada', () => {
+  it('ES_PRODUCCION es falso si la variable falta, está vacía o dice otra cosa', async () => {
+    const { ES_PRODUCCION } = await import('@/config/sitio');
+    // Las pruebas no corren con NEXT_PUBLIC_ENTORNO=produccion.
+    expect(ES_PRODUCCION).toBe(false);
+  });
+
+  it('robots.txt bloquea el rastreo entero', async () => {
+    const robots = (await import('@/app/robots')).default();
+    expect(robots.rules).toEqual([{ userAgent: '*', disallow: '/' }]);
+    // Y no se ofrece el sitemap: sería una invitación a rastrear.
+    expect(robots.sitemap).toBeUndefined();
+  });
+
+  // Los metadatos del layout no se prueban acá: importarlo arrastra
+  // next/font/google, que necesita el build de Next. Esa mitad se
+  // verifica sobre el Preview desplegado, que es donde importa.
+});

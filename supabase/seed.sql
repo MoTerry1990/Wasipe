@@ -88,7 +88,14 @@ values
 on conflict (id) do nothing;
 
 -- Todas las cuentas de ejemplo ya pasaron la bienvenida.
+-- El rol va acá y no en el `insert` de arriba: el disparador
+-- `al_crear_usuario` ya creó el perfil con el rol por defecto, así que ese
+-- insert lleva `on conflict do nothing` y no cambia nada. Faltaba en esta
+-- línea, y Rosa quedaba como `buyer` aunque la siembra le asigne avisos
+-- —incluido el borrador con tres fotos—: su panel no mostraba «Mis
+-- propiedades» y no podía enviar su propio aviso a revisión.
 update public.profiles set
+  role = 'owner',
   phone = '987654321', whatsapp = '987654321',
   bio = 'Vendo el departamento donde viví los últimos ocho años.',
   preferred_contact = 'whatsapp', intent = 'sell', onboarded_at = now()

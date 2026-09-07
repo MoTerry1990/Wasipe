@@ -39,7 +39,42 @@ Ninguno se corrigió en este sprint: la instrucción fue auditar, no cambiar.
 > antes: sacar los scripts a archivos en un sitio que va a morir es
 > trabajo que no vuelve.
 
-### P-22 · Sentry no filtra los datos que van dentro del texto del error — **ABIERTO · P0 antes del lanzamiento**
+### P-25 · El panel contaba los avisos de todo el mundo como propios — **RESUELTO (sprint 22)**
+
+> Encontrado al verificar P-24. El resumen del panel decía a Rosa
+> «8 avisos publicados» cuando tiene tres: dos publicados y uno en
+> revisión. Ocho era el total de la base.
+>
+> La consulta era:
+>
+>     supabase.from('properties').select('id', { count: 'exact', head: true })
+>
+> Sin `owner_id` y sin `publication_status`. Contaba **todo lo que RLS le
+> deja ver** a quien pregunta —los avisos publicados de todos más los
+> suyos— y lo rotulaba como si fueran de la persona.
+>
+> Lo que lo hace interesante: **RLS lo volvió invisible.** La consulta
+> nunca falla y nunca devuelve datos ajenos que no se puedan mostrar; solo
+> cuenta de más. Es exactamente lo que advierte `CLAUDE.md`: RLS acota lo
+> que se puede leer, no dice de quién es. Esa parte la pone la consulta,
+> siempre.
+>
+> Cerrado con los dos filtros. Verificado en el Preview: ahora dice
+> «2 avisos publicados».
+
+### P-22 · Sentry no filtra los datos que van dentro del texto del error — **RESUELTO (sprint 22)**
+
+> **Cerrado.** `limpiarTexto()` en `lib/observabilidad/sentry.ts` tapa
+> correos, celulares peruanos, coordenadas, secretos escritos como
+> `clave=valor`, DNI y RUC, y se aplica a `evento.message`, a cada
+> `exception.value` y al texto de las migas de pan. Ocho pruebas nuevas.
+>
+> Verificado sobre un evento que viajó de verdad desde el Preview: los
+> cinco datos salen como `[correo]`, `[teléfono]`, `[coordenada]` y
+> `[oculto]`, y el código del aviso, el área y el precio siguen ahí. Un
+> mensaje mutilado no sirve para depurar.
+>
+> Lo de abajo queda como estaba, porque explica qué pasó.
 
 > **Encontrado en el sprint 22**, sobre un evento que viajó de verdad.
 >
@@ -65,7 +100,13 @@ Ninguno se corrigió en este sprint: la instrucción fue auditar, no cambiar.
 > Las 14 pruebas no lo detectaron porque comprueban las rutas
 > estructuradas, que sí funcionan.
 
-### P-23 · Mensaje de Zod sin traducir en el asistente de publicación — **ABIERTO**
+### P-23 · Mensaje de Zod sin traducir en el asistente de publicación — **RESUELTO (sprint 22)**
+
+> **Cerrado.** `lib/validacion/idioma.ts` pone los mensajes por defecto de
+> Zod en español para todo el proyecto, y el campo `tipo` recibió el suyo.
+> Arreglar campo por campo habría dejado el próximo sin cubrir.
+>
+> Lo de abajo queda como estaba, porque explica qué pasó.
 
 > El paso 1 de `/publicar` muestra en pantalla:
 >
@@ -74,7 +115,12 @@ Ninguno se corrigió en este sprint: la instrucción fue auditar, no cambiar.
 > Es el mensaje por defecto de Zod llegando crudo al usuario. Viola la
 > regla de idioma, y además no le dice nada a quien lo lee.
 
-### P-24 · El rol de Rosa Quispe quedó en `buyer` en la siembra — **ABIERTO**
+### P-24 · El rol de Rosa Quispe quedó en `buyer` en la siembra — **RESUELTO (sprint 22)**
+
+> **Cerrado.** El `update` de Rosa ahora incluye `role`. Verificado en el
+> Preview: su panel ya muestra «Mis propiedades».
+>
+> Lo de abajo queda como estaba, porque explica qué pasó.
 
 > La siembra la trata como propietaria —le asigna avisos, incluido el
 > borrador con tres fotos— pero su perfil queda con rol `buyer`.
@@ -121,7 +167,14 @@ Ninguno se corrigió en este sprint: la instrucción fue auditar, no cambiar.
 > Lanzar así significa no enterarse de ningún error que le ocurra a un
 > usuario en su navegador. **Bloqueante.**
 
-### P-19 · El Preview se declara indexable — **ABIERTO · P0 antes del lanzamiento**
+### P-19 · El Preview se declara indexable — **RESUELTO (sprint 22)**
+
+> **Cerrado.** `ES_PRODUCCION` en `config/sitio.ts`, usado por
+> `app/robots.ts` y por los metadatos del layout. Verificado en el
+> Preview: `robots.txt` responde `Disallow: /` y la portada
+> `noindex, nofollow`. Dos pruebas nuevas.
+>
+> Lo de abajo queda como estaba, porque explica qué pasó.
 
 > **Encontrado en el sprint 22**, en el primer despliegue de Preview.
 >
@@ -330,6 +383,11 @@ pero no rompe nada.
 2. **P-03** — Cloudinary, sin eso nadie publica
 3. **P-02** — desplegar la búsqueda, hoy da 404
 
-**Bloqueantes antes de lanzar:** **P-22** — los datos personales que van dentro del texto de un error llegan a Sentry sin filtrar. **P-19** — el Preview se ofrece a Google
-como si fuera el sitio. Hoy lo tapa la protección de despliegue de Vercel,
-que se apaga con un clic.
+**Bloqueantes antes de lanzar:** ninguno abierto. P-19, P-21, P-22, P-23,
+P-24 y P-25 se cerraron en el sprint 22, todos verificados contra el
+Preview desplegado y no solo con pruebas.
+
+Lo que sigue abierto y no bloquea el lanzamiento, pero conviene mirar:
+las 19 funciones `SECURITY DEFINER` sin comprobación interna,
+`saldo_de_creditos` entre autenticados, el borrado de EXIF sin
+implementar, y `fast-uri` en el árbol de producción vía Sentry.

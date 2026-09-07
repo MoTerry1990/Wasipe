@@ -108,6 +108,56 @@ function limpiar(valor: unknown, profundidad = 0): unknown {
 }
 
 /**
+ * Tapa los datos personales que viajan **dentro de un texto libre**.
+ *
+ * `limpiar()` recorre objetos y mira las llaves. Eso no alcanza para el
+ * mensaje de un error, que es una cadena suelta sin llaves donde mirar.
+ *
+ * Y no es un caso raro. Los errores de validación y los de Supabase
+ * repiten el valor que falló, y en un portal inmobiliario ese valor es un
+ * correo o un teléfono:
+ *
+ *     User already registered: alguien@ejemplo.pe
+ *     El teléfono 987654321 ya está en uso
+ *
+ * En el sprint 22 se comprobó sobre un evento que viajó de verdad: las
+ * cookies se filtraban bien y el correo, el teléfono, las coordenadas y
+ * la contraseña llegaban intactos a Sentry.
+ *
+ * Se reemplaza por una marca en vez de borrar: saber que **había** un
+ * teléfono ahí es la mitad de la depuración, y un mensaje mutilado no
+ * sirve para nada.
+ */
+const REEMPLAZOS: ReadonlyArray<readonly [RegExp, string]> = [
+  // Correos.
+  [/\b[\w.+-]+@[\w-]+\.[\w.-]+\b/g, '[correo]'],
+
+  // Celulares peruanos: nueve dígitos que empiezan en 9, con o sin +51 y
+  // con los separadores que la gente escribe.
+  [/(?:\+?51[\s.-]?)?\b9\d{2}[\s.-]?\d{3}[\s.-]?\d{3}\b/g, '[teléfono]'],
+
+  // Coordenadas. Cuatro decimales o más ya no es un precio ni un área: en
+  // este producto, un número así es la casa de alguien.
+  [/-?\d{1,3}\.\d{4,}/g, '[coordenada]'],
+
+  // Secretos escritos como `clave=…`, que es como terminan en un mensaje
+  // de error cuando alguien vuelca el objeto entero.
+  [
+    /\b(pass(?:word|wd)?|clave|contrase(?:ñ|n)a|token|secret|api[_-]?key|authorization)\b\s*[=:]\s*("[^"]*"|'[^']*'|\S+)/gi,
+    '$1=[oculto]',
+  ],
+
+  // DNI y RUC peruanos.
+  [/\b(?:dni|ruc)\b\s*[=:]?\s*\d{8,11}\b/gi, '[documento]'],
+];
+
+function limpiarTexto(texto: string): string {
+  let salida = texto;
+  for (const [patron, marca] of REEMPLAZOS) salida = salida.replace(patron, marca);
+  return salida;
+}
+
+/**
  * Quita de una dirección lo que no debería viajar.
  *
  * Una URL con `?correo=alguien@ejemplo.pe` termina en el título del
@@ -169,11 +219,20 @@ export function limpiarEvento(evento: ErrorEvent): ErrorEvent | null {
   if (evento.extra) evento.extra = limpiar(evento.extra) as Record<string, unknown>;
   if (evento.contexts) evento.contexts = limpiar(evento.contexts) as typeof evento.contexts;
 
+  // El texto del error, que es lo que se ve primero en Sentry y lo que
+  // viaja en el correo de alerta. Hasta el sprint 22 salía tal cual.
+  if (evento.message) evento.message = limpiarTexto(evento.message);
+
+  for (const excepcion of evento.exception?.values ?? []) {
+    if (excepcion.value) excepcion.value = limpiarTexto(excepcion.value);
+  }
+
   // Las migas de pan guardan cada clic y cada petición. Ahí es donde se
   // cuela un formulario entero sin que nadie lo haya pedido.
   if (evento.breadcrumbs) {
     evento.breadcrumbs = evento.breadcrumbs.slice(-20).map((miga) => ({
       ...miga,
+      message: miga.message ? limpiarTexto(miga.message) : miga.message,
       data: miga.data ? (limpiar(miga.data) as Record<string, unknown>) : undefined,
     }));
   }

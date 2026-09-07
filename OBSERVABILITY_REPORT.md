@@ -262,3 +262,32 @@ inmobiliario: los errores de validación y los de Supabase suelen repetir
 el valor que falló, y ese valor es un correo o un teléfono.
 
 Anotado como **P-22**.
+
+---
+
+## Cuarta pasada — el filtrado del texto, corregido
+
+`limpiarTexto()` en `lib/observabilidad/sentry.ts` tapa lo que viaja
+dentro de una cadena: correos, celulares peruanos con y sin prefijo,
+coordenadas, secretos escritos como `clave=valor`, DNI y RUC. Se aplica a
+`evento.message`, a cada `exception.value` y al texto de las migas de pan.
+
+Ocho pruebas nuevas, y verificado sobre un evento que viajó de verdad
+desde el Preview:
+
+| Dato | Antes | Ahora |
+|---|---|---|
+| cabecera `cookie` | ausente | ausente |
+| cookie de sesión | ausente | ausente |
+| correo | **presente** | **ausente** → `[correo]` |
+| teléfono | **presente** | **ausente** → `[teléfono]` |
+| coordenadas | **presente** | **ausente** → `[coordenada]` |
+| contraseña | **presente** | **ausente** → `[oculto]` |
+
+Y lo que tiene que sobrevivir, sobrevive: en el mismo evento siguen
+estando `WSP-001001`, `120 m²` y `420,000`. Se reemplaza por una marca en
+vez de borrar porque saber que **había** un teléfono ahí es la mitad de
+la depuración, y un mensaje mutilado no sirve para nada.
+
+**Los tres puntos del sprint quedan en verde:** llega, dice `staging`, y
+no lleva datos personales.

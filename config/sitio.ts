@@ -12,6 +12,25 @@ export const SITIO = {
   zonaHoraria: 'America/Lima',
 } as const;
 
+/**
+ * Si esto es el sitio de verdad o una vista previa.
+ *
+ * Existe porque hasta el sprint 22 **nada lo preguntaba**:
+ * `NEXT_PUBLIC_ENTORNO` estaba configurada y solo la leía Sentry, así que
+ * el Preview respondía `index, follow` y un `robots.txt` con `Allow: /`.
+ * Se ofrecía a Google como si fuera el sitio real, y lo único que lo
+ * tapaba era la protección de despliegue de Vercel, que se apaga con un
+ * clic.
+ *
+ * Dos copias del mismo portal compitiendo en el índice es contenido
+ * duplicado, y el que pierde no siempre es el que sobra.
+ *
+ * Se compara contra `'produccion'` y no contra una lista de entornos: si
+ * la variable falta, está mal escrita o llega vacía, el resultado es
+ * «no es producción», que es el lado seguro del error.
+ */
+export const ES_PRODUCCION = (process.env.NEXT_PUBLIC_ENTORNO ?? '').trim() === 'produccion';
+
 /** Navegación principal. El orden es el que se ve en el encabezado. */
 export const NAVEGACION = [
   { texto: 'Comprar', href: '/comprar' },

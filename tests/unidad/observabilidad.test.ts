@@ -186,3 +186,83 @@ describe('lo que sí sale', () => {
     expect(limpiarEvento(ruido)).toBeNull();
   });
 });
+
+/**
+ * El texto del error.
+ *
+ * Estas pruebas existen porque las anteriores no bastaban, y se supo de la
+ * peor manera: en el sprint 22 se disparó un error real contra el Preview
+ * con un correo, un teléfono, unas coordenadas y una contraseña metidos
+ * **dentro del mensaje**. Las cookies se filtraron bien. Los otros cuatro
+ * llegaron intactos a Sentry.
+ *
+ * El filtro de objetos mira las llaves, y un mensaje no tiene llaves donde
+ * mirar. Todas las pruebas de arriba pasaban, y el agujero seguía abierto.
+ */
+describe('lo que va dentro del texto del error', () => {
+  const textoDe = (valor: string) => {
+    const salida = limpiarEvento(
+      evento({ exception: { values: [{ type: 'Error', value: valor }] } }),
+    );
+    return salida?.exception?.values?.[0]?.value ?? '';
+  };
+
+  it('un correo en el mensaje', () => {
+    // Supabase responde así cuando alguien se registra dos veces.
+    const t = textoDe('User already registered: lucia.ferrer@ejemplo.pe');
+    expect(t).not.toContain('lucia.ferrer@ejemplo.pe');
+    expect(t).toContain('[correo]');
+  });
+
+  it('un celular peruano, con y sin prefijo', () => {
+    for (const escrito of ['987654321', '+51 987 654 321', '51-987-654-321', '987 654 321']) {
+      const t = textoDe(`El teléfono ${escrito} ya está en uso`);
+      expect(t).not.toMatch(/987/);
+      expect(t).toContain('[teléfono]');
+    }
+  });
+
+  it('las coordenadas de una propiedad', () => {
+    const t = textoDe('No se pudo geocodificar lat=-12.121100 lon=-77.030000');
+    expect(t).not.toContain('-12.121100');
+    expect(t).not.toContain('-77.030000');
+    expect(t).toContain('[coordenada]');
+  });
+
+  it('una contraseña volcada como clave=valor', () => {
+    const t = textoDe('Fallo de conexión: password=secreta-de-verdad user=postgres');
+    expect(t).not.toContain('secreta-de-verdad');
+    expect(t).toContain('[oculto]');
+    // El resto del mensaje tiene que seguir sirviendo para depurar.
+    expect(t).toContain('user=postgres');
+  });
+
+  it('un DNI o un RUC', () => {
+    expect(textoDe('DNI 12345678 no válido')).not.toContain('12345678');
+    expect(textoDe('RUC: 20512345678 duplicado')).not.toContain('20512345678');
+  });
+
+  it('lo mismo en evento.message, no solo en la excepción', () => {
+    const salida = limpiarEvento(evento({ message: 'Aviso rechazado: rosa@ejemplo.pe' }));
+    expect(salida?.message).not.toContain('rosa@ejemplo.pe');
+    expect(salida?.message).toContain('[correo]');
+  });
+
+  it('y en el texto de una miga de pan', () => {
+    const salida = limpiarEvento(
+      evento({
+        breadcrumbs: [{ message: 'Buscó por correo=alguien@ejemplo.pe', timestamp: 0 }],
+      }),
+    );
+    expect(JSON.stringify(salida)).not.toContain('alguien@ejemplo.pe');
+  });
+
+  it('sin comerse lo que sí hace falta para depurar', () => {
+    // El precio, el área y el código del aviso no son datos personales, y
+    // un mensaje sin ellos no sirve para nada.
+    const t = textoDe('El aviso WSP-001001 de 120 m² a US$ 420,000 falló al guardar');
+    expect(t).toContain('WSP-001001');
+    expect(t).toContain('120 m²');
+    expect(t).toContain('420,000');
+  });
+});

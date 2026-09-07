@@ -26,7 +26,21 @@ export default async function Panel({
   const supabase = await clienteServidor();
 
   const [avisos, favoritos, consultas] = await Promise.all([
-    supabase.from('properties').select('id', { count: 'exact', head: true }),
+    // Los dos filtros son necesarios y ninguno sobra.
+    //
+    // Sin `owner_id`, esta consulta cuenta todo lo que RLS le deja ver a
+    // quien pregunta: los avisos publicados de todo el mundo más los
+    // suyos. Y nunca falla, así que no se nota — a Rosa, con tres avisos,
+    // el panel le decía ocho. RLS acota lo que se puede leer; no dice de
+    // quién es. Esa parte la pone la consulta, siempre.
+    //
+    // Sin `publication_status`, el número deja de ser el que dice la
+    // etiqueta: entrarían borradores y avisos en revisión.
+    supabase
+      .from('properties')
+      .select('id', { count: 'exact', head: true })
+      .eq('owner_id', perfil.id)
+      .eq('publication_status', 'published'),
     supabase.from('favorites').select('property_id', { count: 'exact', head: true }),
     supabase.from('inquiries').select('id', { count: 'exact', head: true }).eq('status', 'new'),
   ]);

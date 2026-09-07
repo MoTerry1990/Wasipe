@@ -1,5 +1,5 @@
 import type { MetadataRoute } from 'next';
-import { SITIO } from '@/config/sitio';
+import { ES_PRODUCCION, SITIO } from '@/config/sitio';
 
 /**
  * robots.txt. Resuelve KNOWN_ISSUES P-10: el sitio anterior devolvía 404.
@@ -19,6 +19,13 @@ import { SITIO } from '@/config/sitio';
  * De ahí que la lista de abajo sea corta a propósito.
  */
 export default function robots(): MetadataRoute.Robots {
+  // Fuera de producción no se rastrea nada, y no se ofrece sitemap. Un
+  // Preview indexado compite contra el sitio real por las mismas
+  // búsquedas, y quitarlo del índice después cuesta semanas.
+  if (!ES_PRODUCCION) {
+    return { rules: [{ userAgent: '*', disallow: '/' }] };
+  }
+
   return {
     rules: [
       {

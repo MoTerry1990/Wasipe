@@ -1,6 +1,6 @@
 import type { Metadata, Viewport } from 'next';
 import { Bricolage_Grotesque, Instrument_Sans, JetBrains_Mono } from 'next/font/google';
-import { SITIO } from '@/config/sitio';
+import { ES_PRODUCCION, SITIO } from '@/config/sitio';
 import './globals.css';
 
 /**
@@ -65,7 +65,12 @@ export const metadata: Metadata = {
     ],
   },
   twitter: { card: 'summary_large_image' },
-  robots: { index: true, follow: true },
+  // Fuera de producción, `noindex` en todo el sitio. `robots.txt` ya
+  // bloquea el rastreo, pero las dos cosas hacen falta: un `Disallow`
+  // impide entrar, y una página bloqueada que alguien enlaza puede
+  // aparecer igual en resultados, porque el robot nunca llegó a leer el
+  // `noindex`. Con las dos, no hay puerta.
+  robots: ES_PRODUCCION ? { index: true, follow: true } : { index: false, follow: false },
 };
 
 export const viewport: Viewport = {
