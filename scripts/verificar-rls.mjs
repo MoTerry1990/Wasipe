@@ -120,9 +120,7 @@ const sinPoliticas = sinRls.filter((t) => t.habilitada && Number(t.politicas) ==
 if (desprotegidas.length === 0) {
   bien(`Las ${sinRls.length} tablas tienen RLS habilitado`);
 } else {
-  mal(
-    `${desprotegidas.length} tabla(s) SIN RLS: ${desprotegidas.map((t) => t.relname).join(', ')}`,
-  );
+  mal(`${desprotegidas.length} tabla(s) SIN RLS: ${desprotegidas.map((t) => t.relname).join(', ')}`);
 }
 
 if (sinPoliticas.length > 0) {
@@ -189,9 +187,7 @@ const { rows: depositos } = await cliente.query(`
 
 for (const d of depositos) {
   const visibilidad = d.public ? rojo('PÚBLICO') : verde('privado');
-  const limite = d.file_size_limit
-    ? `${Math.round(d.file_size_limit / 1024 / 1024)} MB`
-    : 'sin límite';
+  const limite = d.file_size_limit ? `${Math.round(d.file_size_limit / 1024 / 1024)} MB` : 'sin límite';
   console.log(`      ${d.id.padEnd(20)} ${visibilidad}  ${gris(limite)}`);
 }
 

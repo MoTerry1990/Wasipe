@@ -65,9 +65,10 @@ async function como(uid) {
     await cliente.query(`select set_config('request.jwt.claims', '', true)`);
     await cliente.query('set local role anon');
   } else {
-    await cliente.query(`select set_config('request.jwt.claims', $1, true)`, [
-      JSON.stringify({ sub: uid, role: 'authenticated' }),
-    ]);
+    await cliente.query(
+      `select set_config('request.jwt.claims', $1, true)`,
+      [JSON.stringify({ sub: uid, role: 'authenticated' })],
+    );
     await cliente.query('set local role authenticated');
   }
 }
@@ -120,10 +121,9 @@ try {
     );
   }
 
-  const perfiles = await cliente.query(
-    'select id, full_name, phone from profiles where id = any($1)',
-    [[A, B]],
-  );
+  const perfiles = await cliente.query('select id, full_name, phone from profiles where id = any($1)', [
+    [A, B],
+  ]);
   if (perfiles.rowCount === 2) bien('El disparador creó los dos perfiles al registrarse');
   else {
     for (const [uid, nombre] of [
@@ -182,8 +182,7 @@ try {
     `update profiles set full_name = 'Secuestrado' where id = $1`,
     [B],
   );
-  if (cambiaPerfil.ok && cambiaPerfil.cantidad === 0)
-    bien('A no puede modificar el perfil de B');
+  if (cambiaPerfil.ok && cambiaPerfil.cantidad === 0) bien('A no puede modificar el perfil de B');
   else if (cambiaPerfil.ok) mal(`A MODIFICÓ el perfil de B (${cambiaPerfil.cantidad} fila)`);
   else bien(`A no puede modificarlo: ${cambiaPerfil.error}`);
 
@@ -192,13 +191,9 @@ try {
   // -------------------------------------------------------------------
   titulo('c · A intenta administrar el aviso de B');
 
-  const cambiaPrecio = await intentar(`update properties set price = 1 where id = $1`, [
-    avisoDeB,
-  ]);
-  if (cambiaPrecio.ok && cambiaPrecio.cantidad === 0)
-    bien('A no puede cambiarle el precio a B');
-  else if (cambiaPrecio.ok)
-    mal(`A CAMBIÓ el precio del aviso de B (${cambiaPrecio.cantidad} fila)`);
+  const cambiaPrecio = await intentar(`update properties set price = 1 where id = $1`, [avisoDeB]);
+  if (cambiaPrecio.ok && cambiaPrecio.cantidad === 0) bien('A no puede cambiarle el precio a B');
+  else if (cambiaPrecio.ok) mal(`A CAMBIÓ el precio del aviso de B (${cambiaPrecio.cantidad} fila)`);
   else bien(`A no puede cambiarlo: ${cambiaPrecio.error}`);
 
   const borra = await intentar('delete from properties where id = $1', [avisoDeB]);
@@ -256,15 +251,14 @@ try {
     else mal(`A pasa por personal: admin=${v} moderador=${m}`);
   } else mal(`No pude comprobarlo: ${esAdmin.error}`);
 
-  const revisa = await intentar(`select revisar_aviso($1, 'approve', 'sin motivo')`, [
-    avisoDeB,
-  ]);
+  const revisa = await intentar(`select revisar_aviso($1, 'approve', 'sin motivo')`, [avisoDeB]);
   if (!revisa.ok) bien(`revisar_aviso rechazada: ${revisa.error}`);
   else mal('A APROBÓ un aviso sin ser moderador');
 
-  const verifica = await intentar(`select verificar_anunciante($1, 'verified', 'sin motivo')`, [
-    randomUUID(),
-  ]);
+  const verifica = await intentar(
+    `select verificar_anunciante($1, 'verified', 'sin motivo')`,
+    [randomUUID()],
+  );
   if (!verifica.ok) bien(`verificar_anunciante rechazada: ${verifica.error}`);
   else mal('A VERIFICÓ un anunciante sin ser personal');
 
@@ -304,9 +298,7 @@ try {
   else if (anonPerfiles.ok) mal(`Un visitante LISTA ${anonPerfiles.filas[0].n} perfil(es)`);
   else bien(`Un visitante no puede listarlos: ${anonPerfiles.error}`);
 
-  const anonRevisa = await intentar(`select revisar_aviso($1, 'approve', 'sin motivo')`, [
-    avisoDeB,
-  ]);
+  const anonRevisa = await intentar(`select revisar_aviso($1, 'approve', 'sin motivo')`, [avisoDeB]);
   if (!anonRevisa.ok) bien(`Un visitante no puede moderar: ${anonRevisa.error}`);
   else mal('UN VISITANTE APROBÓ UN AVISO');
 
@@ -317,8 +309,7 @@ try {
   else mal('UN VISITANTE REGISTRÓ UN EVENTO DE PAGO');
 
   const anonHuellas = await intentar('select count(*)::int as n from fotos_sin_huella(10)');
-  if (!anonHuellas.ok)
-    bien(`Un visitante no puede recorrer fotos ajenas: ${anonHuellas.error}`);
+  if (!anonHuellas.ok) bien(`Un visitante no puede recorrer fotos ajenas: ${anonHuellas.error}`);
   else mal(`UN VISITANTE recorrió fotos de todo el mundo (${anonHuellas.filas[0].n})`);
 
   // Postgres concede EXECUTE a PUBLIC en cada función nueva, y PUBLIC
@@ -336,8 +327,7 @@ try {
 
   for (const [nombre, sql] of soloDelServidor) {
     const r = await intentar(sql);
-    if (!r.ok && /permission denied|permiso/i.test(r.error))
-      bien(`Un visitante no puede ${nombre}`);
+    if (!r.ok && /permission denied|permiso/i.test(r.error)) bien(`Un visitante no puede ${nombre}`);
     else if (!r.ok) bien(`Un visitante no puede ${nombre}: ${r.error}`);
     else mal(`UN VISITANTE EJECUTÓ ${nombre}`);
   }

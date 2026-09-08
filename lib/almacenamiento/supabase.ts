@@ -118,9 +118,7 @@ class AlmacenamientoSupabase implements ProveedorDeAlmacenamiento {
 
     try {
       const supabase = await clienteServidor();
-      const { data, error } = await supabase.storage
-        .from(BUCKET_DE[deposito])
-        .remove([...rutas]);
+      const { data, error } = await supabase.storage.from(BUCKET_DE[deposito]).remove([...rutas]);
       return { borrados: error ? 0 : (data?.length ?? 0) };
     } catch {
       return { borrados: 0 };

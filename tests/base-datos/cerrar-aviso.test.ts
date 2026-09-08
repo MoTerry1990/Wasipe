@@ -97,9 +97,7 @@ describe('quién puede cerrar', () => {
 
   it('y cada quien sí cierra el suyo', async () => {
     await banco.comoUsuario(CUENTAS.lucia, (db) =>
-      db.query(`update public.properties set status = 'rented' where id = $1`, [
-        AVISO_DE_LUCIA,
-      ]),
+      db.query(`update public.properties set status = 'rented' where id = $1`, [AVISO_DE_LUCIA]),
     );
 
     expect((await disponibilidadDe(AVISO_DE_LUCIA)).status).toBe('rented');
@@ -112,9 +110,7 @@ describe('desde qué estado', () => {
     // ensucia las estadísticas de mercado, que se calculan sobre cierres.
     await expect(
       banco.comoUsuario(CUENTAS.rosa, (db) =>
-        db.query(`update public.properties set status = 'sold' where id = $1`, [
-          AVISOS.borrador,
-        ]),
+        db.query(`update public.properties set status = 'sold' where id = $1`, [AVISOS.borrador]),
       ),
     ).rejects.toThrow(/Solo se puede cerrar un aviso publicado o pausado/);
   });
@@ -180,9 +176,7 @@ describe('un aviso cerrado desaparece', () => {
     expect(await loVe(AVISO_DE_ROSA)).toBe(false);
 
     await banco.comoUsuario(CUENTAS.rosa, (db) =>
-      db.query(`update public.properties set status = 'available' where id = $1`, [
-        AVISO_DE_ROSA,
-      ]),
+      db.query(`update public.properties set status = 'available' where id = $1`, [AVISO_DE_ROSA]),
     );
     expect(await loVe(AVISO_DE_ROSA)).toBe(true);
   });

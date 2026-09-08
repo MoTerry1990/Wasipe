@@ -57,9 +57,6 @@ export function Migas({ pasos }: { pasos: readonly Miga[] }) {
  */
 export function DatosEstructurados({ datos }: { datos: object | readonly object[] }) {
   return (
-    <script
-      type="application/ld+json"
-      dangerouslySetInnerHTML={{ __html: aJsonSeguro(datos) }}
-    />
+    <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: aJsonSeguro(datos) }} />
   );
 }

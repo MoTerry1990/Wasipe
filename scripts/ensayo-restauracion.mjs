@@ -134,7 +134,9 @@ console.log(
     .map(([k, v]) => `${k} ${v}`)
     .join(' · ')}`,
 );
-console.log(`  filas: ${antes.filasTotales} en ${Object.keys(antes.filas).length} tabla(s)`);
+console.log(
+  `  filas: ${antes.filasTotales} en ${Object.keys(antes.filas).length} tabla(s)`,
+);
 
 // ---------------------------------------------------------------------
 // 2 · Respaldar
@@ -315,9 +317,7 @@ if (sinRls === 0) bien('\n  Ninguna tabla restaurada quedó sin RLS');
 else mal(`\n  ${sinRls} tabla(s) restaurada(s) SIN RLS`);
 
 if (igualesEstructura !== Object.keys(OBJETOS).length)
-  mal(
-    `Solo ${igualesEstructura} de ${Object.keys(OBJETOS).length} conteos de estructura coinciden`,
-  );
+  mal(`Solo ${igualesEstructura} de ${Object.keys(OBJETOS).length} conteos de estructura coinciden`);
 if (antes.filasTotales !== despues.filasTotales) mal('Las filas no coinciden');
 
 await restaurado.end();
@@ -340,9 +340,7 @@ bien('Archivo de respaldo eliminado');
 titulo('Resultado');
 console.log(
   fallos === 0
-    ? verde(
-        `  Restauración verificada: ${igualesEstructura} conteos de estructura y ${filasIguales} tabla(s) con datos, todo igual.`,
-      )
+    ? verde(`  Restauración verificada: ${igualesEstructura} conteos de estructura y ${filasIguales} tabla(s) con datos, todo igual.`)
     : rojo(`  ${fallos} problema(s).`),
 );
 console.log();

@@ -173,7 +173,8 @@ export async function enviarARevision(
         // tabla de la dirección exacta. Solo si la privacidad elegida lo
         // permite: quien pidió mostrar únicamente el distrito no queda
         // acotado a unas cuadras por un filtro que se agregó después.
-        urbanization: aviso.privacidad === 'district_only' ? null : aviso.urbanizacion || null,
+        urbanization:
+          aviso.privacidad === 'district_only' ? null : aviso.urbanizacion || null,
         lat: publico.lat,
         lon: publico.lon,
         publication_status: 'in_review',
