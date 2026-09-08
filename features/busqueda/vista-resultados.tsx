@@ -16,7 +16,16 @@ import { Insignia } from '@/components/ui/tarjeta';
  * sentido para algo que solo existe en pantalla.
  */
 const MapaResultados = dynamic(
-  () => import('@/features/busqueda/mapa-resultados').then((m) => m.MapaResultados),
+  () =>
+    import('@/features/busqueda/mapa-resultados')
+      .then((m) => {
+        console.log('MAPA: módulo cargado', Object.keys(m));
+        return m.MapaResultados;
+      })
+      .catch((e) => {
+        console.error('MAPA: FALLÓ EL IMPORT', e);
+        throw e;
+      }),
   {
     ssr: false,
     loading: () => (

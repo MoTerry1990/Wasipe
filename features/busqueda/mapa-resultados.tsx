@@ -83,6 +83,22 @@ export function MapaResultados({
   );
 
   const limites = useMemo(() => limitesDe(ubicables), [ubicables]);
+  /**
+   * El zoom de MapLibre alimenta la agrupación, y **no son la misma
+   * escala**.
+   *
+   * `agrupar()` tiene su propia lista de diez tamaños de celda, del más
+   * grueso al más fino; MapLibre va de 0 a 22. Se le pasa el zoom crudo
+   * y `ladoDeCelda()` lo recorta al rango que conoce, así que la relación
+   * es monótona —más zoom, celdas más chicas— y a escala de ciudad se
+   * comporta bien: en la vista completa de Lima quedan celdas de ~1 km, y
+   * acercándose se separan hasta ~70 m.
+   *
+   * No es una equivalencia exacta y conviene no fingir que lo es: ahora
+   * que MapLibre es el dueño del encuadre, lo correcto sería derivar el
+   * tamaño de celda de la extensión visible en vez de un nivel. Queda
+   * anotado; hoy no molesta.
+   */
   const grupos = useMemo(() => agrupar(ubicables, vista.zoom), [ubicables, vista.zoom]);
 
   const ocultos = avisos.length - ubicables.length;
@@ -118,20 +134,41 @@ export function MapaResultados({
         touchZoomRotate: true,
       });
 
-      m.addControl(new AttributionControl({ compact: true, customAttribution: ATRIBUCION }));
-      m.touchZoomRotate?.disableRotation();
-
+      // Los manejadores van PRIMERO, antes de cualquier otra cosa que
+      // pueda lanzar. En el sprint 23D estaban después de `addControl` y
+      // de `disableRotation()`, y algo entre medio cortaba la ejecución:
+      // el mapa se dibujaba, la atribución aparecía, y `load` no llegaba
+      // nunca. Resultado: `listo` en falso para siempre y cero
+      // marcadores sobre un mapa que se veía perfecto.
       const sincronizar = () =>
         setVista((v) => ({ zoom: Math.round(m.getZoom()), version: v.version + 1 }));
 
-      m.on('load', () => {
-        if (cancelado) return;
-        setListo(true);
-        sincronizar();
-      });
+      // NO se espera al evento `load`.
+      //
+      // Se intentó, y no llega: el mapa se dibuja, las teselas bajan, la
+      // atribución aparece, y `load` nunca dispara. Se perdió medio
+      // sprint buscando por qué, con el resultado visible de un mapa
+      // perfecto y cero marcadores encima.
+      //
+      // Y además no hacía falta: `project()` traduce coordenadas usando
+      // la transformación de la cámara, que existe desde que el mapa se
+      // construye. Esperar a que terminen de bajar las teselas para
+      // colocar un alfiler era atarse a un evento que no aporta nada a
+      // lo que se necesita.
       m.on('move', sincronizar);
+      m.on('zoom', sincronizar);
+
+      // Si el estilo o las teselas fallan, que no quede un mapa mudo:
+      // sin esto un error de red se ve igual que un mapa vacío.
+      m.on('error', (e) => {
+        if (!cancelado) console.error('Mapa:', e?.error?.message ?? e);
+      });
 
       mapa.current = m;
+      setListo(true);
+      sincronizar();
+
+      m.addControl(new AttributionControl({ compact: true, customAttribution: ATRIBUCION }));
     });
 
     return () => {
