@@ -114,10 +114,26 @@ Ninguno se corrigió en este sprint: la instrucción fue auditar, no cambiar.
 > Las 14 pruebas no lo detectaron porque comprueban las rutas
 > estructuradas, que sí funcionan.
 
-### P-30 · La vista de mapa nunca termina de cargar — **ABIERTO · bloquea la cartografía**
+### P-30 · La vista de mapa nunca termina de cargar — **RETIRADO: era mi entorno, no el producto**
 
-> **Es previo, y es la explicación de P-26.**
+> **Estaba equivocado, y conviene que quede escrito por qué.**
 >
+> Se anotó esto sobre la base de que la vista de mapa se quedaba cargando
+> para siempre. Eso pasaba **solo en el navegador del panel de
+> herramientas**. Bajo Playwright el módulo carga sin problema y el mapa
+> se dibuja. No era un defecto del producto: era mi entorno de
+> verificación, y lo di por producto durante medio sprint.
+>
+> El defecto real era otro y sí era mío: el componente esperaba el evento
+> `load` de MapLibre, que no llega. Cerrado en el sprint 23D.
+>
+> La lección que sí vale: **un fallo que solo se ve en una herramienta
+> hay que reproducirlo en otra antes de anotarlo.** El control que lo
+> resolvió —correr lo mismo bajo Playwright— costó un minuto y lo hice
+> tarde.
+>
+> Lo de abajo queda como se escribió, porque es el ejemplo.
+
 > `/comprar?vista=mapa` se queda para siempre en «Cargando el mapa…». En
 > el DOM queda el límite de Suspense sin resolver:
 >
@@ -142,6 +158,50 @@ Ninguno se corrigió en este sprint: la instrucción fue auditar, no cambiar.
 >
 > Mientras esto no se arregle, la cartografía integrada en el sprint 23D
 > no se puede ver ni verificar, aunque compile y pase todo lo demás.
+
+### P-31 · Los marcadores del mapa enlazan a una ruta que no existe — **ABIERTO · autorizado aparte**
+
+> `features/busqueda/mapa-resultados.tsx` enlaza cada marcador a
+> `/aviso/<id>`. **Esa ruta no existe**: la ficha vive en
+> `/propiedad/[aviso]`. Comprobado contra el Preview: `/aviso/<id>`
+> responde 302 y no lleva a ninguna ficha.
+>
+> O sea que cada alfiler del mapa es un enlace muerto, y lo es desde que
+> el mapa existe.
+>
+> El arreglo es una línea —usar `enlaceDeAviso()`, como hacen la lista y
+> los favoritos—, pero se dejó fuera del sprint 23D por alcance y quedó
+> autorizado por separado.
+
+### P-32 · «Al instante» no existe: las alertas son diarias — **ABIERTO**
+
+> `alert_frequency` ofrece `instant`, y el cron de Vercel en el plan
+> gratuito corre una vez al día. La tarea trata `instant` como `daily` y
+> lo dice en su código, pero **la interfaz sigue ofreciendo la opción**.
+>
+> Prometer un aviso instantáneo y mandarlo al día siguiente es peor que
+> no ofrecerlo: quien lo elige cree que se enteró tarde por su culpa.
+>
+> Dos salidas: quitar la opción de la interfaz mientras no haya cómo
+> cumplirla, o cambiarle el nombre a algo que sea cierto.
+
+### P-33 · Las alertas no entregan el correo: solo lo registran — **ABIERTO**
+
+> **Supabase no puede mandar correo transaccional.** Su servicio de correo
+> existe y funciona, pero solo para lo que dispara el propio Auth:
+> confirmar cuenta, recuperar contraseña, invitar. No hay API de «mandá
+> este mensaje a esta dirección», y no es cuestión de configurar una
+> variable: no existe el punto de entrada.
+>
+> Con la regla de costo cero tampoco se abre un servicio dedicado, así que
+> el proveedor de bitácora deja escrito el correo completo en
+> `notificaciones_de_alerta` y no lo entrega. El estado dice `registrado`
+> y no `enviado` justamente para que nadie lo confunda.
+>
+> Todo lo demás de la tarea funciona y está verificado. Lo único que falta
+> es el último tramo, y necesita una decisión de producto: qué proveedor,
+> con qué costo. La interfaz `ProveedorDeCorreo` ya está lista para
+> recibirlo sin tocar nada más.
 
 ### P-29 · Tres pruebas de `busqueda.spec.ts` fallan, y ninguna por el producto — **ABIERTO**
 
