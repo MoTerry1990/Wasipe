@@ -73,7 +73,12 @@ export function VistaResultados({
           {total === 1 ? 'propiedad encontrada' : 'propiedades encontradas'}
         </p>
 
-        <div className="flex flex-wrap items-center gap-2">
+        {/* `min-w-0` no es adorno: un <select> nativo se ancha hasta su opción
+            más larga —«Precio por m²: de menor a mayor»— y sin esto no cede
+            ni un píxel, así que en un teléfono de 390 se salía de la pantalla
+            y arrastraba consigo el desplazamiento horizontal de toda la
+            página. */}
+        <div className="flex min-w-0 flex-wrap items-center gap-2">
           {/* Orden */}
           <label className="solo-lectores" htmlFor="orden-resultados">
             Ordenar los resultados
@@ -89,7 +94,7 @@ export function VistaResultados({
                 }),
               )
             }
-            className="border-linea text-tinta focus:border-fucsia rounded-xl border-[1.5px] bg-white px-3 py-2 text-[14.5px] font-semibold focus:outline-none"
+            className="border-linea text-tinta focus:border-fucsia max-w-full min-w-0 rounded-xl border-[1.5px] bg-white px-3 py-2 text-[14.5px] font-semibold focus:outline-none"
           >
             {ORDENES.map((orden) => (
               <option key={orden} value={orden}>

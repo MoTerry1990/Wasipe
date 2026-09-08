@@ -39,7 +39,7 @@ Ninguno se corrigió en este sprint: la instrucción fue auditar, no cambiar.
 > antes: sacar los scripts a archivos en un sitio que va a morir es
 > trabajo que no vuelve.
 
-### P-25 · El panel cuenta los avisos de todo el mundo como propios — **ABIERTO · sprint 23**
+### P-25 · El panel cuenta los avisos de todo el mundo como propios — **RESUELTO (sprint 23B)**
 
 > Encontrado al verificar P-24. El resumen del panel decía a Rosa
 > «8 avisos publicados» cuando tiene tres: dos publicados y uno en
@@ -159,31 +159,51 @@ Ninguno se corrigió en este sprint: la instrucción fue auditar, no cambiar.
 > Mientras esto no se arregle, la cartografía integrada en el sprint 23D
 > no se puede ver ni verificar, aunque compile y pase todo lo demás.
 
-### P-31 · Los marcadores del mapa enlazan a una ruta que no existe — **ABIERTO · autorizado aparte**
+### P-31 · Los marcadores del mapa enlazaban a una ruta que no existe — **RESUELTO (sprint 23E)**
 
-> `features/busqueda/mapa-resultados.tsx` enlaza cada marcador a
+> `features/busqueda/mapa-resultados.tsx` enlazaba cada marcador a
 > `/aviso/<id>`. **Esa ruta no existe**: la ficha vive en
-> `/propiedad/[aviso]`. Comprobado contra el Preview: `/aviso/<id>`
-> responde 302 y no lleva a ninguna ficha.
+> `/propiedad/[aviso]`. Cada alfiler del mapa era un enlace muerto, y lo
+> era desde que el mapa existe.
 >
-> O sea que cada alfiler del mapa es un enlace muerto, y lo es desde que
-> el mapa existe.
+> Arreglado usando `enlaceDeAviso()`, la misma función que ya usaban la
+> lista y los favoritos, en vez de armar la dirección a mano. Ese era el
+> fondo del asunto: había dos maneras de construir el enlace de un aviso
+> y solo una estaba bien.
 >
-> El arreglo es una línea —usar `enlaceDeAviso()`, como hacen la lista y
-> los favoritos—, pero se dejó fuera del sprint 23D por alcance y quedó
-> autorizado por separado.
+> La prueba nueva —`tests/e2e/mapa.spec.ts`, «el enlace de un marcador
+> lleva a la ficha del aviso»— **no se conforma con que el `href` empiece
+> por `/propiedad/`**: navega a esa dirección y exige 200 y que el `h1` no
+> sea «Esta página no existe». La anterior también «parecía» una ruta.
 
-### P-32 · «Al instante» no existe: las alertas son diarias — **ABIERTO**
+### P-32 · «Al instante» no existe: las alertas son diarias — **RESUELTO en código (sprint 23E) · migración sin aplicar**
 
-> `alert_frequency` ofrece `instant`, y el cron de Vercel en el plan
-> gratuito corre una vez al día. La tarea trata `instant` como `daily` y
-> lo dice en su código, pero **la interfaz sigue ofreciendo la opción**.
+> `alert_frequency` ofrecía `instant`, y el cron de Vercel en el plan
+> gratuito corre una vez al día. La tarea ya trataba `instant` como
+> `daily`, pero **la interfaz seguía ofreciendo la opción** y la llamaba
+> «Apenas aparezca». Prometer un aviso instantáneo y mandarlo al día
+> siguiente es peor que no ofrecerlo: quien lo elige cree que se enteró
+> tarde por su culpa.
 >
-> Prometer un aviso instantáneo y mandarlo al día siguiente es peor que
-> no ofrecerlo: quien lo elige cree que se enteró tarde por su culpa.
+> Se hicieron las dos cosas, porque una sola no alcanzaba:
 >
-> Dos salidas: quitar la opción de la interfaz mientras no haya cómo
-> cumplirla, o cambiarle el nombre a algo que sea cierto.
+> - **Nada nuevo lo produce.** `features/busqueda/conversacion-acciones.ts`
+>   acepta `never`, `daily` y `weekly`; lo que llegue de más cae en
+>   `daily`, que es lo que iba a pasar igual.
+> - **Lo que ya existía dice la verdad.** La etiqueta de `instant` en
+>   `/panel/alertas` es «Un resumen al día». No se borró del mapa de
+>   etiquetas: mientras el valor siga siendo posible en la base, borrarlo
+>   dejaría filas mostrando «Sin aviso», que sería mentir de nuevo.
+>
+> El valor sigue en el `CHECK` de la base a propósito: una migración
+> aplicada no se modifica.
+>
+> **Pendiente:** `supabase/migrations/20260908100000_alertas_sin_instantaneo.sql`
+> normaliza a `daily` las filas que hubiera en `instant`. Está escrita y
+> **no aplicada**: `db.<referencia>.supabase.co` dejó de resolver por DNS
+> durante el sprint 23D y `db:push` sigue bloqueado. Comprobado por
+> PostgREST que hoy hay **cero búsquedas guardadas** en staging, así que
+> la migración es un no-operativo y no hay ninguna fila inconsistente.
 
 ### P-33 · Las alertas no entregan el correo: solo lo registran — **ABIERTO**
 
@@ -202,30 +222,73 @@ Ninguno se corrigió en este sprint: la instrucción fue auditar, no cambiar.
 > es el último tramo, y necesita una decisión de producto: qué proveedor,
 > con qué costo. La interfaz `ProveedorDeCorreo` ya está lista para
 > recibirlo sin tocar nada más.
+>
+> **Decidido en el sprint 23E:** cuando haya usuarios reales el proveedor
+> será **Resend** (3.000 correos al mes sin costo, que alcanza de sobra
+> para el volumen de alertas previsto). No se implementa ahora: hasta que
+> alguien reciba esos correos, encenderlo solo agrega una dependencia
+> externa y un dominio que verificar. Lo que se implementa es el enchufe,
+> y ya está: `ProveedorDeCorreo` no cambia cuando llegue.
 
-### P-29 · Tres pruebas de `busqueda.spec.ts` fallan, y ninguna por el producto — **ABIERTO**
+### P-29 · Tres pruebas de `busqueda.spec.ts` fallaban — **una resuelta, una es de entorno, una destapó P-34**
 
-> Comprobado en el sprint 23C que **las tres fallan sin los cambios de ese
-> sprint**. Se anotan juntas porque comparten la misma raíz: la prueba
-> describe un mundo que ya no existe.
+> Revisadas una por una en el sprint 23E, contra un servidor recién
+> construido. La suite quedó en **18 de 20**, y los dos rojos que siguen
+> están explicados acá abajo.
 >
-> **«un segmento inventado da 404»** — violación de modo estricto: el
-> enlace «Departamentos en Miraflores» aparece tres veces en la página de
-> 404 (en el bloque de sugerencias, en la lista y en el pie) y el
-> localizador no elige cuál. Se arregla con un `.first()` o acotando el
-> ámbito, no tocando la página.
+> **«la búsqueda no se desborda a lo ancho» — era del producto. RESUELTO.**
+> Un `<select>` nativo se ancha hasta su opción más larga y no cede: la
+> barra de orden mide 267 px por culpa de «Precio por m²: de menor a
+> mayor», y al lado del contador de resultados se salía de una pantalla
+> de 390. La página entera se desplazaba a lo ancho. Arreglado con
+> `min-w-0` en el contenedor y `max-w-full min-w-0` en el `<select>`
+> (`features/busqueda/vista-resultados.tsx`). Medido después del arreglo
+> a **390, 360 y 320 px** en `/comprar`, `/alquilar` y una búsqueda con
+> filtros: `scrollWidth === clientWidth` en los nueve casos.
 >
-> **«el orden y la vista se eligen desde la barra»** — espera ver
-> «Todavía no hay propiedades acá». Desde que en el sprint 22 se sembró
-> staging, la búsqueda devuelve resultados y el estado vacío no aparece.
-> La prueba daba por sentada una base vacía.
+> **«el orden y la vista se eligen desde la barra» — es de entorno. Queda.**
+> La prueba espera ver «Todavía no hay propiedades acá». Desde que en el
+> sprint 22 se sembró staging, `/comprar` devuelve resultados y el estado
+> vacío no aparece. La prueba daba por sentada una base vacía —y, de
+> paso, su nombre promete comprobar la barra de orden y lo que comprueba
+> es el estado vacío. Reescribirla es trabajo de producto, no de este
+> sprint.
 >
-> **«la búsqueda no se desborda a lo ancho»** — desbordamiento horizontal
-> en móvil. Este sí puede ser del producto y merece mirarse: se comprobó
-> que falla también sin el campo de zona agregado en 23C.
+> **«un segmento inventado da 404» — NO era de entorno: destapó P-34.**
+> En el sprint 23C la anoté como un localizador impreciso que se
+> arreglaba con `.first()`. **Estaba equivocado.** Al medir la página en
+> vez de suponerla aparecieron dos encabezados, dos pies y dos `<main>`.
+> El detalle está en P-34. La prueba tiene razón; la página está mal.
 >
 > Las tres juntas son el motivo por el que P-26 importa: una suite con
-> rojos crónicos deja de avisar cuando aparece uno nuevo.
+> rojos crónicos deja de avisar cuando aparece uno nuevo. Este es el
+> ejemplo exacto —el rojo llevaba dos sprints anotado como «de entorno» y
+> lo que había debajo era un defecto real.
+
+### P-34 · El 404 de una sección dibuja dos encabezados y dos pies — **ABIERTO**
+
+> Un `notFound()` lanzado dentro del grupo `(public)` hace que Next
+> dibuje `app/not-found.tsx` **anidado dentro de**
+> `app/(public)/layout.tsx`. Las dos plantillas traen `<Encabezado />`,
+> `<main id="contenido">` y `<Pie />`, así que salen por duplicado.
+>
+> Medido en `/comprar/narnia`:
+>
+>     header 2 · footer 2 · main 2 · id="contenido" 2
+>
+> Y en un 404 de raíz, `/narnia-total`: uno de cada. O sea que solo pasa
+> en las secciones, que es donde caen los 404 que importan —un aviso que
+> se vendió, una búsqueda mal escrita.
+>
+> No es cosmético. `id="contenido"` repetido deja el enlace de «saltar al
+> contenido» apuntando a un destino ambiguo, y dos `<main>` y dos
+> `contentinfo` en el mismo documento le quitan sentido a la navegación
+> por regiones de un lector de pantalla.
+>
+> Salida probable: que `not-found.tsx` traiga solo el contenido y deje el
+> encabezado y el pie a la plantilla que lo envuelve, comprobando que el
+> 404 de raíz siga teniendo los suyos. Fuera del alcance del sprint 23E:
+> se anota con la medición hecha para que se arregle con prueba.
 
 ### P-26 · La prueba de la vista de mapa es inestable — **ABIERTO**
 
@@ -240,6 +303,15 @@ Ninguno se corrigió en este sprint: la instrucción fue auditar, no cambiar.
 >
 > Una prueba que falla a veces es peor que ninguna: enseña a ignorar el
 > rojo.
+>
+> **Segundo caso, medido en el sprint 23E:** `tests/e2e/navegacion.spec.ts`
+> → «ningún enlace interno de la portada está roto» tiene la misma forma.
+> Recorre todos los enlaces de la portada uno por uno con `request.get()`
+> en serie: sola tarda **30, 31 y 34 segundos** en tres corridas —contra
+> un tiempo de espera por omisión de 30— y en la suite completa, con las
+> demás compitiendo por el servidor, se pasa. No hay nada roto: hay una
+> prueba secuencial contra un límite que ya casi toca. Las peticiones
+> deberían ir en paralelo, o la prueba merece su propio tiempo.
 
 ### P-27 · Sentry pide `onRouterTransitionStart` — **ABIERTO**
 
@@ -265,7 +337,7 @@ Ninguno se corrigió en este sprint: la instrucción fue auditar, no cambiar.
 > sprints. La prueba nueva del sprint 23B solo cubre las fuentes que
 > manejan fotos de avisos.
 
-### P-23 · Mensaje de Zod sin traducir en el asistente de publicación — **ABIERTO · sprint 23**
+### P-23 · Mensaje de Zod sin traducir en el asistente de publicación — **RESUELTO (sprint 23C)**
 
 > **Se probó el arreglo durante el sprint 22 y se revirtió por alcance.**
 > Queda anotado cómo, para que el sprint 23 no lo investigue de nuevo.
@@ -561,10 +633,15 @@ pero no rompe nada.
 se cerraron en el sprint 22, verificados contra el Preview desplegado y no
 solo con pruebas.
 
-**Pendientes para el sprint 23:** P-23 (mensaje de Zod en inglés) y P-25
-(el panel cuenta avisos ajenos como propios). Los dos se probaron durante
-el sprint 22 y se revirtieron por alcance; el arreglo de cada uno está
-anotado en su entrada.
+**Cerrado en el sprint 23:** P-13 y P-25 en 23B; P-23 en 23C; P-31 y el
+desbordamiento en móvil de P-29 en 23E. P-32 quedó resuelto en código y
+espera solo una migración de normalización que hoy es un no-operativo.
+
+**Abierto al cierre del sprint 23E:** P-34 (el 404 de una sección dibuja
+dos encabezados y dos pies), P-33 (las alertas se registran pero no se
+entregan; el proveedor será Resend cuando haya usuarios reales), P-26 (la
+prueba de mapa inestable), P-27, P-28 y las dos pruebas de entorno
+anotadas en P-29.
 
 Abierto y sin bloquear: las 19 funciones `SECURITY DEFINER` sin
 comprobación interna, `saldo_de_creditos` entre autenticados, el borrado

@@ -4,6 +4,7 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import Link from 'next/link';
 import { agrupar, limitesDe, tienePuntoPublico } from '@/lib/mapa/agrupar';
 import { ESTILO_DE_TESELAS, ATRIBUCION } from '@/lib/mapa/teselas';
+import { enlaceDeAviso } from '@/lib/avisos/enlace';
 import { precioMostrado } from '@/lib/moneda';
 import { numero } from '@/lib/formato';
 import { TIPO_INMUEBLE } from '@/lib/etiquetas';
@@ -257,7 +258,13 @@ export function MapaResultados({
               return (
                 <Link
                   key={grupo.id}
-                  href={`/aviso/${unico.id}`}
+                  // La misma función que usan la lista y los favoritos.
+                  // Acá decía `/aviso/${id}`, una ruta que no existe: la
+                  // ficha vive en `/propiedad/[aviso]`. Cada alfiler del
+                  // mapa era un enlace muerto desde que el mapa existe, y
+                  // no se notó porque nadie hace clic en un mapa que
+                  // estaba sin marcadores.
+                  href={enlaceDeAviso(unico)}
                   style={{ left: punto.x, top: punto.y }}
                   onMouseEnter={() => onSeleccionar(unico.id)}
                   onMouseLeave={() => onSeleccionar(null)}

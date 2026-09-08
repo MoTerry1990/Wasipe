@@ -5,9 +5,22 @@ import { EstadoVacio, EnConstruccion } from '@/components/estados/estado-vacio';
 
 export const metadata = { title: 'Alertas' };
 
+/**
+ * Cada cuánto se avisa, dicho como es.
+ *
+ * `instant` decía «Apenas aparezca» y eso no era cierto: la tarea corre
+ * una vez al día, así que quien elegía esa opción se enteraba al día
+ * siguiente y creía que había llegado tarde por su culpa. Prometer un
+ * aviso instantáneo y mandarlo mañana es peor que no ofrecerlo.
+ *
+ * El valor sigue en el enum de la base porque una migración aplicada no
+ * se modifica, pero **ya nada nuevo lo produce** y las filas que existían
+ * se normalizaron a `daily`. La etiqueta se mantiene por si quedara
+ * alguna, y dice lo que de verdad pasa.
+ */
 const FRECUENCIA: Record<string, string> = {
   never: 'Sin aviso',
-  instant: 'Apenas aparezca',
+  instant: 'Un resumen al día',
   daily: 'Un resumen al día',
   weekly: 'Un resumen a la semana',
 };

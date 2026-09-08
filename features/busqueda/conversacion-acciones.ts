@@ -174,7 +174,11 @@ export async function guardarBusquedaConversacional(
   const limpio = nombre.trim().slice(0, 80);
   if (limpio.length < 2) return { ok: false, mensaje: 'Ponle un nombre a tu búsqueda.' };
 
-  const frecuencias = ['never', 'instant', 'daily', 'weekly'] as const;
+  // Sin `instant`: la tarea corre una vez al día, así que ofrecerlo sería
+  // prometer un aviso instantáneo y mandarlo mañana. Lo que no se puede
+  // cumplir no se acepta, y lo que llegue de más cae en `daily`, que es lo
+  // que iba a pasar de todos modos.
+  const frecuencias = ['never', 'daily', 'weekly'] as const;
   const alerta = (frecuencias as readonly string[]).includes(frecuencia)
     ? (frecuencia as (typeof frecuencias)[number])
     : 'daily';
