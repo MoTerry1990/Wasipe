@@ -319,6 +319,28 @@ export type Favorito = {
   created_at: string;
 };
 
+/**
+ * Una notificación de alerta ya emitida.
+ *
+ * Una fila por aviso avisado, no por correo: si una corrida encuentra
+ * tres avisos nuevos quedan tres filas con el mismo . Eso es
+ * lo que permite que la restricción única (búsqueda, aviso) impida
+ * avisar dos veces de lo mismo.
+ */
+export type NotificacionDeAlerta = {
+  id: number;
+  busqueda_id: string;
+  user_id: string;
+  property_id: string;
+  envio_id: string;
+  estado: 'registrado' | 'enviado' | 'fallido';
+  proveedor: string;
+  error: string | null;
+  asunto: string | null;
+  cuerpo: string | null;
+  created_at: string;
+};
+
 export type TipoConsulta = 'message' | 'visit';
 
 export type TipoEventoLead =
@@ -685,6 +707,15 @@ export type Database = {
         Row: MedioPropiedad;
         Insert: Alta<MedioPropiedad, 'property_id' | 'url'>;
         Update: Partial<MedioPropiedad>;
+        Relationships: [];
+      };
+      notificaciones_de_alerta: {
+        Row: NotificacionDeAlerta;
+        Insert: Alta<
+          NotificacionDeAlerta,
+          'busqueda_id' | 'user_id' | 'property_id' | 'envio_id'
+        >;
+        Update: Partial<NotificacionDeAlerta>;
         Relationships: [];
       };
       favorites: {

@@ -1,7 +1,9 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
   "framework": "nextjs",
-  "regions": ["gru1"],
+  "regions": [
+    "gru1"
+  ],
   "github": {
     "silent": true,
     "autoJobCancelation": true
@@ -10,9 +12,18 @@
     {
       "source": "/(.*)",
       "headers": [
-        { "key": "X-Content-Type-Options", "value": "nosniff" },
-        { "key": "X-Frame-Options", "value": "DENY" },
-        { "key": "Referrer-Policy", "value": "strict-origin-when-cross-origin" },
+        {
+          "key": "X-Content-Type-Options",
+          "value": "nosniff"
+        },
+        {
+          "key": "X-Frame-Options",
+          "value": "DENY"
+        },
+        {
+          "key": "Referrer-Policy",
+          "value": "strict-origin-when-cross-origin"
+        },
         {
           "key": "Strict-Transport-Security",
           "value": "max-age=31536000; includeSubDomains; preload"
@@ -26,8 +37,17 @@
     {
       "source": "/(.*).(jpg|jpeg|png|webp|avif|svg|woff2)",
       "headers": [
-        { "key": "Cache-Control", "value": "public, max-age=31536000, immutable" }
+        {
+          "key": "Cache-Control",
+          "value": "public, max-age=31536000, immutable"
+        }
       ]
+    }
+  ],
+  "crons": [
+    {
+      "path": "/api/tareas/alertas",
+      "schedule": "0 13 * * *"
     }
   ]
 }
