@@ -79,7 +79,9 @@ describe('la nota de un favorito', () => {
 
     // RLS no lanza: no alcanza ninguna fila. Comprobar que «no falló» no
     // dice nada; hay que mirar el dato.
-    expect(await notaDe(CUENTAS.lucia, AVISOS.miraflores)).toBe('Preguntar por el mantenimiento');
+    expect(await notaDe(CUENTAS.lucia, AVISOS.miraflores)).toBe(
+      'Preguntar por el mantenimiento',
+    );
   });
 
   it('ni leerla', async () => {
@@ -101,7 +103,9 @@ describe('la nota de un favorito', () => {
       db.query(`delete from public.favorites where property_id = $1`, [AVISOS.miraflores]),
     );
 
-    expect(await notaDe(CUENTAS.lucia, AVISOS.miraflores)).toBe('Preguntar por el mantenimiento');
+    expect(await notaDe(CUENTAS.lucia, AVISOS.miraflores)).toBe(
+      'Preguntar por el mantenimiento',
+    );
   });
 
   it('un visitante sin sesión no ve ninguna', async () => {

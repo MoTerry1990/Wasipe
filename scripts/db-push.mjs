@@ -58,7 +58,9 @@ if (!cadena) {
 // El marcador del panel viene entre corchetes y ya costó un intento de
 // migración: la cadena parecía completa y no falló hasta la autenticación.
 if (/\[[^\]]*\]|your.?password/i.test(cadena)) {
-  console.error(rojo('\nSUPABASE_DB_URL trae el marcador de posición del panel sin reemplazar.'));
+  console.error(
+    rojo('\nSUPABASE_DB_URL trae el marcador de posición del panel sin reemplazar.'),
+  );
   console.error(gris('Quita los corchetes y pon la contraseña real de la base.\n'));
   process.exit(1);
 }

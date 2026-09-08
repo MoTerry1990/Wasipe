@@ -107,7 +107,9 @@ describe('el resumen del panel', () => {
     });
 
     await banco.comoServicio((db) =>
-      db.query(`update public.properties set publication_status = 'paused' where id = $1`, [suyo]),
+      db.query(`update public.properties set publication_status = 'paused' where id = $1`, [
+        suyo,
+      ]),
     );
 
     expect(await comoAhora(CUENTAS.rosa)).toBe(antes - 1);

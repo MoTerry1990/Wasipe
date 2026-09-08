@@ -144,10 +144,12 @@ export function Fotos({
 
         setEnCurso((v) => v.map((e) => (e.id === clave ? { ...e, avance: 70 } : e)));
 
-        const { error: fallo } = await supabase.storage.from(BUCKET_DE.publicas).upload(ruta, cuerpo, {
-          contentType: comprimida ? 'image/webp' : archivo.type,
-          upsert: false,
-        });
+        const { error: fallo } = await supabase.storage
+          .from(BUCKET_DE.publicas)
+          .upload(ruta, cuerpo, {
+            contentType: comprimida ? 'image/webp' : archivo.type,
+            upsert: false,
+          });
 
         if (fallo) throw fallo;
 

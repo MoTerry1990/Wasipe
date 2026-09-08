@@ -63,7 +63,10 @@ type BusquedaGuardada = {
 };
 
 /** Aplica los filtros guardados sobre los avisos publicados. */
-function conFiltros(consulta: ReturnType<typeof armarConsulta>, filtros: Record<string, unknown>) {
+function conFiltros(
+  consulta: ReturnType<typeof armarConsulta>,
+  filtros: Record<string, unknown>,
+) {
   const texto = (clave: string) => {
     const v = filtros[clave];
     return typeof v === 'string' && v.trim() !== '' ? v.trim() : null;
@@ -105,7 +108,9 @@ function armarConsulta() {
   const supabase = clienteAdministrador();
   return supabase
     .from('properties')
-    .select('id, code, title, district, operation, property_type, currency, price, published_at');
+    .select(
+      'id, code, title, district, operation, property_type, currency, price, published_at',
+    );
 }
 
 /**
@@ -131,7 +136,9 @@ export async function ejecutarAlertas(ahora = new Date()): Promise<Resumen> {
 
   const { data: busquedas } = await supabase
     .from('saved_searches')
-    .select('id, user_id, name, operation, filters, alert_frequency, last_run_at, last_notified_at, created_at')
+    .select(
+      'id, user_id, name, operation, filters, alert_frequency, last_run_at, last_notified_at, created_at',
+    )
     .eq('is_active', true)
     .neq('alert_frequency', 'never')
     .returns<BusquedaGuardada[]>();
