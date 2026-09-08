@@ -200,10 +200,10 @@ Ninguno se corrigió en este sprint: la instrucción fue auditar, no cambiar.
 >
 > **Pendiente:** `supabase/migrations/20260908100000_alertas_sin_instantaneo.sql`
 > normaliza a `daily` las filas que hubiera en `instant`. Está escrita y
-> **no aplicada**: `db.<referencia>.supabase.co` dejó de resolver por DNS
-> durante el sprint 23D y `db:push` sigue bloqueado. Comprobado por
-> PostgREST que hoy hay **cero búsquedas guardadas** en staging, así que
-> la migración es un no-operativo y no hay ninguna fila inconsistente.
+> **no aplicada**, por lo que se explica en P-35. Comprobado por PostgREST
+> que hoy hay **cero búsquedas guardadas** en staging, así que la
+> migración es un no-operativo y no hay ninguna fila inconsistente
+> esperándola.
 
 ### P-33 · Las alertas no entregan el correo: solo lo registran — **ABIERTO**
 
@@ -230,65 +230,128 @@ Ninguno se corrigió en este sprint: la instrucción fue auditar, no cambiar.
 > externa y un dominio que verificar. Lo que se implementa es el enchufe,
 > y ya está: `ProveedorDeCorreo` no cambia cuando llegue.
 
-### P-29 · Tres pruebas de `busqueda.spec.ts` fallaban — **una resuelta, una es de entorno, una destapó P-34**
+### P-29 · Tres pruebas de `busqueda.spec.ts` fallaban — **RESUELTO (sprint 23E)**
 
-> Revisadas una por una en el sprint 23E, contra un servidor recién
-> construido. La suite quedó en **18 de 20**, y los dos rojos que siguen
-> están explicados acá abajo.
+> Ninguna de las tres se arregló bajándole la exigencia a la prueba. Dos
+> eran del producto y una describía un mundo que ya no existe.
 >
-> **«la búsqueda no se desborda a lo ancho» — era del producto. RESUELTO.**
+> **1 · «la búsqueda no se desborda a lo ancho» — era del producto.**
 > Un `<select>` nativo se ancha hasta su opción más larga y no cede: la
-> barra de orden mide 267 px por culpa de «Precio por m²: de menor a
-> mayor», y al lado del contador de resultados se salía de una pantalla
-> de 390. La página entera se desplazaba a lo ancho. Arreglado con
-> `min-w-0` en el contenedor y `max-w-full min-w-0` en el `<select>`
-> (`features/busqueda/vista-resultados.tsx`). Medido después del arreglo
-> a **390, 360 y 320 px** en `/comprar`, `/alquilar` y una búsqueda con
-> filtros: `scrollWidth === clientWidth` en los nueve casos.
+> barra de orden medía 267 px por «Precio por m²: de menor a mayor», y al
+> lado del contador de resultados se salía de una pantalla de 390,
+> desplazando la página entera a lo ancho. Arreglado con `min-w-0` en el
+> contenedor y `max-w-full min-w-0` en el `<select>`
+> (`features/busqueda/vista-resultados.tsx`). Medido a **390, 360 y
+> 320 px** en `/comprar`, `/alquilar` y una búsqueda con filtros:
+> `scrollWidth === clientWidth` en los nueve casos.
 >
-> **«el orden y la vista se eligen desde la barra» — es de entorno. Queda.**
-> La prueba espera ver «Todavía no hay propiedades acá». Desde que en el
-> sprint 22 se sembró staging, `/comprar` devuelve resultados y el estado
-> vacío no aparece. La prueba daba por sentada una base vacía —y, de
-> paso, su nombre promete comprobar la barra de orden y lo que comprueba
-> es el estado vacío. Reescribirla es trabajo de producto, no de este
-> sprint.
->
-> **«un segmento inventado da 404» — NO era de entorno: destapó P-34.**
+> **2 · «un segmento inventado da 404» — también era del producto.**
 > En el sprint 23C la anoté como un localizador impreciso que se
 > arreglaba con `.first()`. **Estaba equivocado.** Al medir la página en
-> vez de suponerla aparecieron dos encabezados, dos pies y dos `<main>`.
-> El detalle está en P-34. La prueba tiene razón; la página está mal.
+> vez de suponerla aparecieron dos encabezados, dos pies y dos `<main>`:
+> es P-34, arreglado. La prueba tenía razón; la página estaba mal.
 >
-> Las tres juntas son el motivo por el que P-26 importa: una suite con
-> rojos crónicos deja de avisar cuando aparece uno nuevo. Este es el
-> ejemplo exacto —el rojo llevaba dos sprints anotado como «de entorno» y
-> lo que había debajo era un defecto real.
+> De paso se acotó el localizador, que también hacía falta: el pie ofrece
+> las mismas búsquedas populares que el bloque del 404, y eso está bien.
+> Lo que hay que comprobar es que **el 404 las ofrezca por su cuenta**,
+> sin depender de que alguien baje hasta el pie. Ahora se busca dentro de
+> la región «Mientras tanto, las búsquedas más usadas».
+>
+> **3 · «el orden y la vista se eligen desde la barra» — la prueba estaba
+> mal escrita, y de una manera peor que fallar.**
+> Comprobaba el texto del estado vacío. O sea que **pasaba en verde sin
+> haber tocado nunca la barra de orden**, que es lo que su nombre promete.
+> Cuando en el sprint 22 se sembró staging se puso roja, y lo que se rompió
+> no fue el producto: fue la suposición de base vacía que traía el archivo
+> entero en su cabecera.
+>
+> Se partió en dos pruebas que sí ejercitan la barra: una cambia el orden
+> y exige que quede en la URL —el orden tiene que sobrevivir a compartir
+> el enlace—, y otra cambia a vista de mapa y espera el lienzo. Las dos
+> llevan un mensaje explícito para que, si algún día el entorno queda sin
+> avisos publicados, la falla diga «no hay avisos publicados» y no
+> «no se encontró el `select`».
+>
+> El estado vacío no quedó sin cubrir: la prueba de al lado lo fuerza con
+> filtros imposibles, que no depende de lo que haya en la base. Esa es la
+> diferencia —una comprueba el estado vacío a propósito, la otra lo
+> comprobaba de casualidad.
+>
+> Las tres juntas fueron el argumento de P-26: una suite con rojos
+> crónicos deja de avisar cuando aparece uno nuevo. Acá el rojo llevaba
+> dos sprints anotado como «de entorno» y debajo había un defecto real.
 
-### P-34 · El 404 de una sección dibuja dos encabezados y dos pies — **ABIERTO**
+### P-34 · El 404 de una sección dibujaba dos encabezados y dos pies — **RESUELTO (sprint 23E)**
 
-> Un `notFound()` lanzado dentro del grupo `(public)` hace que Next
-> dibuje `app/not-found.tsx` **anidado dentro de**
-> `app/(public)/layout.tsx`. Las dos plantillas traen `<Encabezado />`,
-> `<main id="contenido">` y `<Pie />`, así que salen por duplicado.
+> Un `notFound()` lanzado dentro de un grupo de rutas hacía que Next
+> dibujara `app/not-found.tsx` **anidado dentro de** la plantilla del
+> grupo. Las dos traían `<Encabezado />`, `<main id="contenido">` y
+> `<Pie />`, así que salían por duplicado.
 >
-> Medido en `/comprar/narnia`:
->
->     header 2 · footer 2 · main 2 · id="contenido" 2
->
-> Y en un 404 de raíz, `/narnia-total`: uno de cada. O sea que solo pasa
-> en las secciones, que es donde caen los 404 que importan —un aviso que
-> se vendió, una búsqueda mal escrita.
->
-> No es cosmético. `id="contenido"` repetido deja el enlace de «saltar al
-> contenido» apuntando a un destino ambiguo, y dos `<main>` y dos
+> No era cosmético: `id="contenido"` repetido dejaba el enlace de «saltar
+> al contenido» apuntando a un destino ambiguo, y dos `<main>` y dos
 > `contentinfo` en el mismo documento le quitan sentido a la navegación
 > por regiones de un lector de pantalla.
 >
-> Salida probable: que `not-found.tsx` traiga solo el contenido y deje el
-> encabezado y el pie a la plantilla que lo envuelve, comprobando que el
-> 404 de raíz siga teniendo los suyos. Fuera del alcance del sprint 23E:
-> se anota con la medición hecha para que se arregle con prueba.
+> **El arreglo.** El contenido del 404 se separó en
+> `components/estados/pagina-no-encontrada.tsx`, sin cromo. Quien lo usa
+> decide el envoltorio:
+>
+> - `app/not-found.tsx` pone encabezado, `<main>` y pie, porque cuelga de
+>   `app/layout.tsx`, que no trae ninguno.
+> - `app/(public)/not-found.tsx`, `app/(dashboard)/not-found.tsx` y
+>   `app/(auth)/not-found.tsx` no ponen nada: la plantilla de su grupo ya
+>   lo puso.
+>
+> Se hicieron los tres grupos y no solo el que fallaba. Los tres repetían
+> al menos `<main id="contenido">`, y arreglar uno dejando dos rotos es la
+> misma manera de trabajar que había causado esto.
+>
+> **Medido después**, con la etiqueta `robots` de paso, porque el refactor
+> movía el `export const metadata`:
+>
+> | Ruta | Estado | header · footer · main · #contenido | robots |
+> |---|---|---|---|
+> | `/comprar/narnia` | 404 | 1 · 1 · 1 · 1 | `noindex` |
+> | `/ingresar/narnia` | 404 | 1 · 1 · 1 · 1 | `noindex` |
+> | `/recuperar/narnia` | 404 | 1 · 1 · 1 · 1 | `noindex` |
+> | `/no-existe-en-ninguna-parte` | 404 | 1 · 1 · 1 · 1 | `noindex` |
+>
+> Uno de cada, no cero: un 404 sin salida es la otra mitad del problema.
+>
+> **Lo que no pude comprobar:** el 404 del grupo `(dashboard)`. Sin sesión,
+> `/panel/<lo que sea>` redirige a `/ingresar` antes de llegar al 404, así
+> que ese archivo va por construcción y no por medición. Queda dicho.
+>
+> Lo cuida `tests/e2e/navegacion.spec.ts` → «el 404 de una sección no
+> repite el encabezado ni el pie», que comprueba las dos formas de caer en
+> un 404 porque se resuelven por caminos distintos y solo una estaba rota.
+
+### P-35 · El anfitrión directo de Postgres solo publica IPv6 — **ABIERTO · riesgo para el próximo `db:push`**
+
+> Durante el sprint 23D anoté que `db.<referencia>.supabase.co` «dejó de
+> resolver». **Era impreciso.** Resuelve:
+>
+>     nslookup            → 2600:1f16:1e8d:b800:…      (AAAA)
+>     nslookup -type=A    → No address (A) records available
+>     dns.lookup de Node  → ENOTFOUND
+>
+> O sea: el anfitrión publica **solo AAAA, sin registro A**. Node no falla
+> por DNS caído sino porque esta máquina no tiene ruta IPv6 utilizable, y
+> `getaddrinfo` no devuelve nada de la familia que sí puede usar. Es el
+> cambio conocido de Supabase: la conexión directa a la base pasó a ser
+> solo IPv6 y el camino IPv4 es el *pooler* —o el complemento de IPv4, que
+> es pago y acá no corresponde.
+>
+> **Riesgo concreto:** el próximo `db:push` va a fallar igual mientras la
+> cadena de `.env.local` apunte al anfitrión directo. Hoy no bloquea nada
+> —la única migración pendiente es un no-operativo, ver P-32— pero sí
+> bloquea la primera migración que de verdad tenga que aplicarse.
+>
+> **Salida probable, sin costo:** usar la cadena del *pooler* en modo
+> sesión, que sí tiene IPv4. No se investigó a fondo en este sprint por
+> alcance; queda anotado con la medición hecha para no volver a
+> diagnosticarlo desde cero.
 
 ### P-26 · La prueba de la vista de mapa es inestable — **ABIERTO**
 
@@ -312,6 +375,10 @@ Ninguno se corrigió en este sprint: la instrucción fue auditar, no cambiar.
 > demás compitiendo por el servidor, se pasa. No hay nada roto: hay una
 > prueba secuencial contra un límite que ya casi toca. Las peticiones
 > deberían ir en paralelo, o la prueba merece su propio tiempo.
+>
+> Confirmado como inestable y no como roto: en tres corridas de la suite
+> completa durante el sprint 23E salió **roja, verde y roja**, sin que
+> cambiara nada de la portada entre una y otra.
 
 ### P-27 · Sentry pide `onRouterTransitionStart` — **ABIERTO**
 
@@ -633,15 +700,30 @@ pero no rompe nada.
 se cerraron en el sprint 22, verificados contra el Preview desplegado y no
 solo con pruebas.
 
-**Cerrado en el sprint 23:** P-13 y P-25 en 23B; P-23 en 23C; P-31 y el
-desbordamiento en móvil de P-29 en 23E. P-32 quedó resuelto en código y
-espera solo una migración de normalización que hoy es un no-operativo.
+**Cerrado en el sprint 23:** P-13 y P-25 en 23B; P-23 en 23C; P-31, P-29
+—las tres pruebas— y P-34 en 23E. P-32 quedó resuelto en código y espera
+solo una migración de normalización que hoy es un no-operativo.
 
-**Abierto al cierre del sprint 23E:** P-34 (el 404 de una sección dibuja
-dos encabezados y dos pies), P-33 (las alertas se registran pero no se
-entregan; el proveedor será Resend cuando haya usuarios reales), P-26 (la
-prueba de mapa inestable), P-27, P-28 y las dos pruebas de entorno
-anotadas en P-29.
+Dos de esos tres rojos de P-29 eran defectos del producto que llevaban
+sprints anotados como «de entorno». Vale la pena decirlo así, porque el
+costo no fue arreglarlos: fue haberlos clasificado sin medir.
+
+**Abierto al cierre del sprint 23E:**
+
+| | Qué es | Aprieta |
+|---|---|---|
+| **P-35** | El anfitrión directo de Postgres solo publica IPv6 | Cuando haya que aplicar una migración de verdad |
+| **P-33** | Las alertas se registran pero no se entregan | Cuando haya usuarios reales (será Resend) |
+| **P-26** | Dos pruebas inestables por tiempo de espera | Ya: enseñan a ignorar el rojo |
+| **P-27** | Sentry pide `onRouterTransitionStart` | No |
+| **P-28** | Avatares y logos nombran su bucket a mano | No |
+
+**Rojos que quedan en la suite de navegador, todos anteriores y ninguno
+del producto:** `seo.spec.ts` espera que el `robots` indexe y desde P-19
+responde `Disallow: /` fuera de producción —la prueba quedó atrás del
+arreglo, no al revés—; `portada.spec.ts` espera una base vacía;
+`criticos.spec.ts` y `navegacion.spec.ts` son P-26. Es la deuda que
+conviene pagar antes de que tape al próximo P-34.
 
 Abierto y sin bloquear: las 19 funciones `SECURITY DEFINER` sin
 comprobación interna, `saldo_de_creditos` entre autenticados, el borrado

@@ -42,6 +42,36 @@ test('la página inexistente responde 404 en español', async ({ page }) => {
   await expect(page.getByText(/no encontramos|no existe/i)).toBeVisible();
 });
 
+test('el 404 de una sección no repite el encabezado ni el pie', async ({ page }) => {
+  // P-34. Un `notFound()` dentro de un grupo de rutas dibujaba el 404 de
+  // raíz —que trae cromo propio— anidado dentro de la plantilla del grupo,
+  // que también lo trae. Salían dos encabezados, dos pies, dos `<main>` y
+  // el `id="contenido"` repetido, con lo que el enlace de «saltar al
+  // contenido» apuntaba a un destino ambiguo.
+  //
+  // Se comprueban las dos formas de caer en un 404, porque se resuelven
+  // por caminos distintos y solo una estaba rota.
+  for (const ruta of ['/comprar/narnia', '/no-existe-en-ninguna-parte']) {
+    const respuesta = await page.goto(ruta);
+    expect(respuesta?.status(), ruta).toBe(404);
+
+    const cuenta = await page.evaluate(() => ({
+      encabezados: document.querySelectorAll('header').length,
+      pies: document.querySelectorAll('footer').length,
+      principales: document.querySelectorAll('main').length,
+      contenido: document.querySelectorAll('#contenido').length,
+    }));
+
+    // Uno de cada, no cero: un 404 sin salida es la mitad del problema.
+    expect(cuenta, ruta).toEqual({
+      encabezados: 1,
+      pies: 1,
+      principales: 1,
+      contenido: 1,
+    });
+  }
+});
+
 test('el documento declara español peruano', async ({ page }) => {
   await page.goto('/');
   await expect(page.locator('html')).toHaveAttribute('lang', 'es-PE');

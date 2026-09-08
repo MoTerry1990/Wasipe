@@ -3,10 +3,14 @@ import { test, expect } from '@playwright/test';
 /**
  * Búsqueda: filtros, URL compartible y mapa.
  *
- * Corre sin Supabase conectado, así que no hay resultados. Lo que se
- * comprueba es la mitad que no depende de la base y que es la que suele
- * romperse: que los filtros lleguen a la URL, que la URL los devuelva
- * igual, y que un enlace manipulado no tumbe la página.
+ * Casi todo acá comprueba la mitad que no depende de la base, que es la
+ * que suele romperse: que los filtros lleguen a la URL, que la URL los
+ * devuelva igual, y que un enlace manipulado no tumbe la página.
+ *
+ * Lo que sí depende de la base se dice en cada prueba. Antes no: el
+ * archivo entero suponía «sin Supabase conectado, así que no hay
+ * resultados», y desde que en el sprint 22 se sembró staging esa
+ * suposición dejó de ser cierta sin que nadie la revisara.
  */
 
 test.describe('rutas de búsqueda', () => {
@@ -53,7 +57,17 @@ test.describe('rutas de búsqueda', () => {
     expect(respuesta?.status()).toBe(404);
 
     await expect(page.getByRole('heading', { level: 1 })).toHaveText('Esta página no existe');
-    await expect(page.getByRole('link', { name: /Departamentos en Miraflores/ })).toBeVisible();
+
+    // Acotado al bloque de la propia página: el pie ofrece las mismas
+    // búsquedas, y eso está bien. Lo que hay que comprobar es que el 404
+    // las ofrezca por su cuenta, sin depender de que alguien baje hasta
+    // el pie.
+    const sugerencias = page.getByRole('region', {
+      name: 'Mientras tanto, las búsquedas más usadas',
+    });
+    await expect(
+      sugerencias.getByRole('link', { name: 'Departamentos en Miraflores' }),
+    ).toBeVisible();
     await expect(page.getByRole('link', { name: /todas las búsquedas/i })).toBeVisible();
   });
 
@@ -123,11 +137,45 @@ test.describe('filtros', () => {
 });
 
 test.describe('presentación de resultados', () => {
-  test('el orden y la vista se eligen desde la barra', async ({ page }) => {
-    // Sin resultados la barra no se dibuja: se comprueba el estado vacío,
-    // que es lo que sí corresponde mostrar.
+  // La barra solo existe cuando hay resultados —es lo que los ordena—, así
+  // que estas dos necesitan avisos publicados en el entorno de prueba. El
+  // estado vacío no se queda sin cubrir: la prueba de acá abajo lo fuerza
+  // con filtros imposibles, que no depende de lo que haya en la base.
+  //
+  // Antes esta prueba se llamaba «el orden y la vista se eligen desde la
+  // barra» y lo único que comprobaba era el texto del estado vacío. Pasaba
+  // en verde sin haber tocado nunca la barra, y el día que staging tuvo
+  // datos se puso roja sin que hubiera nada roto.
+  test('el orden se elige desde la barra y queda en la URL', async ({ page }) => {
     await page.goto('/comprar');
-    await expect(page.getByText('Todavía no hay propiedades acá')).toBeVisible();
+
+    const barra = page.getByLabel('Ordenar los resultados');
+    await expect(
+      barra,
+      'no hay avisos publicados en el entorno de prueba: la barra de orden no se dibuja',
+    ).toBeVisible();
+
+    await barra.selectOption('precio-asc');
+
+    // Lo que importa es que quede en la dirección: el orden tiene que
+    // sobrevivir a compartir el enlace y a recargar.
+    await expect(page).toHaveURL(/orden=precio-asc/);
+    await expect(page.getByLabel('Ordenar los resultados')).toHaveValue('precio-asc');
+  });
+
+  test('la vista cambia a mapa desde la barra', async ({ page }) => {
+    await page.goto('/comprar');
+
+    const grupo = page.getByRole('group', { name: 'Cómo ver los resultados' });
+    await expect(
+      grupo,
+      'no hay avisos publicados en el entorno de prueba: la barra de vista no se dibuja',
+    ).toBeVisible();
+
+    await grupo.getByRole('button', { name: 'mapa' }).click();
+
+    await expect(page).toHaveURL(/vista=mapa/);
+    await expect(page.locator('canvas.maplibregl-canvas')).toBeVisible({ timeout: 20_000 });
   });
 
   test('con filtros y sin resultados, ofrece una salida', async ({ page }) => {
