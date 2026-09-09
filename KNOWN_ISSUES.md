@@ -776,17 +776,33 @@ y un enlace roto ahí es peor que no tenerlo: quien lo busca ya viene con un pro
 
 ---
 
-### P-06 · "Proyectos" en la navegación no puede funcionar
+### P-06 · «Proyectos» promete un catálogo y entrega un aviso suelto — **EN CURSO (sprint 25)**
 
-El home enlaza a `/buscar?operacion=proyecto`, pero el esquema solo admite
-`venta`, `alquiler` y `traspaso`.
-
-Los proyectos son una entidad aparte (`proyectos` + `tipologias`), con tablas creadas
-pero sin código. Ese enlace del menú siempre dará vacío o error.
-
-**Opciones:** ocultar "Proyectos" hasta construirlo, o construirlo.
-
----
+> **Reescrito en el sprint 25: lo anterior describía el sitio de antes.**
+> Decía que la portada enlaza a `/buscar?operacion=proyecto`, que el
+> esquema solo admite «venta, alquiler y traspaso», y que existían tablas
+> `proyectos` + `tipologias` «creadas pero sin código». Nada de eso era
+> cierto en este stack, y quien lo leyera para planificar habría
+> planificado sobre un mundo que no existe.
+>
+> **Lo que pasa de verdad.** El enum sí tiene `project`, no existían esas
+> tablas, y `/proyectos` **no** da vacío ni error: renderiza una búsqueda
+> que funciona. El problema es otro y es peor, porque no se ve:
+>
+> Un «proyecto» era una fila de `properties` con `operation = 'project'`.
+> Esa fila tiene **un** precio, **un** número de dormitorios y **un**
+> área. Un proyecto real se vende por tipologías —1, 2 y 3 dormitorios,
+> cada una con su rango— así que publicarlo obligaba a elegir una y callar
+> las demás, o a inventar un promedio. Mientras tanto la portada promete
+> «el precio por m² a la vista para comparar contra lo ya construido».
+>
+> No era un enlace roto: era una promesa que el modelo no podía cumplir.
+>
+> **Sprint 25A** crea `projects`, `project_typologies`, `project_media` y
+> `project_features`, con RLS, transiciones y la regla de que no se
+> publica sin tipología ni foto. Los sprints siguientes ponen el panel, la
+> revisión y las páginas públicas. La opción «Proyecto» del publicador
+> normal se quita cuando el panel esté listo, no antes.
 
 ## 🟡 Medios
 
