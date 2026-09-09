@@ -156,8 +156,40 @@ Si algún cambio parece exigir tocarla, se pregunta primero.
     node scripts/verificar-proyecto.mjs   solo lectura, previo a migrar
 
 Antes de `db:push` contra un proyecto real se corre siempre
-`scripts/verificar-proyecto.mjs`: confirma a qué proyecto apunta y si la base
-está vacía. **Si sale con código 2, no se migra.**
+`scripts/verificar-proyecto.mjs`. Confirma a qué proyecto y a qué entorno se
+estaría migrando, y qué migraciones faltan.
+
+| Código | Qué significa | Qué hacer |
+|---:|---|---|
+| **0** | Se puede continuar: base nueva, al día, o con pendientes concretas | Migrar, si hay algo que aplicar |
+| **1** | Faltan variables en `.env.local` | Completarlas. No se comprobó nada de la base |
+| **2** | **BLOQUEO**: el proyecto o el entorno no son los correctos | **No se migra.** Corregir `.env.local` |
+| **3** | No se pudo conectar o leer el esquema | Revisar la conexión. Distinto del 1: la configuración estaba bien |
+
+**Que la base tenga tablas no es una alarma: es lo normal.** Hasta el sprint 24
+el guion salía con 2 en cuanto encontraba tablas —se escribió para la primera
+migración, cuando vacía era lo correcto— y como desde el sprint 21 siempre las
+hay, ese 2 se volvió permanente. La regla «con 2 no se migra», leída al pie de
+la letra, prohibía toda migración incremental. Hoy el 2 queda reservado para lo
+que de verdad no se deshace: **el proyecto equivocado y el entorno equivocado.**
+
+Producción se migra a propósito y no de paso: con `NEXT_PUBLIC_ENTORNO=produccion`
+el guion bloquea salvo que se le pase `--permitir-produccion`, para que la
+decisión quede escrita en el comando. `--json` da la misma respuesta en un
+formato que otro guion puede leer.
+
+### Conectarse: el *pooler*, no el anfitrión directo
+
+`db.<referencia>.supabase.co` publica **solo AAAA**. Sin ruta IPv6, `db:push`
+muere en `ENOTFOUND` y parece un DNS caído. La conexión que sí tiene IPv4 es el
+*pooler* **en modo sesión**, y tiene dos diferencias que no son obvias:
+
+- el usuario lleva el sufijo del proyecto: `postgres.<referencia>`, no `postgres`;
+- el puerto es el **5432**. El 6543 es modo transacción, que devuelve la conexión
+  al pool en cada `commit` y no sirve para migrar.
+
+Como el anfitrión del pooler es regional y compartido, no identifica al proyecto:
+el único dato que lo hace es el usuario. Por eso el verificador mira los dos.
 
 ### Migrar no necesita `supabase link`
 

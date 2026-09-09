@@ -50,9 +50,13 @@ describe('los cinco depósitos', () => {
     expect(DEPOSITOS.videos.publico).toBe(false);
   });
 
-  it('solo son públicas las dos que se ven en el portal', () => {
+  it('solo son públicas las que se ven en el portal', () => {
+    // `avatares` y `logos` estaban fundidas en un solo depósito
+    // `perfiles` hasta el sprint 24. Se separaron porque en Storage son
+    // dos buckets con políticas distintas, y el contrato no sabía nombrar
+    // el segundo: ver P-28.
     const publicos = (Object.keys(DEPOSITOS) as Deposito[]).filter((d) => DEPOSITOS[d].publico);
-    expect(publicos.sort()).toEqual(['perfiles', 'publicas']);
+    expect(publicos.sort()).toEqual(['avatares', 'logos', 'publicas']);
   });
 
   it('cada uno explica por qué está de su lado', () => {

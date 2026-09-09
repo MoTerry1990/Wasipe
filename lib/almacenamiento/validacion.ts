@@ -109,7 +109,14 @@ export const LIMITES: Record<
     tipos: ['video/mp4', 'video/webm'],
     comoSeDice: '200 MB',
   },
-  perfiles: {
+  // Avatares y logos comparten límite pero son depósitos distintos: van a
+  // buckets distintos, con políticas distintas. Ver P-28.
+  avatares: {
+    bytes: 2_097_152,
+    tipos: ['image/jpeg', 'image/png', 'image/webp'],
+    comoSeDice: '2 MB',
+  },
+  logos: {
     bytes: 2_097_152,
     tipos: ['image/jpeg', 'image/png', 'image/webp'],
     comoSeDice: '2 MB',

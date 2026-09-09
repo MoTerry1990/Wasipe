@@ -38,8 +38,10 @@ export type Deposito =
   | 'generadas'
   /** Videos del aviso. Privado, se entregan con enlace firmado. */
   | 'videos'
-  /** Fotos de perfil y logotipos. Públicas. */
-  | 'perfiles';
+  /** Foto de perfil de una persona. Pública. */
+  | 'avatares'
+  /** Logotipo de una inmobiliaria. Público. */
+  | 'logos';
 
 export const DEPOSITOS: Record<Deposito, { publico: boolean; porQue: string }> = {
   originales: {
@@ -60,9 +62,13 @@ export const DEPOSITOS: Record<Deposito, { publico: boolean; porQue: string }> =
     publico: false,
     porQue: 'Se entregan con enlace firmado de cinco minutos: no hay dirección que reenviar.',
   },
-  perfiles: {
+  avatares: {
     publico: true,
-    porQue: 'Una foto de perfil y un logotipo se muestran en cualquier parte del portal.',
+    porQue: 'La foto de perfil se muestra en cualquier parte del portal.',
+  },
+  logos: {
+    publico: true,
+    porQue: 'El logotipo de una inmobiliaria se muestra en sus avisos y en su perfil público.',
   },
 };
 
@@ -143,11 +149,22 @@ export interface ProveedorDeAlmacenamiento {
  *
  * Un solo mapa, importable desde los dos lados, es lo que impide que
  * vuelva a pasar.
+ *
+ * `avatares` y `logos` van separados aunque los dos sean públicos, y esa
+ * separación es la corrección de P-28. Antes había un único depósito
+ * `perfiles` apuntando a `avatares`, así que el contrato **no sabía
+ * nombrar** el bucket de los logos: subir un logo por esta vía lo habría
+ * puesto en el bucket equivocado, bajo las políticas equivocadas. Por eso
+ * el código de cuentas escribía `'avatares'` y `'logos'` a mano —no por
+ * descuido, sino porque el contrato no le servía—. Son dos buckets
+ * distintos en Storage, con políticas distintas; el contrato ahora lo
+ * dice.
  */
 export const BUCKET_DE: Record<Deposito, string> = {
   originales: 'originales',
   publicas: 'avisos',
   generadas: 'generados',
   videos: 'videos',
-  perfiles: 'avatares',
+  avatares: 'avatares',
+  logos: 'logos',
 };

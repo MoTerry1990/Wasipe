@@ -327,31 +327,79 @@ Ninguno se corrigió en este sprint: la instrucción fue auditar, no cambiar.
 > repite el encabezado ni el pie», que comprueba las dos formas de caer en
 > un 404 porque se resuelven por caminos distintos y solo una estaba rota.
 
-### P-35 · El anfitrión directo de Postgres solo publica IPv6 — **ABIERTO · riesgo para el próximo `db:push`**
+### P-35 · El anfitrión directo de Postgres solo publica IPv6 — **RESUELTO (sprint 24, requisito previo)**
 
-> Durante el sprint 23D anoté que `db.<referencia>.supabase.co` «dejó de
-> resolver». **Era impreciso.** Resuelve:
+> Durante el sprint 23D lo anoté como «dejó de resolver». Era impreciso, y
+> la precisión era justo lo que faltaba para arreglarlo:
 >
->     nslookup            → 2600:1f16:1e8d:b800:…      (AAAA)
+>     nslookup            → 2600:1f16:1e8d:b800:…   (AAAA)
 >     nslookup -type=A    → No address (A) records available
 >     dns.lookup de Node  → ENOTFOUND
 >
-> O sea: el anfitrión publica **solo AAAA, sin registro A**. Node no falla
-> por DNS caído sino porque esta máquina no tiene ruta IPv6 utilizable, y
-> `getaddrinfo` no devuelve nada de la familia que sí puede usar. Es el
-> cambio conocido de Supabase: la conexión directa a la base pasó a ser
-> solo IPv6 y el camino IPv4 es el *pooler* —o el complemento de IPv4, que
-> es pago y acá no corresponde.
+> El anfitrión publica **solo AAAA, sin registro A**. No era un DNS caído:
+> es que esta máquina no tiene ruta IPv6 y `getaddrinfo` no devolvía nada
+> de la familia que sí puede usar. Es el cambio conocido de Supabase: la
+> conexión directa pasó a ser solo IPv6, y el camino con IPv4 es el
+> *pooler* —o el complemento de IPv4, que es pago y acá no corresponde—.
 >
-> **Riesgo concreto:** el próximo `db:push` va a fallar igual mientras la
-> cadena de `.env.local` apunte al anfitrión directo. Hoy no bloquea nada
-> —la única migración pendiente es un no-operativo, ver P-32— pero sí
-> bloquea la primera migración que de verdad tenga que aplicarse.
+> **La salida, sin costo: el pooler en modo sesión.** Tres cosas cambian
+> respecto de la cadena directa, y la segunda es la que no es obvia:
 >
-> **Salida probable, sin costo:** usar la cadena del *pooler* en modo
-> sesión, que sí tiene IPv4. No se investigó a fondo en este sprint por
-> alcance; queda anotado con la medición hecha para no volver a
-> diagnosticarlo desde cero.
+> | | Directa | Pooler en modo sesión |
+> |---|---|---|
+> | Anfitrión | `db.<ref>.supabase.co` | `aws-0-us-east-2.pooler.supabase.com` |
+> | Usuario | `postgres` | `postgres.<ref>` — **con el sufijo del proyecto** |
+> | Puerto | 5432 | 5432 (el 6543 es modo transacción, que no sirve para migrar) |
+>
+> El anfitrión correcto se determinó por medición, no por suposición:
+> `aws-1-us-east-2` responde en TCP pero rechaza la autenticación con
+> «tenant/user not found», y `aws-0-us-east-2` conecta. Probar los dos
+> costó menos que adivinar uno.
+>
+> **Modo sesión y no transacción** porque migrar necesita una conexión que
+> conserve estado entre sentencias: el modo transacción devuelve la
+> conexión al pool en cada `commit` y rompe cualquier cosa que dependa de
+> lo anterior.
+>
+> Con eso, `db:push` volvió a funcionar y quedó aplicada la migración que
+> esperaba desde el sprint 23E (P-32). La base quedó en 35 de 35, con las
+> 74 políticas de RLS intactas.
+
+### P-39 · `verificar-proyecto.mjs` no discriminaba: salía 2 siempre — **RESUELTO (sprint 24)**
+
+> `CLAUDE.md` decía que con código 2 no se migra. El guion salía 2 en
+> cuanto encontraba tablas, y desde el sprint 21 siempre las hay: el 2 era
+> permanente y la regla, leída al pie de la letra, prohibía toda migración
+> incremental para siempre. Una comprobación que siempre contesta lo mismo
+> dejó de comprobar.
+>
+> **Antes:** dos respuestas —vacía (0) o con tablas (2)— y la decisión
+> mezclada con la petición de red, así que la única forma de saber qué
+> haría era apuntarla a una base de verdad y mirar.
+>
+> **Ahora:** cinco estados, y el bloqueo reservado para lo que no se
+> deshace.
+>
+> | Código | Estado | |
+> |---:|---|---|
+> | 0 | `base-nueva` · `al-dia` · `con-pendientes` | Se puede continuar; el texto dice cuál |
+> | 1 | `configuracion-incompleta` | Faltan variables; no se miró la base |
+> | 2 | `proyecto-equivocado` · `entorno-equivocado` | **No se migra** |
+> | 3 | `error-de-conexion` | Conectó mal, pero la configuración estaba bien |
+>
+> La protección no se aflojó: se movió a donde importaba. Producción
+> bloquea salvo que se pase `--permitir-produccion`, para que la decisión
+> quede escrita en el comando y no en la cabeza de alguien.
+>
+> **Un detalle que casi deja ciega la protección:** con el *pooler* (P-35)
+> el anfitrión es regional y compartido —`aws-0-us-east-2.pooler…`— y no
+> dice a qué proyecto se conecta uno. Lo único que lo dice es el usuario,
+> `postgres.<ref>`. Un verificador que solo mirara el anfitrión habría
+> dado por buena cualquier cadena. Mira los dos.
+>
+> La decisión vive aparte, en `verificar-proyecto.logica.mjs`, sin entrada
+> ni salida, y tiene prueba para cada estado (`tests/unidad/verificar-proyecto.test.ts`)
+> sin abrir ninguna conexión ni tocar ningún dato.
 
 ### P-26 · Pruebas inestables por tiempo de espera — **RESUELTO (sprint 23F)**
 
@@ -499,29 +547,49 @@ Ninguno se corrigió en este sprint: la instrucción fue auditar, no cambiar.
 > el defecto de P-13 a propósito: con la normalización puesta, el guardián
 > lo sigue atrapando.
 
-### P-27 · Sentry pide `onRouterTransitionStart` — **ABIERTO**
+### P-27 · Sentry pedía `onRouterTransitionStart` — **RESUELTO (sprint 24)**
 
-> El build avisa:
+> Next llama a un export con ese nombre en `instrumentation-client.ts` al
+> empezar cada navegación del App Router, y Sentry lo necesita para abrir
+> ahí la traza. Sin él avisaba por consola y las navegaciones del lado del
+> cliente quedaban sin medir: se veían los errores, pero no en qué
+> navegación ocurrieron ni cuánto tardaron.
 >
->     ACTION REQUIRED: To instrument navigations, the Sentry SDK requires
->     you to export an `onRouterTransitionStart` hook from your
->     instrumentation-client file.
->
-> Sin eso, los errores que ocurren **durante una navegación** no quedan
-> asociados a la ruta que se estaba abriendo. No rompe nada y no impide el
-> build; es una línea en `instrumentation-client.ts`.
+> **No hizo falta actualizar nada.** `@sentry/nextjs` 10.70 ya exporta
+> `captureRouterTransitionStart` desde su entrada de cliente —comprobado
+> en el paquete instalado—; lo que faltaba era el enganche. Se reexporta
+> tal cual, sin envolverla: un envoltorio propio se queda atrás cuando
+> cambie el de Sentry, y el fallo sería silencioso porque el export
+> seguiría existiendo. Hay una prueba que lo exige así.
 
-### P-28 · Avatares y logos nombran su bucket a mano — **ABIERTO**
+### P-28 · Avatares y logos nombraban su bucket a mano — **RESUELTO (sprint 24)**
 
-> `features/cuentas/acciones.ts` escribe `.from('avatares')` y
-> `.from('logos')` en vez de pasar por `BUCKET_DE`.
+> `features/cuentas/acciones.ts` escribía `.from('avatares')` y
+> `.from('logos')` a mano, cuatro veces. Es la misma forma que tenía P-13,
+> donde el mapa decía una cosa y la llamada decía otra.
 >
-> Hoy no tiene consecuencia: los dos depósitos son públicos a propósito y
-> ahí van fotos de perfil y logotipos, que se muestran en cualquier parte.
-> Se anota porque **es el mismo patrón que causó P-13**: el mapa decía una
-> cosa y la llamada real decía otra, y nadie las comparó durante cuatro
-> sprints. La prueba nueva del sprint 23B solo cubre las fuentes que
-> manejan fotos de avisos.
+> **Pero no era descuido, y eso importa para el arreglo.** El contrato
+> tenía un único depósito `perfiles` apuntando a `avatares`, así que **no
+> sabía nombrar** el bucket de los logos: subir un logo por esa vía lo
+> habría puesto en el bucket equivocado, bajo las políticas equivocadas.
+> El código esquivaba el contrato porque el contrato no le servía.
+>
+> Cambiar cadenas por constantes habría dejado el problema intacto. Lo que
+> se hizo fue partir `perfiles` en `avatares` y `logos`, que es lo que hay
+> de verdad en Storage: dos buckets con políticas propias. Con eso el
+> contrato ya puede expresar lo que el código necesita, y las cuatro
+> llamadas pasan por `BUCKET_DE`.
+>
+> No se tocó ninguna migración ni ninguna política: los identificadores
+> que se emiten son los mismos de antes, así que avatares y logos siguen
+> cargando por el mismo camino. Los originales siguen privados.
+>
+> Lo cuida una prueba guardiana nueva en `tests/unidad/seguridad.test.ts`,
+> que mira `features/cuentas/` —el guardián anterior solo miraba las
+> fuentes de fotos de aviso, por eso no lo veía— y exige además que los
+> dos depósitos apunten a buckets distintos: si volvieran a fundirse, la
+> prueba de las cadenas pasaría igual y los logos seguirían yendo al lugar
+> equivocado. Verificado reintroduciendo la regresión a propósito.
 
 ### P-23 · Mensaje de Zod sin traducir en el asistente de publicación — **RESUELTO (sprint 23C)**
 

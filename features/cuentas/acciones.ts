@@ -21,6 +21,7 @@ import {
   TIPOS_LOGO,
 } from '@/lib/validacion/cuenta';
 import { SITIO } from '@/config/sitio';
+import { BUCKET_DE } from '@/lib/almacenamiento/proveedor';
 
 /**
  * Acciones de cuenta.
@@ -332,7 +333,7 @@ export async function subirAvatar(_previo: Estado, datos: FormData): Promise<Est
   const ruta = rutaDeImagen(perfil.id, revision.extension, Date.now());
 
   const { error: errorSubida } = await supabase.storage
-    .from('avatares')
+    .from(BUCKET_DE.avatares)
     .upload(ruta, archivo, { contentType: archivo.type, upsert: true });
 
   if (errorSubida) {
@@ -341,7 +342,7 @@ export async function subirAvatar(_previo: Estado, datos: FormData): Promise<Est
 
   const {
     data: { publicUrl },
-  } = supabase.storage.from('avatares').getPublicUrl(ruta);
+  } = supabase.storage.from(BUCKET_DE.avatares).getPublicUrl(ruta);
 
   const { error } = await supabase
     .from('profiles')
@@ -382,7 +383,7 @@ export async function subirLogo(_previo: Estado, datos: FormData): Promise<Estad
   // política de storage, no este código: la carpeta tiene que ser una
   // agencia suya o la subida se rechaza en la base.
   const { error: errorSubida } = await supabase.storage
-    .from('logos')
+    .from(BUCKET_DE.logos)
     .upload(ruta, archivo, { contentType: archivo.type, upsert: true });
 
   if (errorSubida) {
@@ -394,7 +395,7 @@ export async function subirLogo(_previo: Estado, datos: FormData): Promise<Estad
 
   const {
     data: { publicUrl },
-  } = supabase.storage.from('logos').getPublicUrl(ruta);
+  } = supabase.storage.from(BUCKET_DE.logos).getPublicUrl(ruta);
 
   const { error } = await supabase
     .from('agencies')

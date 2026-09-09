@@ -1,3 +1,5 @@
+import { readFileSync } from 'node:fs';
+import { join } from 'node:path';
 import { describe, it, expect } from 'vitest';
 import type { ErrorEvent } from '@sentry/nextjs';
 import {
@@ -264,5 +266,34 @@ describe('lo que va dentro del texto del error', () => {
     expect(t).toContain('WSP-001001');
     expect(t).toContain('120 m²');
     expect(t).toContain('420,000');
+  });
+});
+
+
+/**
+ * El enganche de navegación del App Router. Es P-27.
+ *
+ * Next busca un export llamado `onRouterTransitionStart` en
+ * `instrumentation-client.ts` y lo llama al empezar cada navegación del
+ * lado del cliente. Sin él, Sentry avisa en consola y las navegaciones
+ * quedan sin medir: se ven los errores, pero no en qué navegación
+ * ocurrieron ni cuánto tardó.
+ *
+ * Se comprueba sobre la fuente y no importando el módulo porque importarlo
+ * arrastra el arranque del cliente de Sentry —y con él `next/font`—, que
+ * necesita el build de Next. Lo que puede romperse acá es que alguien
+ * borre el export o le cambie el nombre, y eso el texto lo ve igual.
+ */
+describe('el enganche de navegación del App Router', () => {
+  const fuente = readFileSync(join(__dirname, '..', '..', 'instrumentation-client.ts'), 'utf8');
+
+  it('instrumentation-client exporta onRouterTransitionStart', () => {
+    expect(fuente).toMatch(/export\s*\{[^}]*as\s+onRouterTransitionStart/);
+  });
+
+  it('lo reexporta del paquete, sin envolverlo en una copia propia', () => {
+    // Un envoltorio propio se queda atrás cuando cambie el de Sentry, y
+    // el fallo sería silencioso: seguiría existiendo el export.
+    expect(fuente).toMatch(/captureRouterTransitionStart[\s\S]*from '@sentry\/nextjs'/);
   });
 });

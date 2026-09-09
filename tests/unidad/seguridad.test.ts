@@ -317,6 +317,45 @@ describe('el original de una foto no puede terminar en un depósito público', (
     expect(culpables).toEqual([]);
   });
 
+  /**
+   * Lo mismo para avatares y logotipos. Es P-28.
+   *
+   * `features/cuentas/` escribía `.from('avatares')` y `.from('logos')` a
+   * mano, y el guardián de arriba no lo veía porque solo miraba las
+   * fuentes de fotos de aviso. No era descuido: el contrato tenía un
+   * único depósito `perfiles` apuntando a `avatares`, así que **no sabía
+   * nombrar** el bucket de los logos. Cuando el contrato no alcanza, el
+   * código lo esquiva; por eso el arreglo fue partir el depósito en dos y
+   * no solo cambiar cadenas por constantes.
+   *
+   * Son dos buckets distintos con políticas distintas: un logo subido al
+   * bucket de avatares queda bajo las reglas equivocadas.
+   */
+  const DE_PERFILES = FUENTES.filter(({ ruta }) => ruta.startsWith('features/cuentas/'));
+
+  it('avatares y logos tampoco: el contrato los nombra por los dos', () => {
+    expect(DE_PERFILES.length, 'no se encontró ninguna fuente de cuentas').toBeGreaterThan(0);
+
+    const culpables = DE_PERFILES.filter(({ fuente }) =>
+      PUBLICOS.some((b) => fuente.includes(".from('" + b + "')") || fuente.includes('.from("' + b + '")')),
+    ).map(({ ruta }) => ruta);
+
+    expect(culpables).toEqual([]);
+  });
+
+  it('el contrato distingue avatares de logos, y cada uno va a su bucket', async () => {
+    const { BUCKET_DE, DEPOSITOS } = await import('@/lib/almacenamiento/proveedor');
+
+    // Si los dos apuntaran al mismo bucket, la prueba de arriba pasaría
+    // igual y los logos seguirían yendo al lugar equivocado.
+    expect(BUCKET_DE.avatares).toBe('avatares');
+    expect(BUCKET_DE.logos).toBe('logos');
+    expect(BUCKET_DE.avatares).not.toBe(BUCKET_DE.logos);
+
+    // Y los originales siguen siendo privados, que es lo que P-13 protege.
+    expect(DEPOSITOS.originales.publico).toBe(false);
+  });
+
   it('donde se arma la ruta del original, el depósito es el privado', () => {
     let revisadas = 0;
 

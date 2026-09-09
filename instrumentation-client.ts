@@ -17,3 +17,19 @@
  * Next espera encontrar.
  */
 import './sentry.client.config';
+
+/**
+ * El aviso de que empezó una navegación del App Router.
+ *
+ * Next llama a este export en cuanto arranca una transición de ruta, y
+ * Sentry lo necesita para abrir ahí la traza de navegación. Sin él, el
+ * paquete avisa —«onRouterTransitionStart is not exported»— y las
+ * navegaciones del lado del cliente quedan sin medir: se ven los errores,
+ * pero no en qué navegación ocurrieron ni cuánto tardó.
+ *
+ * Va acá y no en un componente porque es el archivo que Next inspecciona;
+ * exportarlo desde otro lado no lo conecta con nada. Se reexporta la
+ * función del paquete tal cual, sin envolverla: cualquier envoltorio
+ * propio sería una copia que se queda atrás cuando cambie la de Sentry.
+ */
+export { captureRouterTransitionStart as onRouterTransitionStart } from '@sentry/nextjs';
