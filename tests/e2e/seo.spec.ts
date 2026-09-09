@@ -1,5 +1,6 @@
 import { test, expect, type Page } from '@playwright/test';
 import { BASE, ES_PRODUCCION } from './entorno';
+import { rastreable, ofreceSitemap } from './robots';
 
 /**
  * SEO en el HTML de verdad.
@@ -145,30 +146,26 @@ test.describe('las búsquedas flacas no se indexan', () => {
  * y sacarlo del índice después lleva semanas. En producción se abre todo
  * menos lo privado.
  *
- * Estas pruebas comprueban el contrato del servidor que tienen delante,
- * leyendo el entorno del mismo lugar que la aplicación. Antes solo
- * conocían la versión de producción, así que se pusieron rojas
- * exactamente cuando P-19 empezó a funcionar.
+ * **Acá no hay ninguna rama.** La versión anterior de este arreglo partía
+ * la prueba en dos con un `if`, y eso tiene el mismo defecto que un
+ * `skip`: la mitad que no se ejecuta no comprueba nada, así que en cada
+ * entorno quedaba media garantía sin mirar.
  *
- * El contrato de producción, que en local no se puede observar, está
- * cubierto aparte en `tests/unidad/seo.test.ts`, forzando la variable.
- */
-/**
- * `robots.txt` tiene DOS contratos, no uno, y son opuestos.
+ * Lo que se afirma acá se afirma **siempre**, en los dos entornos, porque
+ * está escrito como una equivalencia y no como un caso:
  *
- * Fuera de producción se cierra el sitio entero al rastreo (P-19): un
- * Preview indexado compite contra el sitio real por las mismas búsquedas,
- * y sacarlo del índice después lleva semanas. En producción se abre todo
- * menos lo privado.
+ *     lo privado  →  nunca rastreable
+ *     lo público  →  rastreable si y solo si es producción
+ *     sitemap     →  ofrecido si y solo si es producción
  *
- * La prueba comprueba el contrato del servidor que tiene delante, leyendo
- * el entorno del mismo lugar que la aplicación. Antes solo conocía la
- * versión de producción, así que se puso roja exactamente cuando P-19
- * empezó a funcionar. No lleva `skip`: siempre corre y siempre afirma
- * algo, solo que lo correcto según dónde apunte.
+ * Si el servidor sirviera el contrato equivocado —abierto en un Preview,
+ * cerrado en producción— esto falla en vez de acomodarse, que es
+ * exactamente lo que la versión con `if` no hacía.
  *
- * El contrato de producción también está cubierto sin depender del
- * entorno en `tests/unidad/seo.test.ts`, forzando la variable.
+ * Quien decide si una ruta es rastreable es `rastreable()`, que aplica
+ * las reglas de verdad —patrón más largo, comodines— y está probada
+ * aparte en `tests/unidad/robots.test.ts`. Sin esa prueba, un evaluador
+ * roto dejaría todo esto en verde sin medir nada.
  */
 test.describe('robots.txt', () => {
   test('existe y responde texto plano', async ({ request }) => {
@@ -177,30 +174,42 @@ test.describe('robots.txt', () => {
     expect(r.headers()['content-type']).toContain('text/plain');
   });
 
-  test('sirve el contrato que corresponde al entorno del servidor', async ({ request }) => {
+  test('lo privado no es rastreable, valga el contrato que valga', async ({ request }) => {
     const cuerpo = await (await request.get('/robots.txt')).text();
 
-    if (!ES_PRODUCCION) {
-      // Fuera de producción: cerrado entero, y sin sitemap, que sería una
-      // invitación a rastrear lo que se acaba de cerrar.
-      expect(cuerpo).toMatch(/^Disallow:\s*\/\s*$/m);
-      expect(cuerpo).not.toContain('Sitemap:');
-      return;
+    for (const privada of [
+      '/panel',
+      '/panel/favoritos',
+      '/ingresar',
+      '/registrarse',
+      '/auth/callback',
+      '/api/avisos',
+    ]) {
+      expect(rastreable(cuerpo, privada), `${privada} quedó abierta al rastreo`).toBe(false);
     }
+  });
 
-    expect(cuerpo).toContain('Sitemap:');
-    expect(cuerpo).toContain('/sitemap.xml');
+  test('lo público es rastreable si y solo si el servidor es producción', async ({ request }) => {
+    const cuerpo = await (await request.get('/robots.txt')).text();
 
-    for (const privada of ['/panel', '/ingresar', '/auth', '/api']) {
-      expect(cuerpo, privada).toContain(`Disallow: ${privada}`);
+    // Si se bloqueara el rastreo de una búsqueda con filtros, el robot
+    // nunca entraría a leer su `noindex` y la página podría aparecer
+    // igual, sin descripción y sin control. Por eso en producción tienen
+    // que estar abiertas; y fuera de producción, cerradas.
+    for (const publica of ['/', '/comprar', '/alquilar', '/propiedad/algo', '/precio-m2']) {
+      expect(
+        rastreable(cuerpo, publica),
+        `${publica}: rastreable=${rastreable(cuerpo, publica)} con ES_PRODUCCION=${ES_PRODUCCION}`,
+      ).toBe(ES_PRODUCCION);
     }
+  });
 
-    // Lo que NO puede estar bloqueado: si se bloquea el rastreo de una
-    // búsqueda con filtros, el robot nunca entra a leer su `noindex` y la
-    // página puede aparecer igual, sin descripción y sin control.
-    expect(cuerpo).not.toContain('Disallow: /comprar');
-    expect(cuerpo).not.toContain('Disallow: /alquilar');
-    expect(cuerpo).not.toContain('Disallow: /propiedad');
+  test('el sitemap se ofrece si y solo si el servidor es producción', async ({ request }) => {
+    const cuerpo = await (await request.get('/robots.txt')).text();
+
+    // Ofrecer el sitemap en un Preview es invitar a rastrear lo que el
+    // `Disallow: /` acaba de cerrar.
+    expect(ofreceSitemap(cuerpo)).toBe(ES_PRODUCCION);
   });
 });
 

@@ -395,6 +395,60 @@ Ninguno se corrigió en este sprint: la instrucción fue auditar, no cambiar.
 > botón vuelva a habilitarse, o sea que la acción terminó— y recién
 > entonces se afirma sobre su efecto. Si el cambio de moneda se rompe o se
 > cuelga de verdad, esto sigue fallando.
+>
+> **Cuántos usos del ayudante estaban afectados: uno.** Se midió
+> `networkidle` ruta por ruta en vez de razonarlo, que era la manera de
+> saberlo sin adivinar:
+>
+> | Ruta | Asienta en |
+> |---|---|
+> | `/`, `/proyectos`, `/wasi-ai`, `/busquedas`, `/precio-m2` | 0,5 – 1,3 s |
+> | `/comprar`, `/alquilar`, `/comprar` con filtros, ruta amigable | 1,0 – 1,6 s |
+> | **`/comprar?vista=mapa`** | **nunca (> 15 s)** |
+>
+> Once rutas asientan con muchísimo margen y una no asienta jamás. O sea
+> que `esperar()` sirve en todas las pantallas del sitio menos la del
+> mapa, y no había que cambiarlo en ningún otro sitio.
+>
+> Para que no vuelva a costar dos sprints, el ayudante ahora **se niega**:
+> si lo llaman en la vista de mapa lanza un error que dice qué usar en su
+> lugar. Un fallo inmediato y explicado es mejor que treinta segundos de
+> espera y un mensaje que no dice nada.
+
+### P-38 · Las pruebas de `robots.txt` afirmaban media garantía por entorno — **RESUELTO (sprint 23F)**
+
+> El primer arreglo de estas pruebas, en este mismo sprint, partía la
+> comprobación en dos con un `if (!ES_PRODUCCION)`. Pasaba, pero estaba
+> mal: **la mitad que no se ejecuta no comprueba nada**. Contra el
+> servidor local solo se afirmaba el contrato de staging, y el de
+> producción no lo miraba nadie. Una rama así es un `skip` con otro
+> nombre.
+>
+> Reescrito sin ninguna rama, como equivalencias que valen siempre:
+>
+>     lo privado  →  nunca rastreable
+>     lo público  →  rastreable si y solo si es producción
+>     sitemap     →  ofrecido si y solo si es producción
+>
+> Las tres corren en todos los entornos. Quien contesta si una ruta es
+> rastreable es `rastreable()` (`tests/e2e/robots.ts`), que aplica las
+> reglas de verdad —gana el patrón más largo, `Allow` gana los empates,
+> comodines— en vez de buscar una cadena dentro del archivo, que era lo
+> que ataba la prueba a un contrato.
+>
+> **Tres comprobaciones para que esto no sea humo:**
+>
+> 1. El evaluador está probado aparte (`tests/unidad/robots.test.ts`, 8
+>    pruebas), incluida una que exige que **no conteste siempre lo mismo**:
+>    un instrumento roto no avisa, da un número.
+> 2. Falsificación: mintiéndole al proceso de prueba
+>    (`NEXT_PUBLIC_ENTORNO=produccion` mientras el servidor sirve staging)
+>    las dos pruebas **fallan**, con el mensaje
+>    `/: rastreable=false con ES_PRODUCCION=true`. No se acomodan.
+> 3. El contrato de producción se ejerció de verdad: se construyó con
+>    `NEXT_PUBLIC_ENTORNO=produccion` y las once pruebas de `robots.txt`,
+>    sitemap y privacidad pasaron contra ese servidor. Los dos contratos
+>    quedan comprobados de punta a punta, no uno solo.
 
 ### P-36 · La ruta amigable se desbordaba a lo ancho en 360 px y menos — **RESUELTO (sprint 23F)**
 
@@ -783,8 +837,9 @@ costo no fue arreglarlos: fue haberlos clasificado sin medir.
 | **P-28** | Avatares y logos nombran su bucket a mano | No |
 
 **Cerrado en el sprint 23F:** P-26 (las tres pruebas inestables), P-36 (el
-desborde de la ruta amigable) y P-37 (el guardián que leía según los
-finales de línea).
+desborde de la ruta amigable), P-37 (el guardián que leía según los
+finales de línea) y P-38 (las pruebas de `robots.txt` que afirmaban media
+garantía por entorno).
 
 **La suite de navegador quedó sin rojos.** 589 pasan, 0 fallan, 5 omitidas
 —y esas cinco son una omisión del sprint 6, con motivo escrito: en móvil

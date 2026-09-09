@@ -21,7 +21,30 @@ import { test, expect, type Page } from '@playwright/test';
  * probar. No como aprobado.
  */
 
-const esperar = (page: Page) => page.waitForLoadState('networkidle');
+/**
+ * Espera a que la página deje de pedir cosas.
+ *
+ * Sirve en todas las pantallas del sitio menos una. Medido ruta por ruta
+ * contra el servidor de pruebas: la portada asienta en 502 ms, `/comprar`
+ * en 1573, la ruta amigable en 1175, y ninguna de las once pasa de 1,6
+ * segundos. La excepción es la vista de mapa, que **no asienta nunca**
+ * —MapLibre pide teselas mientras dibuja y vuelve a pedirlas al moverse—
+ * y ahí `networkidle` se come el tiempo de espera entero.
+ *
+ * Eso fue P-26 y costó dos sprints de rojo intermitente, así que en vez
+ * de dejarlo escrito en un comentario que nadie lee, la función se niega.
+ * Un error inmediato que dice qué hacer es mejor que treinta segundos de
+ * espera y un fallo que no explica nada.
+ */
+const esperar = (page: Page) => {
+  if (/vista=mapa/.test(page.url())) {
+    throw new Error(
+      'esperar() no sirve en la vista de mapa: `networkidle` no llega nunca ahí. ' +
+        'Espera el lienzo — locator("canvas.maplibregl-canvas") — que además exige más.',
+    );
+  }
+  return page.waitForLoadState('networkidle');
+};
 
 // ---------------------------------------------------------------------
 // 1 · Cuentas

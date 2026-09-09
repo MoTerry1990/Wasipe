@@ -1,5 +1,5 @@
 import { test, expect } from '@playwright/test';
-import { ES_PRODUCCION } from './entorno';
+import { rastreable } from './robots';
 
 /**
  * Ficha del aviso.
@@ -67,22 +67,19 @@ test.describe('privacidad', () => {
   });
 
   test('el robots deja fuera lo privado', async ({ request }) => {
-    const robots = await (await request.get('/robots.txt')).text();
+    const cuerpo = await (await request.get('/robots.txt')).text();
 
-    // Lo que hay que garantizar es que el panel y el ingreso NO queden
-    // abiertos al rastreo. Se llega por dos caminos según el entorno, y
-    // antes esta prueba solo conocía uno: en producción van nombrados uno
-    // por uno; fuera de producción el `Disallow: /` los cubre a todos y
-    // buscar `/panel` en el texto fallaba aunque la garantía se cumpliera
-    // de sobra.
-    if (!ES_PRODUCCION) {
-      expect(robots).toMatch(/^Disallow:\s*\/\s*$/m);
-      expect(robots).not.toMatch(/^Allow:/m);
-      return;
+    // Sin rama. Antes esto buscaba el texto «/panel» dentro del archivo,
+    // que es una manera de preguntar que solo funciona con el contrato de
+    // producción: fuera de producción el `Disallow: /` cierra el panel de
+    // sobra y la prueba fallaba igual, con la garantía cumplida.
+    //
+    // Lo que hay que saber no es si aparece una cadena, sino si un robot
+    // que respeta el archivo puede pedir esa ruta. Eso es cierto o falso
+    // en los dos entornos, así que se pregunta una sola vez.
+    for (const privada of ['/panel', '/panel/favoritos', '/ingresar']) {
+      expect(rastreable(cuerpo, privada), `${privada} quedó abierta al rastreo`).toBe(false);
     }
-
-    expect(robots).toContain('/panel');
-    expect(robots).toContain('/ingresar');
   });
 });
 
