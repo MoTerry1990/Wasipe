@@ -1,4 +1,5 @@
 import { test, expect } from '@playwright/test';
+import { ES_PRODUCCION } from './entorno';
 
 /**
  * Ficha del aviso.
@@ -49,13 +50,37 @@ test.describe('privacidad', () => {
       const html = await respuesta.text();
 
       // Nueve dígitos que empiezan en 9, sueltos en el texto.
-      const encontrados = html.match(/(?<!\d)9\d{8}(?!\d)/g) ?? [];
+      //
+      // El borde es hexadecimal y no decimal a propósito. Con `(?<!\d)`
+      // esto marcaba `993399033` en TODAS las páginas, y no era un
+      // teléfono: era un pedazo del identificador de una acción de
+      // servidor de Next —`$ACTION_ID_401b0e993399033da8d76d8c97…`—,
+      // rodeado de letras hexadecimales. Un falso positivo constante
+      // enseña a ignorar la prueba, que es peor que no tenerla.
+      //
+      // Un celular de verdad va pegado a espacios, signos o etiquetas,
+      // nunca en medio de una tira hexadecimal, así que el borde nuevo
+      // no deja pasar ninguno.
+      const encontrados = html.match(/(?<![0-9a-fA-F])9\d{8}(?![0-9a-fA-F])/g) ?? [];
       expect(encontrados, `${ruta} trae lo que parece un celular`).toEqual([]);
     }
   });
 
   test('el robots deja fuera lo privado', async ({ request }) => {
     const robots = await (await request.get('/robots.txt')).text();
+
+    // Lo que hay que garantizar es que el panel y el ingreso NO queden
+    // abiertos al rastreo. Se llega por dos caminos según el entorno, y
+    // antes esta prueba solo conocía uno: en producción van nombrados uno
+    // por uno; fuera de producción el `Disallow: /` los cubre a todos y
+    // buscar `/panel` en el texto fallaba aunque la garantía se cumpliera
+    // de sobra.
+    if (!ES_PRODUCCION) {
+      expect(robots).toMatch(/^Disallow:\s*\/\s*$/m);
+      expect(robots).not.toMatch(/^Allow:/m);
+      return;
+    }
+
     expect(robots).toContain('/panel');
     expect(robots).toContain('/ingresar');
   });

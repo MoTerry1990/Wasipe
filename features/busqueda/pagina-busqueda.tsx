@@ -198,7 +198,15 @@ async function Resultados({
                   href={urlDeFiltros(filtros, { ...sugerencia.filtros, pagina: undefined })}
                   className="border-linea hover:border-fucsia flex items-center justify-between gap-4 rounded-xl border px-4 py-3 transition-colors"
                 >
-                  <span className="text-tinta text-[14.5px] font-semibold">
+                  {/* `min-w-0` porque al lado hay un `whitespace-nowrap`:
+                      sin esto la frase no puede encogerse, la fila mide más
+                      que la pantalla y arrastra el desplazamiento
+                      horizontal de toda la página. Se veía a 360 px y menos
+                      —scrollWidth 368 contra clientWidth 360—, o sea en
+                      buena parte del parque de teléfonos del Perú. Es el
+                      mismo defecto que la barra de orden del sprint 23E,
+                      en otro sitio. */}
+                  <span className="text-tinta min-w-0 text-[14.5px] font-semibold">
                     {sugerencia.texto}
                   </span>
                   <span className="cifra text-turquesa-osc text-[14px] font-bold whitespace-nowrap">

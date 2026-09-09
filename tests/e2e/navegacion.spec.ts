@@ -89,10 +89,28 @@ test('ningún enlace interno de la portada está roto', async ({ page, request }
   ]);
 
   expect(destinos.length).toBeGreaterThan(3);
-  for (const destino of destinos) {
-    const respuesta = await request.get(destino);
-    expect(respuesta.status(), `enlace roto: ${destino}`).toBeLessThan(400);
-  }
+
+  // Las peticiones van en paralelo, no una detrás de otra.
+  //
+  // En serie esto tardaba entre 29 y 34 segundos contra un límite de 30,
+  // así que salía roja o verde según cuánto estuviera cargado el servidor
+  // —tres corridas seguidas dieron roja, verde y roja sin que cambiara
+  // nada de la portada—. No había nada roto: había una prueba secuencial
+  // rozando su propio límite. Subir el límite habría tapado el síntoma y
+  // dejado la prueba igual de lenta.
+  //
+  // No se comprueba menos: se comprueban los mismos enlaces, con la misma
+  // petición de verdad al servidor y la misma exigencia sobre el estado.
+  const revisados = await Promise.all(
+    destinos.map(async (destino) => ({
+      destino,
+      estado: (await request.get(destino)).status(),
+    })),
+  );
+
+  const rotos = revisados.filter((r) => r.estado >= 400);
+  expect(rotos, `enlaces rotos: ${rotos.map((r) => `${r.destino} → ${r.estado}`).join(', ')}`)
+    .toEqual([]);
 });
 
 test('la ilustración de Lima sigue en la portada', async ({ page }) => {

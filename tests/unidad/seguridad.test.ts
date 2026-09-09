@@ -25,10 +25,30 @@ function archivos(carpeta: string, extensiones: RegExp): string[] {
   return salida;
 }
 
+/**
+ * Lee las fuentes con los finales de linea normalizados.
+ *
+ * El retorno de carro no es un detalle cosmetico aca. Estas pruebas
+ * analizan texto, y varias quitan comentarios con expresiones que
+ * terminan en $. En JavaScript el CR es un terminador de linea: el
+ * punto no lo cruza y el $ sin la bandera m exige el final de la
+ * cadena, asi que en un archivo con CRLF **el reemplazo no ocurre** y
+ * el comentario se queda.
+ *
+ * Esto no es teorico. `core.autocrlf` esta en `true` en este
+ * repositorio, o sea que en Windows todo archivo recien sacado de git
+ * llega con CRLF. El guardian de P-13 dio un falso positivo apenas se
+ * revirtio un commit de formato: la unica diferencia era que prettier
+ * habia normalizado esos archivos a LF, y sin esa casualidad el
+ * guardian leia mal.
+ *
+ * Un guardian de seguridad cuyo resultado depende de los finales de
+ * linea no es un guardian. Se normaliza aca, una vez, para todas.
+ */
 const leer = (rutas: string[]) =>
   rutas.map((ruta) => ({
     ruta: relative(RAIZ, ruta).split(sep).join('/'),
-    fuente: readFileSync(ruta, 'utf8'),
+    fuente: readFileSync(ruta, 'utf8').replace(/\r\n/g, '\n'),
   }));
 
 const FUENTES = leer(

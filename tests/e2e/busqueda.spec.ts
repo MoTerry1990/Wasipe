@@ -245,15 +245,43 @@ test.describe('en móvil', () => {
     await expect(page.getByRole('dialog', { name: 'Filtros de búsqueda' })).toBeHidden();
   });
 
-  test('la búsqueda no se desborda a lo ancho', async ({ page }) => {
-    await page.goto('/comprar?tipo=departamento&dorm=3&precioMax=250000');
-    await page.waitForLoadState('networkidle');
+  /**
+   * Ni un píxel de desplazamiento horizontal, en los anchos que existen.
+   *
+   * Se comprueban tres anchos y no uno porque el defecto que esto
+   * encontró —un `<select>` nativo que se ancha hasta su opción más larga
+   * y no cede— empeora cuanto más angosta es la pantalla. Con un solo
+   * ancho, un arreglo que sirva a 390 y falle a 320 pasa en verde.
+   *
+   * 320 no es un ancho inventado: es el del iPhone SE de primera
+   * generación y el de varios Android de gama de entrada, que en el Perú
+   * son una parte real del parque.
+   */
+  for (const ancho of [390, 360, 320]) {
+    test(`la búsqueda no se desborda a lo ancho en ${ancho} px`, async ({ page }) => {
+      await page.setViewportSize({ width: ancho, height: 780 });
 
-    const desborda = await page.evaluate(
-      () => document.documentElement.scrollWidth > document.documentElement.clientWidth + 1,
-    );
-    expect(desborda).toBe(false);
-  });
+      for (const ruta of [
+        '/comprar',
+        '/alquilar',
+        '/comprar?tipo=departamento&dorm=3&precioMax=250000',
+        '/alquilar/departamento/miraflores',
+      ]) {
+        await page.goto(ruta);
+        await page.waitForLoadState('domcontentloaded');
+
+        const medida = await page.evaluate(() => ({
+          scroll: document.documentElement.scrollWidth,
+          cliente: document.documentElement.clientWidth,
+        }));
+
+        expect(
+          medida.scroll,
+          `${ruta} a ${ancho} px desborda: scrollWidth ${medida.scroll} > clientWidth ${medida.cliente}`,
+        ).toBeLessThanOrEqual(medida.cliente + 1);
+      }
+    });
+  }
 
   test('el contador de filtros dice cuántos hay puestos', async ({ page }) => {
     await page.goto('/comprar?tipo=casa&dorm=3&verificados=1');

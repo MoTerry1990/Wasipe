@@ -1,4 +1,4 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, vi } from 'vitest';
 import {
   MINIMO_PARA_INDEXAR,
   POR_QUE_NO_SE_INDEXA,
@@ -369,6 +369,69 @@ describe('fuera de producción no se indexa nada', () => {
   // Los metadatos del layout no se prueban acá: importarlo arrastra
   // next/font/google, que necesita el build de Next. Esa mitad se
   // verifica sobre el Preview desplegado, que es donde importa.
+});
+
+/**
+ * Y en producción, lo contrario.
+ *
+ * Esta mitad vivía solo en la prueba de navegador, que corre contra un
+ * servidor que **nunca** es producción. O sea que el contrato de
+ * producción no estaba comprobado en ningún lado: la prueba que decía
+ * cubrirlo llevaba sprints en rojo justamente porque el servidor hacía lo
+ * correcto para su entorno.
+ *
+ * Acá se fuerza la variable y se llama a la función, que es la única
+ * manera de ver la rama de producción sin desplegar.
+ */
+describe('en producción sí se rastrea, salvo lo privado', () => {
+  const forzarProduccion = async () => {
+    const antes = process.env.NEXT_PUBLIC_ENTORNO;
+    process.env.NEXT_PUBLIC_ENTORNO = 'produccion';
+    vi.resetModules();
+    try {
+      return (await import('@/app/robots')).default();
+    } finally {
+      // Se restaura sí o sí: si esto se filtra, contagia a todo lo que
+      // corra después en el mismo proceso.
+      if (antes === undefined) delete process.env.NEXT_PUBLIC_ENTORNO;
+      else process.env.NEXT_PUBLIC_ENTORNO = antes;
+      vi.resetModules();
+    }
+  };
+
+  it('ofrece el sitemap', async () => {
+    const robots = await forzarProduccion();
+    expect(robots.sitemap).toContain('/sitemap.xml');
+  });
+
+  it('cierra lo privado al rastreo', async () => {
+    const robots = await forzarProduccion();
+    const regla = Array.isArray(robots.rules) ? robots.rules[0] : robots.rules;
+    const cerrado = [regla?.disallow ?? []].flat();
+
+    for (const privada of ['/panel', '/ingresar', '/auth', '/api']) {
+      expect(cerrado, privada).toContain(privada);
+    }
+  });
+
+  it('deja abierto lo público, incluidas las búsquedas con filtros', async () => {
+    const robots = await forzarProduccion();
+    const regla = Array.isArray(robots.rules) ? robots.rules[0] : robots.rules;
+    const cerrado = [regla?.disallow ?? []].flat();
+
+    // Bloquear el rastreo de una búsqueda con filtros sería peor que no
+    // hacer nada: el robot nunca entraría a leer su `noindex` y la página
+    // podría aparecer igual, sin descripción y sin control.
+    for (const publica of ['/comprar', '/alquilar', '/propiedad']) {
+      expect(cerrado, publica).not.toContain(publica);
+    }
+    expect(regla?.allow).toBe('/');
+  });
+
+  it('y la variable no quedó pegada para las demás pruebas', async () => {
+    const { ES_PRODUCCION } = await import('@/config/sitio');
+    expect(ES_PRODUCCION).toBe(false);
+  });
 });
 
 /**

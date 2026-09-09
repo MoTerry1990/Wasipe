@@ -353,32 +353,97 @@ Ninguno se corrigió en este sprint: la instrucción fue auditar, no cambiar.
 > alcance; queda anotado con la medición hecha para no volver a
 > diagnosticarlo desde cero.
 
-### P-26 · La prueba de la vista de mapa es inestable — **ABIERTO**
+### P-26 · Pruebas inestables por tiempo de espera — **RESUELTO (sprint 23F)**
 
-> `tests/e2e/criticos.spec.ts` → «la vista de mapa abre sin caerse» falla
-> por tiempo de espera cuando corre junto a otras y pasa cuando corre
-> sola. Comprobado en el sprint 23B que **falla igual antes y después** de
-> los cambios de ese sprint: es previo.
->
-> La causa es el `networkidle` del ayudante `esperar()`. Esperar a que no
-> quede ninguna petición es frágil en una página que agrupa marcadores y
-> vuelve a pedir datos al mover el mapa.
->
-> Una prueba que falla a veces es peor que ninguna: enseña a ignorar el
+> Tres casos, la misma enfermedad: la prueba esperaba algo que no era el
+> hecho que le importaba, y el resultado dependía de cuánto estuviera
+> cargado el servidor. Ninguno era un defecto del producto, y por eso
+> mismo eran caros: un rojo que aparece y desaparece enseña a ignorar el
 > rojo.
 >
-> **Segundo caso, medido en el sprint 23E:** `tests/e2e/navegacion.spec.ts`
-> → «ningún enlace interno de la portada está roto» tiene la misma forma.
-> Recorre todos los enlaces de la portada uno por uno con `request.get()`
-> en serie: sola tarda **30, 31 y 34 segundos** en tres corridas —contra
-> un tiempo de espera por omisión de 30— y en la suite completa, con las
-> demás compitiendo por el servidor, se pasa. No hay nada roto: hay una
-> prueba secuencial contra un límite que ya casi toca. Las peticiones
-> deberían ir en paralelo, o la prueba merece su propio tiempo.
+> **1 · `criticos.spec.ts` → «la vista de mapa abre sin caerse».**
+> Usaba `networkidle`, que espera a que no quede ninguna petición en
+> vuelo. El mapa pide teselas mientras se dibuja y vuelve a pedirlas al
+> moverse, así que ese silencio no llega nunca. Reproducido aislado: dio
+> **verde, roja y roja**, siempre agotando el tiempo en `waitForLoadState`.
 >
-> Confirmado como inestable y no como roto: en tres corridas de la suite
-> completa durante el sprint 23E salió **roja, verde y roja**, sin que
-> cambiara nada de la portada entre una y otra.
+> Ahora espera el lienzo de MapLibre, que es lo que de verdad significa
+> «abrió». Exige más que antes: la versión vieja se conformaba con un
+> `h1`, que también sale con el mapa roto. Tres corridas aisladas: 6,7 s ·
+> 5,8 s · 4,2 s, las tres verdes.
+>
+> **2 · `navegacion.spec.ts` → «ningún enlace interno de la portada está
+> roto».** Recorría los enlaces uno detrás de otro contra el límite de 30
+> segundos, y sola tardaba entre 29 y 34. Tres corridas completas del
+> sprint 23E dieron **roja, verde y roja** sin que cambiara nada de la
+> portada.
+>
+> Las peticiones ahora van en paralelo: de ~30 s a **8,7 s**. No se
+> comprueba menos —los mismos enlaces, la misma petición real, la misma
+> exigencia sobre el estado—; se comprueba igual sin rozar el límite. El
+> tiempo de espera no se tocó.
+>
+> **3 · `portada.spec.ts` → las dos de preferencia de moneda.** Esta no
+> estaba en el inventario de 26: apareció al estabilizar las otras, en una
+> de cada cuatro corridas. Cambiar de moneda es una acción de servidor y
+> el botón se deshabilita mientras está en vuelo; la prueba sondeaba
+> `aria-pressed` contra el límite de 5 segundos por omisión. Medido cinco
+> veces seguidas: **1382, 1526, 1488, 1466 y 1529 ms**, o sea que en una
+> corrida tranquila sobra y bajo la suite completa no.
+>
+> El arreglo no fue subir el número: se espera el hecho observable —que el
+> botón vuelva a habilitarse, o sea que la acción terminó— y recién
+> entonces se afirma sobre su efecto. Si el cambio de moneda se rompe o se
+> cuelga de verdad, esto sigue fallando.
+
+### P-36 · La ruta amigable se desbordaba a lo ancho en 360 px y menos — **RESUELTO (sprint 23F)**
+
+> El mismo defecto que la barra de orden del sprint 23E, en otro sitio y
+> sin descubrir. Apareció al ampliar la prueba de desborde a tres anchos:
+> con un solo ancho, un arreglo que sirve a 390 y falla a 320 pasa en
+> verde, y eso era exactamente lo que estaba pasando.
+>
+> En `/alquilar/departamento/miraflores` —el estado de «no hay resultados,
+> mirá estas búsquedas parecidas»— cada fila es un flex con la frase a la
+> izquierda y el conteo a la derecha en `whitespace-nowrap`. La frase no
+> podía encogerse, así que la fila medía más que la pantalla:
+>
+>     360 px → scrollWidth 368     320 px → scrollWidth 368
+>
+> Y el desplazamiento horizontal se lo comía la página entera, no la fila.
+> Arreglado con `min-w-0` en la frase (`features/busqueda/pagina-busqueda.tsx`).
+>
+> 320 px no es un ancho inventado: es el del iPhone SE de primera
+> generación y el de varios Android de gama de entrada, que en el Perú son
+> una parte real del parque. Ahora la prueba mide **tres anchos por cuatro
+> rutas**, incluida la ruta amigable que nadie estaba mirando.
+
+### P-37 · El guardián de P-13 daba su veredicto según los finales de línea — **RESUELTO (sprint 23F)**
+
+> Lo peor de este sprint, y no se buscaba: se destapó solo al revertir el
+> commit de formato.
+>
+> `tests/unidad/seguridad.test.ts` comprueba que el original de una foto
+> no termine en un depósito público. Para eso quita los comentarios del
+> código con expresiones que terminan en `$`. En JavaScript el retorno de
+> carro es un terminador de línea: el punto no lo cruza y el `$` sin la
+> bandera `m` exige el final de la cadena, así que **en un archivo con
+> CRLF el reemplazo no ocurre** y el comentario se queda.
+>
+> `core.autocrlf` está en `true`, o sea que en Windows todo archivo recién
+> sacado de git llega con CRLF. El guardián venía pasando porque prettier
+> había normalizado a LF justo los archivos que mira. Al revertir el
+> formato volvió el CRLF y dio un falso positivo inmediato.
+>
+> En este caso el efecto fue un falso positivo, no un falso negativo —el
+> comentario sin quitar nombra el bucket viejo—, pero eso es suerte, no
+> diseño: **el veredicto de una prueba de seguridad dependía de con qué
+> sistema operativo se hubiera clonado el repositorio.**
+>
+> Arreglado en `leer()`, que normaliza los finales de línea una sola vez
+> para todas las pruebas que analizan fuentes. Verificado reintroduciendo
+> el defecto de P-13 a propósito: con la normalización puesta, el guardián
+> lo sigue atrapando.
 
 ### P-27 · Sentry pide `onRouterTransitionStart` — **ABIERTO**
 
@@ -708,22 +773,39 @@ Dos de esos tres rojos de P-29 eran defectos del producto que llevaban
 sprints anotados como «de entorno». Vale la pena decirlo así, porque el
 costo no fue arreglarlos: fue haberlos clasificado sin medir.
 
-**Abierto al cierre del sprint 23E:**
+**Abierto al cierre del sprint 23F:**
 
 | | Qué es | Aprieta |
 |---|---|---|
 | **P-35** | El anfitrión directo de Postgres solo publica IPv6 | Cuando haya que aplicar una migración de verdad |
 | **P-33** | Las alertas se registran pero no se entregan | Cuando haya usuarios reales (será Resend) |
-| **P-26** | Dos pruebas inestables por tiempo de espera | Ya: enseñan a ignorar el rojo |
 | **P-27** | Sentry pide `onRouterTransitionStart` | No |
 | **P-28** | Avatares y logos nombran su bucket a mano | No |
 
-**Rojos que quedan en la suite de navegador, todos anteriores y ninguno
-del producto:** `seo.spec.ts` espera que el `robots` indexe y desde P-19
-responde `Disallow: /` fuera de producción —la prueba quedó atrás del
-arreglo, no al revés—; `portada.spec.ts` espera una base vacía;
-`criticos.spec.ts` y `navegacion.spec.ts` son P-26. Es la deuda que
-conviene pagar antes de que tape al próximo P-34.
+**Cerrado en el sprint 23F:** P-26 (las tres pruebas inestables), P-36 (el
+desborde de la ruta amigable) y P-37 (el guardián que leía según los
+finales de línea).
+
+**La suite de navegador quedó sin rojos.** 589 pasan, 0 fallan, 5 omitidas
+—y esas cinco son una omisión del sprint 6, con motivo escrito: en móvil
+los filtros van por el cajón, que tiene su propio bloque de pruebas.
+
+Vale la pena dejar dicho de dónde salieron los 26 rojos que se limpiaron,
+porque el reparto sorprende:
+
+| Clase | Cuántos | |
+|---|---:|---|
+| Pruebas obsoletas | 18 | Codificaban el dominio de Netlify o el `robots.txt` de producción |
+| Falso positivo del localizador | 2 | Un hash de Next que parecía un celular |
+| Dato de staging supuesto | 2 | Daban por sentada una base vacía |
+| Inestabilidad | 4 | `networkidle` y un recorrido secuencial |
+| **Defectos del producto** | **0** | de los 26 originales |
+
+Cero de veintiséis. Pero al ampliar la cobertura para arreglarlos
+aparecieron **dos defectos reales que ninguna prueba estaba mirando**:
+P-36 y P-37. Es el argumento a favor de limpiar los rojos, dicho con
+números: mientras la suite tuvo 26 rojos crónicos nadie miró más allá, y
+debajo había cosas.
 
 Abierto y sin bloquear: las 19 funciones `SECURITY DEFINER` sin
 comprobación interna, `saldo_de_creditos` entre autenticados, el borrado

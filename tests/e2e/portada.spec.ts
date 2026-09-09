@@ -1,4 +1,4 @@
-import { test, expect } from '@playwright/test';
+import { test, expect, type Locator } from '@playwright/test';
 
 /**
  * Portada.
@@ -110,6 +110,27 @@ test.describe('búsqueda', () => {
   });
 });
 
+/**
+ * Cambiar de moneda es una acción de servidor, y hay que esperarla como tal.
+ *
+ * El botón se deshabilita mientras la acción está en vuelo y vuelve a
+ * habilitarse cuando termina. Estas pruebas sondeaban directamente
+ * `aria-pressed` contra el límite de 5 segundos por omisión, que en una
+ * corrida tranquila sobra —medido cinco veces seguidas: 1382, 1526, 1488,
+ * 1466 y 1529 ms— pero se queda corto cuando la suite completa está
+ * compitiendo por el mismo servidor. De ahí que fallara una de cada
+ * cuatro corridas sin que hubiera nada roto.
+ *
+ * El arreglo no es subir el número: es esperar el hecho observable —que
+ * la acción terminó— y recién entonces afirmar sobre su efecto. Si algún
+ * día el cambio de moneda de verdad se rompe o se cuelga, esto sigue
+ * fallando.
+ */
+const esperarCambioDeMoneda = async (boton: Locator) => {
+  await boton.click();
+  await expect(boton).toBeEnabled({ timeout: 20_000 });
+};
+
 test.describe('preferencia de moneda', () => {
   test('empieza en dólares y se puede cambiar a soles', async ({ page }) => {
     await page.goto('/');
@@ -119,18 +140,17 @@ test.describe('preferencia de moneda', () => {
 
     await expect(dolares).toHaveAttribute('aria-pressed', 'true');
 
-    await soles.click();
+    await esperarCambioDeMoneda(soles);
     await expect(soles).toHaveAttribute('aria-pressed', 'true');
     await expect(dolares).toHaveAttribute('aria-pressed', 'false');
   });
 
   test('la preferencia sobrevive a una recarga', async ({ page }) => {
     await page.goto('/');
-    const soles = page.getByRole('button', { name: /soles/ });
-    await soles.click();
     // Hay que esperar a que la acción termine: si no, la recarga puede
     // llegar antes de que el navegador guarde la cookie.
-    await expect(soles).toHaveAttribute('aria-pressed', 'true');
+    await esperarCambioDeMoneda(page.getByRole('button', { name: /soles/ }));
+
     await page.reload();
     await expect(page.getByRole('button', { name: /soles/ })).toHaveAttribute(
       'aria-pressed',
@@ -160,12 +180,53 @@ test.describe('secciones', () => {
     });
   }
 
-  test('sin datos, cada sección explica que está vacía', async ({ page }) => {
-    await page.goto('/');
-    // Ningún hueco mudo: las secciones dicen qué pasa y qué hacer.
-    await expect(page.getByText('Sé el primero en publicar')).toBeVisible();
-    await expect(page.getByRole('link', { name: 'Publicar gratis' }).first()).toBeVisible();
-  });
+  /**
+   * Ninguna sección de datos es un hueco mudo.
+   *
+   * Antes esto se comprobaba buscando el texto «Sé el primero en
+   * publicar», o sea que **daba por sentado que la base estaba vacía**.
+   * Cuando en el sprint 22 se sembró staging, la portada empezó a mostrar
+   * avisos —que es lo correcto— y la prueba se puso roja sin que hubiera
+   * nada roto.
+   *
+   * Lo que hay que garantizar no es que la sección esté vacía, sino que
+   * pase lo que pase **diga algo**: o muestra tarjetas, o explica por qué
+   * no hay y ofrece a dónde ir. Eso es cierto con base llena y con base
+   * vacía, así que la prueba dejó de depender de los datos sin dejar de
+   * comprobar lo que importaba.
+   */
+  const CON_DATOS = [
+    'Propiedades destacadas',
+    'Recién publicadas',
+    'Bajaron de precio',
+    'Proyectos nuevos',
+  ];
+
+  for (const titulo of CON_DATOS) {
+    test(`la sección "${titulo}" nunca queda muda`, async ({ page }) => {
+      await page.goto('/');
+
+      const seccion = page
+        .locator('section')
+        .filter({ has: page.getByRole('heading', { name: titulo, level: 2 }) });
+      await expect(seccion).toHaveCount(1);
+
+      const tarjetas = await seccion.locator('a[href^="/propiedad/"]').count();
+
+      if (tarjetas > 0) {
+        // Con datos: cada tarjeta tiene que llevar a una ficha de verdad.
+        expect(tarjetas).toBeGreaterThan(0);
+        return;
+      }
+
+      // Sin datos: título, explicación y una salida. Los tres, no uno.
+      const vacio = seccion.locator('h3');
+      await expect(vacio).toHaveCount(1);
+      await expect(vacio).not.toHaveText('');
+      await expect(seccion.locator('p')).not.toHaveCount(0);
+      await expect(seccion.getByRole('link')).not.toHaveCount(0);
+    });
+  }
 
   test('el aviso legal del índice aclara que no es una tasación', async ({ page }) => {
     await page.goto('/');

@@ -128,7 +128,17 @@ test.describe('búsqueda', () => {
   test('la vista de mapa abre sin caerse', async ({ page }) => {
     const r = await page.goto('/comprar?vista=mapa');
     expect(r?.status()).toBe(200);
-    await esperar(page);
+
+    // Acá NO se puede usar `esperar()`. Es P-26, y la causa es concreta:
+    // `networkidle` espera a que no quede ninguna petición en vuelo, y el
+    // mapa pide teselas mientras se dibuja y vuelve a pedirlas al moverse,
+    // así que ese silencio no llega nunca. En tres corridas aisladas dio
+    // verde, roja y roja, siempre agotando el tiempo en `waitForLoadState`.
+    //
+    // Se espera lo que de verdad significa «abrió»: que el lienzo esté.
+    // Es determinista y además exige más que antes —la versión vieja se
+    // conformaba con un `h1`, que también sale con el mapa roto—.
+    await expect(page.locator('canvas.maplibregl-canvas')).toBeVisible({ timeout: 20_000 });
     await expect(page.locator('h1')).toBeVisible();
   });
 

@@ -1,4 +1,5 @@
 import { test, expect, type Page } from '@playwright/test';
+import { BASE, ES_PRODUCCION } from './entorno';
 
 /**
  * SEO en el HTML de verdad.
@@ -8,8 +9,6 @@ import { test, expect, type Page } from '@playwright/test';
  * otra hay un `generateMetadata()` que puede olvidarse de devolver algo,
  * y eso no se ve desde una función pura.
  */
-
-const BASE = 'https://wasipe.netlify.app';
 
 const leerCanonica = (page: Page) => page.locator('link[rel="canonical"]').getAttribute('href');
 
@@ -138,18 +137,59 @@ test.describe('las búsquedas flacas no se indexan', () => {
 // robots.txt y sitemap
 // ---------------------------------------------------------------------
 
+/**
+ * `robots.txt` tiene DOS contratos, no uno, y son opuestos.
+ *
+ * Fuera de producción se cierra el sitio entero al rastreo (P-19): un
+ * Preview indexado compite contra el sitio real por las mismas búsquedas
+ * y sacarlo del índice después lleva semanas. En producción se abre todo
+ * menos lo privado.
+ *
+ * Estas pruebas comprueban el contrato del servidor que tienen delante,
+ * leyendo el entorno del mismo lugar que la aplicación. Antes solo
+ * conocían la versión de producción, así que se pusieron rojas
+ * exactamente cuando P-19 empezó a funcionar.
+ *
+ * El contrato de producción, que en local no se puede observar, está
+ * cubierto aparte en `tests/unidad/seo.test.ts`, forzando la variable.
+ */
+/**
+ * `robots.txt` tiene DOS contratos, no uno, y son opuestos.
+ *
+ * Fuera de producción se cierra el sitio entero al rastreo (P-19): un
+ * Preview indexado compite contra el sitio real por las mismas búsquedas,
+ * y sacarlo del índice después lleva semanas. En producción se abre todo
+ * menos lo privado.
+ *
+ * La prueba comprueba el contrato del servidor que tiene delante, leyendo
+ * el entorno del mismo lugar que la aplicación. Antes solo conocía la
+ * versión de producción, así que se puso roja exactamente cuando P-19
+ * empezó a funcionar. No lleva `skip`: siempre corre y siempre afirma
+ * algo, solo que lo correcto según dónde apunte.
+ *
+ * El contrato de producción también está cubierto sin depender del
+ * entorno en `tests/unidad/seo.test.ts`, forzando la variable.
+ */
 test.describe('robots.txt', () => {
-  test('existe, es texto plano y apunta al sitemap', async ({ request }) => {
+  test('existe y responde texto plano', async ({ request }) => {
     const r = await request.get('/robots.txt');
     expect(r.status()).toBe(200);
-
-    const cuerpo = await r.text();
-    expect(cuerpo).toContain('Sitemap:');
-    expect(cuerpo).toContain('/sitemap.xml');
+    expect(r.headers()['content-type']).toContain('text/plain');
   });
 
-  test('cierra el panel y deja abierto lo público', async ({ request }) => {
+  test('sirve el contrato que corresponde al entorno del servidor', async ({ request }) => {
     const cuerpo = await (await request.get('/robots.txt')).text();
+
+    if (!ES_PRODUCCION) {
+      // Fuera de producción: cerrado entero, y sin sitemap, que sería una
+      // invitación a rastrear lo que se acaba de cerrar.
+      expect(cuerpo).toMatch(/^Disallow:\s*\/\s*$/m);
+      expect(cuerpo).not.toContain('Sitemap:');
+      return;
+    }
+
+    expect(cuerpo).toContain('Sitemap:');
+    expect(cuerpo).toContain('/sitemap.xml');
 
     for (const privada of ['/panel', '/ingresar', '/auth', '/api']) {
       expect(cuerpo, privada).toContain(`Disallow: ${privada}`);
