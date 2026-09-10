@@ -2,6 +2,11 @@ import type { Metadata } from 'next';
 import { requiereCuentaLista } from '@/lib/auth/sesion';
 import { navegacionPanel } from '@/lib/auth/roles';
 import { puestosDeLaSesion } from '@/lib/auth/personal';
+import {
+  correspondeVerProyectos,
+  ENTRADA_DE_PROYECTOS,
+  membresiaActual,
+} from '@/lib/proyectos/permisos';
 import { MenuPanel } from '@/components/navegacion/menu-panel';
 
 /**
@@ -32,12 +37,24 @@ export const metadata: Metadata = {
 export default async function LayoutDelPanel({ children }: { children: React.ReactNode }) {
   const perfil = await requiereCuentaLista();
   const puestos = await puestosDeLaSesion();
+  const membresia = await membresiaActual('/panel');
 
   // «Administración» solo aparece para quien tiene un puesto en Wasipe, y
   // ese puesto vive en su propia tabla, no en el rol de la cuenta: quien
   // modera sigue pudiendo publicar su propio departamento.
+  //
+  // «Proyectos» sigue la misma idea, y por el mismo motivo: pertenecer a
+  // una inmobiliaria es un hecho de `agency_members`, no del tipo de
+  // cuenta. Alguien con cuenta de `buyer` puede administrar una
+  // constructora; un `owner` puede no pertenecer a ninguna. Filtrarla por
+  // `profiles.role` le escondía el enlace a quien sí podía usarlo y se lo
+  // mostraba a quien terminaba en un callejón.
+  //
+  // Esto es solo el menú. La autorización de verdad la hacen las acciones
+  // de servidor y la RLS, cada una por su cuenta.
   const entradas = [
     ...navegacionPanel(perfil.role),
+    ...(correspondeVerProyectos(membresia) ? [ENTRADA_DE_PROYECTOS] : []),
     ...(puestos.length > 0 ? [{ href: '/panel/admin', texto: 'Administración' } as const] : []),
   ];
 

@@ -105,6 +105,16 @@ const PANEL: readonly EntradaPanel[] = [
  *
  * Quien solo busca no tiene "Mis propiedades" ni "Contactos": mostrarle
  * secciones vacías da la sensación de un producto a medio hacer.
+ *
+ * **«Proyectos» no está en esta lista a propósito.** Depende de la
+ * membresía en una inmobiliaria, que es otra tabla y otra pregunta que
+ * el tipo de cuenta: alguien con cuenta de `buyer` puede administrar una
+ * constructora, y un `owner` puede no pertenecer a ninguna. Filtrarla
+ * por `profiles.role` mostraba el enlace a quien terminaba en un
+ * callejón y se lo escondía a quien sí podía usarlo.
+ *
+ * La arma el layout del panel, igual que «Administración», que también
+ * sale de su propia tabla.
  */
 export function navegacionPanel(rol: RolUsuario): EntradaPanel[] {
   return PANEL.filter((entrada) => !entrada.roles || entrada.roles.includes(rol));

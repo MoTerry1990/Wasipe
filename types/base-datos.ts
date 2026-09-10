@@ -191,6 +191,105 @@ export type Agencia = {
   updated_at: string;
 };
 
+// ---------------------------------------------------------------------
+// Proyectos inmobiliarios
+// ---------------------------------------------------------------------
+
+/**
+ * Escritos a mano a partir de `20260909120000_proyectos.sql`, como el
+ * resto de este archivo. Si algo de acá no coincide con la migración, lo
+ * que manda es la migración.
+ */
+
+export type EtapaProyecto = 'preventa' | 'construccion' | 'entrega_inmediata';
+
+/**
+ * Un proyecto inmobiliario.
+ *
+ * **No tiene precio, ni dormitorios, ni área.** Los tiene cada tipología.
+ * Un proyecto se vende por modelos —1, 2 y 3 dormitorios, cada uno con su
+ * rango— y meter un precio acá obligaría a elegir uno y callar los demás.
+ *
+ * Tampoco tiene `verification_status`: la aprobación la cuenta
+ * `publication_status` y nada más. Dos columnas para el mismo hecho
+ * pueden contradecirse.
+ */
+export type Proyecto = {
+  id: string;
+  /** Lo pone un disparador. Nunca se envía desde el formulario. */
+  code: string;
+  slug: string;
+  agency_id: string;
+  created_by: string;
+  name: string;
+  description: string | null;
+  stage: EtapaProyecto;
+  /** Mes estimado de entrega. Se guarda como fecha y se muestra como mes. */
+  delivery_estimate: string | null;
+  department: string;
+  province: string;
+  district: string;
+  ubigeo: string | null;
+  address: string | null;
+  lat: number | null;
+  lon: number | null;
+  publication_status: EstadoPublicacion;
+  rejection_reason: string | null;
+  /** Los mueven disparadores. Editarlos a mano lo rechaza la base. */
+  views_count: number;
+  inquiries_count: number;
+  submitted_at: string | null;
+  reviewed_at: string | null;
+  reviewed_by: string | null;
+  published_at: string | null;
+  created_at: string;
+  updated_at: string;
+};
+
+/**
+ * Un modelo de departamento dentro del proyecto.
+ *
+ * No es una unidad individual: registrar el departamento 502 sería un
+ * CRM, no un portal. Acá se cuenta cuántas hay de cada modelo.
+ */
+export type TipologiaDeProyecto = {
+  id: string;
+  project_id: string;
+  name: string;
+  bedrooms: number;
+  bathrooms: number;
+  parking: number;
+  total_area: number | null;
+  built_area: number | null;
+  currency: Moneda;
+  price_from: number;
+  price_to: number;
+  units_total: number;
+  units_available: number;
+  sort_order: number;
+  created_at: string;
+  updated_at: string;
+};
+
+export type MedioDeProyecto = {
+  id: string;
+  project_id: string;
+  kind: TipoMedio;
+  url: string;
+  storage_path: string;
+  width: number | null;
+  height: number | null;
+  sort_order: number;
+  is_cover: boolean;
+  alt: string | null;
+  created_at: string;
+};
+
+export type CaracteristicaDeProyecto = {
+  project_id: string;
+  feature: string;
+};
+
 export type MiembroAgencia = {
   agency_id: string;
   user_id: string;
@@ -364,7 +463,12 @@ export type EventoLead = {
 
 export type Consulta = {
   id: string;
-  property_id: string;
+  /**
+   * Exactamente uno de los dos, nunca los dos ni ninguno: lo garantiza el
+   * check `consulta_sobre_una_sola_cosa` de la migración de proyectos.
+   */
+  property_id: string | null;
+  project_id: string | null;
   kind: TipoConsulta;
   preferred_visit_at: string | null;
   /** Lo fija un trigger a partir del aviso: no se envía. */
@@ -707,6 +811,46 @@ export type Database = {
         Row: MedioPropiedad;
         Insert: Alta<MedioPropiedad, 'property_id' | 'url'>;
         Update: Partial<MedioPropiedad>;
+        Relationships: [];
+      };
+      projects: {
+        Row: Proyecto;
+        // `code`, `publication_status` y los contadores NO son
+        // obligatorios al insertar porque no los pone el cliente: el
+        // código lo genera un disparador y el estado nace en `draft`.
+        Insert: Alta<
+          Proyecto,
+          'agency_id' | 'created_by' | 'slug' | 'name' | 'department' | 'province' | 'district'
+        >;
+        Update: Partial<Proyecto>;
+        Relationships: [];
+      };
+      project_typologies: {
+        Row: TipologiaDeProyecto;
+        Insert: Alta<
+          TipologiaDeProyecto,
+          | 'project_id'
+          | 'name'
+          | 'bedrooms'
+          | 'bathrooms'
+          | 'price_from'
+          | 'price_to'
+          | 'units_total'
+          | 'units_available'
+        >;
+        Update: Partial<TipologiaDeProyecto>;
+        Relationships: [];
+      };
+      project_media: {
+        Row: MedioDeProyecto;
+        Insert: Alta<MedioDeProyecto, 'project_id' | 'url' | 'storage_path'>;
+        Update: Partial<MedioDeProyecto>;
+        Relationships: [];
+      };
+      project_features: {
+        Row: CaracteristicaDeProyecto;
+        Insert: Alta<CaracteristicaDeProyecto, 'project_id' | 'feature'>;
+        Update: Partial<CaracteristicaDeProyecto>;
         Relationships: [];
       };
       notificaciones_de_alerta: {
